@@ -76,9 +76,14 @@ function getPool() {
       }
       opts.connectionString = url;
       opts.ssl = process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false };
-      opts.max = 10;
+      opts.max = 5;
+      opts.connectionTimeoutMillis = 10000;
+      opts.idleTimeoutMillis = 30000;
     }
     pool = new Pool(opts);
+    pool.on('error', (err) => {
+      console.error('pg pool error:', err.message);
+    });
   }
   return pool;
 }
