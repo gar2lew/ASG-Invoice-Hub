@@ -1,0 +1,96 @@
+<%- include('partials/head', { title }) %>
+
+<header class="page-head">
+  <div>
+    <p class="kicker">Record <%= invoice.invoice_number %></p>
+    <h1 class="page-title mono"><%= invoice.invoice_number %></h1>
+    <p class="page-sub">Issued <%= invoice.issueDateText %><% if (invoice.dueDateText) { %> &middot; due <%= invoice.dueDateText %><% } %></p>
+  </div>
+  <div class="head-actions">
+    <span class="badge badge-<%= invoice.status %>"><%= invoice.status %></span>
+    <a class="btn btn-accent" href="/invoices/<%= invoice.id %>/download">Download PDF</a>
+    <% if (invoice.status === 'draft' || invoice.status === 'paid') { %>
+      <form method="post" action="/invoices/<%= invoice.id %>/send">
+        <button class="btn btn-ink" type="submit">Email invoice</button>
+      </form>
+    <% } %>
+    <% if (invoice.status === 'sent') { %>
+      <form method="post" action="/invoices/<%= invoice.id %>/send">
+        <button class="btn btn-ink" type="submit">Re-send</button>
+      </form>
+    <% } %>
+    <% if (invoice.status !== 'paid') { %>
+      <form method="post" action="/invoices/<%= invoice.id %>/paid">
+        <button class="btn btn-ghost" type="submit">Mark paid</button>
+      </form>
+    <% } %>
+    <form method="post" action="/invoices/<%= invoice.id %>/delete" onsubmit="return confirm('Delete invoice <%= invoice.invoice_number %>? This cannot be undone.');">
+      <button class="btn btn-danger" type="submit">Delete</button>
+    </form>
+  </div>
+</header>
+
+<% if (!mailEnabled) { %>
+  <div class="flash flash-warn" role="status">Email is not configured yet — set SMTP settings in <code>.env</code> before invoices can be emailed.</div>
+<% } %>
+
+<div class="detail-grid">
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Items</h2>
+      <span class="badge badge-tpl"><%= invoice.template %></span>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>#</th><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr>
+        </thead>
+        <tbody>
+          <% items.forEach(function(it, idx) { %>
+          <tr>
+            <td class="muted mono"><%= idx + 1 %></td>
+            <td><%= it.description %></td>
+            <td class="num mono"><%= it.quantity %></td>
+            <td class="num mono"><%= it.rateText %></td>
+            <td class="num mono strong"><%= it.amountText %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <div class="detail-totals">
+      <div class="total-row"><span>Subtotal</span><span class="mono"><%= invoice.subtotalText %></span></div>
+      <% if (invoice.tax_amount > 0) { %>
+      <div class="total-row"><span>GST (10%)</span><span class="mono"><%= invoice.taxText %></span></div>
+      <% } %>
+      <div class="total-row total-row-grand"><span>Total</span><span class="mono"><%= invoice.totalText %></span></div>
+    </div>
+    <% if (invoice.notes) { %>
+    <p class="detail-notes"><span class="kicker">Notes</span><%= invoice.notes %></p>
+    <% } %>
+  </section>
+
+  <aside class="detail-side">
+    <section class="card">
+      <h2 class="card-title">Customer</h2>
+      <dl class="dl">
+        <div><dt>Name</dt><dd><%= invoice.customer_name %></dd></div>
+        <% if (invoice.customer_company) { %><div><dt>Company</dt><dd><%= invoice.customer_company %></dd></div><% } %>
+        <% if (invoice.customer_email) { %><div><dt>Email</dt><dd><%= invoice.customer_email %></dd></div><% } %>
+        <% if (invoice.customer_address) { %><div><dt>Address</dt><dd><%= invoice.customer_address %></dd></div><% } %>
+      </dl>
+    </section>
+    <section class="card">
+      <h2 class="card-title">Details</h2>
+      <dl class="dl">
+        <div><dt>Prepared by</dt><dd><%= invoice.repName %></dd></div>
+        <div><dt>Issued</dt><dd><%= invoice.issueDateText %></dd></div>
+        <% if (invoice.dueDateText) { %><div><dt>Due</dt><dd><%= invoice.dueDateText %></dd></div><% } %>
+        <% if (invoice.sent_at) { %><div><dt>Last emailed</dt><dd><%= fmtDate(invoice.sent_at.slice(0,10)) %></dd></div><% } %>
+        <% if (invoice.paid_at) { %><div><dt>Paid</dt><dd><%= fmtDate(invoice.paid_at.slice(0,10)) %></dd></div><% } %>
+      </dl>
+    </section>
+  </aside>
+</div>
+
+<%- include('partials/footer') %>

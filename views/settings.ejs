@@ -1,0 +1,119 @@
+<%- include('partials/head', { title }) %>
+
+<header class="page-head">
+  <div>
+    <p class="kicker">Administration</p>
+    <h1 class="page-title">Settings</h1>
+  </div>
+</header>
+
+<form method="post" action="/settings">
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Company</h2>
+      <p class="card-sub">Shown at the top of every invoice PDF.</p>
+    </div>
+    <div class="grid2">
+      <label class="field">
+        <span class="field-label">Company name</span>
+        <input class="input" type="text" name="company_name" value="<%= settings.company_name %>">
+      </label>
+      <label class="field">
+        <span class="field-label">ABN</span>
+        <input class="input" type="text" name="company_abn" value="<%= settings.company_abn %>">
+      </label>
+    </div>
+    <label class="field">
+      <span class="field-label">Address</span>
+      <input class="input" type="text" name="company_address" value="<%= settings.company_address %>">
+    </label>
+    <div class="grid2">
+      <label class="field">
+        <span class="field-label">Phone</span>
+        <input class="input" type="text" name="company_phone" value="<%= settings.company_phone %>">
+      </label>
+      <label class="field">
+        <span class="field-label">Email</span>
+        <input class="input" type="email" name="company_email" value="<%= settings.company_email %>">
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Invoice numbering</h2>
+      <p class="card-sub">Prefix for new invoice numbers, e.g. <code>INV</code> gives <code>INV-0001</code>.</p>
+    </div>
+    <div class="grid2">
+      <label class="field">
+        <span class="field-label">Prefix</span>
+        <input class="input" type="text" name="invoice_prefix" value="<%= settings.invoice_prefix %>">
+      </label>
+      <label class="field">
+        <span class="field-label">Next number</span>
+        <input class="input" type="number" min="1" name="next_invoice_number" value="<%= settings.next_invoice_number %>">
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Accounts email</h2>
+      <p class="card-sub">Invoices are emailed here (and to the rep). Separate multiple addresses with commas.</p>
+    </div>
+    <label class="field">
+      <span class="field-label">Recipients</span>
+      <input class="input" type="text" name="accounts_email" value="<%= settings.accounts_email %>" placeholder="accounts@company.com.au">
+    </label>
+    <p class="hint">Each rep&rsquo;s email (set on the Sales reps page) also gets a copy.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Bank details &amp; terms</h2>
+      <p class="card-sub">Payment information printed at the bottom of the invoice.</p>
+    </div>
+    <div class="grid2">
+      <label class="field">
+        <span class="field-label">Bank name</span>
+        <input class="input" type="text" name="bank_name" value="<%= settings.bank_name %>">
+      </label>
+      <label class="field">
+        <span class="field-label">BSB</span>
+        <input class="input" type="text" name="bank_bsb" value="<%= settings.bank_bsb %>">
+      </label>
+    </div>
+    <label class="field">
+      <span class="field-label">Account number</span>
+      <input class="input" type="text" name="bank_account" value="<%= settings.bank_account %>">
+    </label>
+    <div class="grid2">
+      <label class="field">
+        <span class="field-label">Payment terms</span>
+        <input class="input" type="text" name="payment_terms" value="<%= settings.payment_terms %>">
+      </label>
+      <label class="field">
+        <span class="field-label">Footer note</span>
+        <input class="input" type="text" name="footer_note" value="<%= settings.footer_note %>">
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Email delivery</h2>
+    </div>
+    <p class="hint">
+      SMTP credentials are read from the server&rsquo;s <code>.env</code> file (SMTP_HOST, SMTP_USER, SMTP_PASS).
+      Current status:
+      <span class="badge <%= mailEnabled ? 'badge-paid' : 'badge-draft' %>"><%= mailEnabled ? 'Configured' : 'Not configured' %></span>
+    </p>
+  </section>
+
+  <div class="actions-row">
+    <button class="btn btn-accent" type="submit">Save settings</button>
+    <a class="btn btn-ghost" href="/">Cancel</a>
+  </div>
+</form>
+
+<%- include('partials/footer') %>

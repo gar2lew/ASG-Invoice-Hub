@@ -1,0 +1,137 @@
+<%- include('partials/head', { title }) %>
+
+<header class="page-head">
+  <div>
+    <p class="kicker">New record</p>
+    <h1 class="page-title">Create invoice</h1>
+  </div>
+</header>
+
+<form id="invoice-form" class="invoice-form" data-next-number="<%= settings.invoice_prefix %>">
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Template</h2>
+      <p class="card-sub">Pick the layout used for the PDF.</p>
+    </div>
+    <div class="tpl-toggle" role="radiogroup" aria-label="Invoice template">
+      <button type="button" class="tpl tpl-active" data-template="standard" role="radio" aria-checked="true">
+        <span class="tpl-preview tpl-preview-standard" aria-hidden="true">
+          <span class="pv-p1"></span><span class="pv-p2"></span><span class="pv-block"></span><span class="pv-rows"><i></i><i></i><i></i></span><span class="pv-tot"></span>
+        </span>
+        <span class="tpl-meta">
+          <span class="tpl-name">Standard</span>
+          <span class="tpl-desc">Classic ledger layout with a strong header and bordered item table.</span>
+        </span>
+      </button>
+      <button type="button" class="tpl" data-template="compact" role="radio" aria-checked="false">
+        <span class="tpl-preview tpl-preview-compact" aria-hidden="true">
+          <span class="pv-band"></span><span class="pv-block"></span><span class="pv-rows pv-rows-slim"><i></i><i></i><i></i></span><span class="pv-tot"></span>
+        </span>
+        <span class="tpl-meta">
+          <span class="tpl-name">Compact</span>
+          <span class="tpl-desc">Streamlined header band and tighter spacing for a shorter one-page invoice.</span>
+        </span>
+      </button>
+      <input type="hidden" name="template" value="standard">
+    </div>
+  </section>
+
+  <div class="form-cols">
+    <div class="form-col">
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">Customer</h2>
+        </div>
+        <div class="grid2">
+          <label class="field">
+            <span class="field-label">Customer name <em>*</em></span>
+            <input class="input" type="text" name="customer_name" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Company</span>
+            <input class="input" type="text" name="customer_company">
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input class="input" type="email" name="customer_email">
+        </label>
+        <label class="field">
+          <span class="field-label">Address</span>
+          <textarea class="input" name="customer_address" rows="2"></textarea>
+        </label>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">Dates &amp; notes</h2>
+        </div>
+        <div class="grid2">
+          <label class="field">
+            <span class="field-label">Issue date</span>
+            <input class="input" type="date" name="issue_date" value="<%= issueDate %>">
+          </label>
+          <label class="field">
+            <span class="field-label">Due date</span>
+            <input class="input" type="date" name="due_date" value="<%= dueDate %>">
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Notes</span>
+          <textarea class="input" name="notes" rows="3" placeholder="Optional message shown on the invoice"></textarea>
+        </label>
+      </section>
+    </div>
+
+    <div class="form-col">
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">Line items</h2>
+          <button type="button" class="btn btn-ghost btn-small" id="add-line">
+            <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Add line
+          </button>
+        </div>
+        <div class="lines" id="lines">
+          <div class="line-row line-head" aria-hidden="true">
+            <span>Description</span><span>Qty</span><span>Rate</span><span class="num">Amount</span><span></span>
+          </div>
+        </div>
+        <div class="totals">
+          <div class="total-row">
+            <span>Subtotal</span>
+            <span class="mono" id="t-subtotal">$0.00</span>
+          </div>
+          <label class="gst-toggle">
+            <input type="checkbox" name="gst" id="gst">
+            <span>Add GST (10%)</span>
+          </label>
+          <div class="total-row total-row-gst" id="gst-row" hidden>
+            <span>GST</span>
+            <span class="mono" id="t-gst">$0.00</span>
+          </div>
+          <div class="total-row total-row-grand">
+            <span>Total</span>
+            <span class="mono" id="t-total">$0.00</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card card-actions">
+        <label class="checkline">
+          <input type="checkbox" name="send_now" id="send_now" checked>
+          <span>Email this invoice to accounts as soon as it&rsquo;s created</span>
+        </label>
+        <div class="actions-row">
+          <button type="submit" class="btn btn-accent" id="submit-draft" name="action" value="draft">Save draft</button>
+          <button type="submit" class="btn btn-ink" id="submit-send" name="action" value="send">
+            <svg aria-hidden="true" viewBox="0 0 16 16" width="15" height="15"><path d="M2 8l11-5-3.5 10-2.5-4.5L2 8zM7 11.5V8l6-5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" fill="none"/></svg>
+            Save &amp; email
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+</form>
+
+<%- include('partials/footer', { pageScript: '/js/invoice-form.js' }) %>

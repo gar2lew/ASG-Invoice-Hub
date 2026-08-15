@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Invoice Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="login-body">
+  <div class="login-wrap">
+    <main class="login-card">
+      <header class="login-head">
+        <span class="brand-mark">INV</span>
+        <h1>Invoice Hub</h1>
+        <p>Sales rep invoicing, straight to accounts.</p>
+      </header>
+
+      <% if (error) { %>
+        <div class="flash flash-error" role="alert"><%= error %></div>
+      <% } %>
+      <% if (flash) { %>
+        <div class="flash flash-<%= flash.type %>" role="status"><%= flash.text %></div>
+      <% } %>
+
+      <form method="post" action="/login" class="stack">
+        <label class="field">
+          <span class="field-label">Username</span>
+          <input class="input" type="text" name="username" autocomplete="username" required autofocus>
+        </label>
+        <label class="field">
+          <span class="field-label">Password</span>
+          <input class="input" type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button class="btn btn-accent btn-block" type="submit">Sign in</button>
+      </form>
+    </main>
+    <p class="login-foot">Internal tool &middot; contact your administrator for access</p>
+  </div>
+</body>
+</html>

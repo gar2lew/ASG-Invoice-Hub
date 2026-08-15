@@ -1,0 +1,86 @@
+<%- include('partials/head', { title }) %>
+
+<header class="page-head">
+  <div>
+    <p class="kicker">Administration</p>
+    <h1 class="page-title">Sales reps</h1>
+  </div>
+</header>
+
+<div class="form-cols">
+  <div class="form-col">
+    <section class="card">
+      <div class="card-head">
+        <h2 class="card-title">Reps</h2>
+        <p class="card-sub">Each rep sees only their own invoices.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Name</th><th>Username</th><th>Email</th><th class="num">Invoices</th><th class="num">Total</th><th class="actions"><span class="sr-only">Actions</span></th></tr>
+          </thead>
+          <tbody>
+            <% users.forEach(function(u) { %>
+            <tr>
+              <td>
+                <span class="cell-main"><%= u.name %></span>
+                <% if (u.role === 'admin') { %><span class="badge badge-sent">admin</span><% } %>
+              </td>
+              <td class="mono muted"><%= u.username %></td>
+              <td class="muted"><%= u.email || '—' %></td>
+              <td class="num mono"><%= u.count %></td>
+              <td class="num mono strong"><%= u.totalText %></td>
+              <td class="actions">
+                <form method="post" action="/users/<%= u.id %>/reset" class="inline-form">
+                  <input class="input input-sm" type="text" name="password" placeholder="New password" minlength="4" required>
+                  <button class="btn btn-ghost btn-tiny" type="submit">Reset</button>
+                </form>
+                <% if (u.id !== currentUser.id) { %>
+                <form method="post" action="/users/<%= u.id %>/delete" class="inline-form" onsubmit="return confirm('Remove <%= u.name %>?' );">
+                  <button class="btn btn-danger btn-tiny" type="submit">Remove</button>
+                </form>
+                <% } %>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="form-col">
+    <section class="card">
+      <div class="card-head">
+        <h2 class="card-title">Add a rep</h2>
+        <p class="card-sub">They&rsquo;ll sign in with this username and password.</p>
+      </div>
+      <form method="post" action="/users">
+        <label class="field">
+          <span class="field-label">Full name <em>*</em></span>
+          <input class="input" type="text" name="name" required>
+        </label>
+        <label class="field">
+          <span class="field-label">Username <em>*</em></span>
+          <input class="input" type="text" name="username" required>
+        </label>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <span class="hint">Gets a copy of every invoice they send.</span>
+          <input class="input" type="email" name="email">
+        </label>
+        <label class="field">
+          <span class="field-label">Password <em>*</em></span>
+          <input class="input" type="text" name="password" required minlength="4">
+        </label>
+        <label class="checkline">
+          <input type="checkbox" name="role" value="admin">
+          <span>Give administrator access</span>
+        </label>
+        <button class="btn btn-accent btn-block" type="submit">Create account</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
