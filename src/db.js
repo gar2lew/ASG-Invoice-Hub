@@ -89,20 +89,44 @@ async function initDb() {
     const p = getPool();
     await p.query(SCHEMA);
     await p.query("INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING");
-    const users = await p.query('SELECT COUNT(*) AS c FROM users');
-    if (Number(users.rows[0].c) === 0) {
-      const username = process.env.ADMIN_USERNAME || 'admin';
-      const password = process.env.ADMIN_PASSWORD || 'changeme';
-      const hash = bcrypt.hashSync(password, 10);
-      await p.query('INSERT INTO users (username, password_hash, name, email, role) VALUES ($1,$2,$3,$4,$5)',
-        [username, hash, 'Administrator', process.env.ADMIN_EMAIL || '', 'admin']);
-      console.log(`Seeded admin user: ${username}`);
-    }
+    await ensureAdmin();
   })().catch((err) => {
     readyPromise = null;
     throw err;
   });
   return readyPromise;
+}
+
+async function ensureAdmin() {
+  const p = getPool();
+  const envUser = process.env.ADMIN_USERNAME;
+  const envPass = process.env.ADMIN_PASSWORD;
+  const envEmail = process.env.ADMIN_EMAIL || '';
+
+  const adminExists = await p.query("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'");
+  if (Number(adminExists.rows[0].c) === 0) {
+    const username = envUser || 'admin';
+    const password = envPass || 'changeme';
+    const hash = bcrypt.hashSync(password, 10);
+    await p.query('INSERT INTO users (username, password_hash, name, email, role) VALUES ($1,$2,$3,$4,$5)',
+      [username, hash, 'Administrator', envEmail, 'admin']);
+    console.log(`Seeded admin user: ${username}`);
+    return;
+  }
+
+  if (envUser && envPass) {
+    const existing = await p.query('SELECT id FROM users WHERE username = $1', [envUser]);
+    const hash = bcrypt.hashSync(envPass, 10);
+    if (existing.rows.length) {
+      await p.query('UPDATE users SET password_hash = $1, email = $2, role = $3 WHERE id = $4',
+        [hash, envEmail, 'admin', existing.rows[0].id]);
+      console.log(`Admin credentials applied from environment: ${envUser}`);
+    } else {
+      await p.query('INSERT INTO users (username, password_hash, name, email, role) VALUES ($1,$2,$3,$4,$5)',
+        [envUser, hash, 'Administrator', envEmail, 'admin']);
+      console.log(`Admin account created from environment: ${envUser}`);
+    }
+  }
 }
 
 async function ensureReady() {
@@ -314,6 +338,7 @@ async function repTotals() {
 
 module.exports = {
   initDb,
+  ensureAdmin,
   getSettings,
   updateSettings,
   getUsers,

@@ -21,6 +21,26 @@ async function main() {
   log(Boolean(admin) && admin.role === 'admin', 'admin user seeded');
   log(bcrypt.compareSync('changeme', admin.password_hash), 'admin password hashes correctly');
 
+  process.env.ADMIN_USERNAME = 'admin';
+  process.env.ADMIN_PASSWORD = 'override123';
+  await db.ensureAdmin();
+  const admin2 = await db.getUserByUsername('admin');
+  log(bcrypt.compareSync('override123', admin2.password_hash), 'env credentials override existing admin');
+
+  process.env.ADMIN_PASSWORD = '';
+  await db.ensureAdmin();
+  const admin3 = await db.getUserByUsername('admin');
+  log(bcrypt.compareSync('override123', admin3.password_hash), 'empty env leaves admin password untouched');
+
+  process.env.ADMIN_USERNAME = 'newadmin';
+  process.env.ADMIN_PASSWORD = 'newpass456';
+  await db.ensureAdmin();
+  const admin4 = await db.getUserByUsername('newadmin');
+  log(Boolean(admin4) && admin4.role === 'admin' && bcrypt.compareSync('newpass456', admin4.password_hash),
+    'new admin username from env creates a second admin');
+  process.env.ADMIN_USERNAME = '';
+  process.env.ADMIN_PASSWORD = '';
+
   await db.createUser({ username: 'rep1', password: 'secret1', name: 'Rep One', email: 'rep1@co.com', role: 'rep' });
   const rep = await db.getUserByUsername('rep1');
   log(Boolean(rep) && rep.name === 'Rep One', 'rep user created');
