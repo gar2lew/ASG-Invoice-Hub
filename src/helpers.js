@@ -5,17 +5,24 @@ function fmtMoney(n) {
   return (neg ? '-$' : '$') + s;
 }
 
+function parseDate(d) {
+  if (!d) return null;
+  if (d instanceof Date) return d;
+  const s = String(d);
+  return new Date(s.includes('T') ? s : s.replace(' ', 'T'));
+}
+
 function fmtDate(d) {
   if (!d) return '';
-  const dt = new Date(d + 'T00:00:00');
-  if (Number.isNaN(dt.getTime())) return d;
+  const dt = parseDate(d);
+  if (!dt || Number.isNaN(dt.getTime())) return String(d);
   return dt.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function fmtDateLong(d) {
   if (!d) return '';
-  const dt = new Date(d + 'T00:00:00');
-  if (Number.isNaN(dt.getTime())) return d;
+  const dt = parseDate(d);
+  if (!dt || Number.isNaN(dt.getTime())) return String(d);
   return dt.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 

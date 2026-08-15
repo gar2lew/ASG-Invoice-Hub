@@ -4,19 +4,23 @@
   "description": "Sales rep invoice hub - create, send and re-download invoices",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node test/run-smoke.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^12.2.0",
     "cookie-session": "^2.1.0",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "nodemailer": "^6.9.16",
-    "pdfkit": "^0.16.0"
+    "pdfkit": "^0.16.0",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "pg-mem": "^3.0.5"
   }
 }

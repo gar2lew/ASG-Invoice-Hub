@@ -5,21 +5,29 @@ function requireAuth(req, res, next) {
   next();
 }
 
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
   if (!req.session.userId) return res.redirect('/login');
-  const user = db.getUserById(req.session.userId);
-  if (!user || user.role !== 'admin') {
-    req.session.flash = { type: 'error', text: 'You need administrator access for that.' };
-    return res.redirect('/');
+  try {
+    const user = await db.getUserById(req.session.userId);
+    if (!user || user.role !== 'admin') {
+      req.session.flash = { type: 'error', text: 'You need administrator access for that.' };
+      return res.redirect('/');
+    }
+    next();
+  } catch (err) {
+    next(err);
   }
-  next();
 }
 
-function currentUser(req, res, next) {
+async function currentUser(req, res, next) {
   if (req.session.userId) {
-    const user = db.getUserById(req.session.userId);
-    if (user) req.user = user;
-    else req.session = null;
+    try {
+      const user = await db.getUserById(req.session.userId);
+      if (user) req.user = user;
+      else req.session = null;
+    } catch (err) {
+      return next(err);
+    }
   }
   res.locals.currentUser = req.user || null;
   next();
