@@ -156,8 +156,9 @@
           <span>Email this invoice to accounts as soon as it&rsquo;s created</span>
         </label>
         <div class="actions-row">
-          <button type="submit" class="btn btn-accent" id="submit-draft" name="action" value="draft">Save draft</button>
-          <button type="submit" class="btn btn-ink" id="submit-send" name="action" value="send">
+          <input type="hidden" name="action" id="action-field" value="draft">
+          <button type="submit" class="btn btn-accent" id="submit-draft" data-action="draft">Save draft</button>
+          <button type="submit" class="btn btn-ink" id="submit-send" data-action="send">
             <svg aria-hidden="true" viewBox="0 0 16 16" width="15" height="15"><path d="M2 8l11-5-3.5 10-2.5-4.5L2 8zM7 11.5V8l6-5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" fill="none"/></svg>
             Save &amp; email
           </button>
@@ -174,8 +175,8 @@
         <div class="preview-page" id="preview-page">
           <div class="preview-header">
             <div class="preview-company">
-              <div class="preview-company-name" id="pv-company">Amplify Solutions Group</div>
-              <div class="preview-company-sub" id="pv-company-sub">ABN 43 663 126 725</div>
+              <div class="preview-company-name" id="pv-company"><%= repName %></div>
+              <div class="preview-company-sub" id="pv-company-sub"><% if (repAbn) { %>ABN <%= repAbn %><% } %></div>
             </div>
             <div class="preview-invoice-label">INVOICE</div>
             <div class="preview-invoice-num" id="pv-inv-num"><%= nextNumber %></div>
@@ -242,6 +243,8 @@
 <script>
   window.__previewData = {
     template: 'asg',
+    repName: '<%= repName %>',
+    repAbn: '<%= repAbn %>',
     company: { name: 'Amplify Solutions Group', abn: '43 663 126 725', address: '14C, 1 The Esplanade, Mount pleasant, 6153', phone: '08 6147 7927' }
   };
 </script>

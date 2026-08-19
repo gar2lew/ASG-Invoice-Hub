@@ -61,6 +61,8 @@ router.get('/invoices/new', requireAuth, async (req, res, next) => {
       flash: flashMsg,
       settings,
       nextNumber,
+      repName: req.user.name || '',
+      repAbn: req.user.abn || '',
       issueDate: todayISO(),
       dueDate: addDaysISO(14),
     });

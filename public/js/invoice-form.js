@@ -57,8 +57,8 @@
     var pvTotal = document.getElementById('pv-total');
     var pvNotes = document.getElementById('pv-notes');
 
-    if (pvCompany) pvCompany.textContent = tpl.name;
-    if (pvCompanySub) pvCompanySub.textContent = tpl.abn ? 'ABN ' + tpl.abn : '';
+    if (pvCompany) pvCompany.textContent = window.__previewData ? window.__previewData.repName : '';
+    if (pvCompanySub) pvCompanySub.textContent = window.__previewData && window.__previewData.repAbn ? 'ABN ' + window.__previewData.repAbn : '';
 
     var invNum = document.getElementById('invoice_number');
     if (pvInvNum) pvInvNum.textContent = invNum ? invNum.value : '';
@@ -238,6 +238,18 @@
   });
 
   /* ---- Form submit ---- */
+  var actionField = document.getElementById('action-field');
+
+  var submitDraft = document.getElementById('submit-draft');
+  var submitSend = document.getElementById('submit-send');
+
+  if (submitDraft) submitDraft.addEventListener('click', function () {
+    actionField.value = 'draft';
+  });
+  if (submitSend) submitSend.addEventListener('click', function () {
+    actionField.value = 'send';
+  });
+
   function showError(msg) {
     var box = document.getElementById('form-error');
     if (!box) {
@@ -282,9 +294,7 @@
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var action = document.activeElement && document.activeElement.name === 'action'
-      ? document.activeElement.value
-      : 'draft';
+    var action = actionField.value || 'draft';
     document.getElementById('send_now').checked = action === 'send';
     var payload = buildPayload();
 

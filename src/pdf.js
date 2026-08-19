@@ -5,7 +5,7 @@ const { getTemplate } = require('./templates');
 const INK = '#1B2434';
 const GRAY = '#5A6472';
 const LIGHT = '#EAE5D9';
-const ACCENT = '#D9481C';
+const ACCENT = '#1B2434';
 const ALT = '#F7F4EC';
 const WHITE = '#FFFFFF';
 
@@ -77,10 +77,11 @@ function drawItemsTable(doc, items, y0, compact) {
 
 function renderStandard(doc, invoice, items, settings, tplConfig) {
   const co = tplConfig || {};
-  doc.fillColor(INK).font('Helvetica-Bold').fontSize(22).text(co.company_name || settings.company_name || 'Company Name', M, 50);
-  const sub = [co.company_address || settings.company_address, co.company_abn && 'ABN ' + co.company_abn || settings.company_abn && 'ABN ' + settings.company_abn, co.company_phone || settings.company_phone, co.company_email || settings.company_email]
-    .filter(Boolean).join('   ·   ');
-  if (sub) doc.font('Helvetica').fontSize(8).fillColor(GRAY).text(sub, M, 78, { width: 320 });
+  const repName = invoice.rep_name || invoice.user_name || 'Contractor';
+  const repAbn = invoice.rep_abn || '';
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(22).text(repName, M, 50);
+  const repSub = [repAbn && 'ABN ' + repAbn].filter(Boolean).join('   ·   ');
+  if (repSub) doc.font('Helvetica').fontSize(8).fillColor(GRAY).text(repSub, M, 78, { width: 320 });
 
   doc.fillColor(ACCENT).font('Helvetica-Bold').fontSize(30).text('INVOICE', RIGHT, 44, { align: 'right', width: 0 });
   doc.fillColor(INK).font('Helvetica-Bold').fontSize(11).text(invoice.invoice_number, RIGHT, 80, { align: 'right', width: 0 });
@@ -100,8 +101,6 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   let my = 124;
   my = meta(doc, RIGHT, my, 'Issue date', invoice.issue_date);
   if (invoice.due_date) my = meta(doc, RIGHT, my, 'Due date', invoice.due_date);
-  my = meta(doc, RIGHT, my, 'Prepared by', invoice.rep_name || invoice.user_name);
-  if (invoice.rep_abn) my = meta(doc, RIGHT, my, 'Contractor ABN', invoice.rep_abn);
 
   y = Math.max(y + 18, 232);
   const tableBottom = drawItemsTable(doc, items, y);
@@ -151,14 +150,15 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
 
 function renderCompact(doc, invoice, items, settings, tplConfig) {
   const co = tplConfig || {};
+  const repName = invoice.rep_name || invoice.user_name || 'Contractor';
+  const repAbn = invoice.rep_abn || '';
   doc.rect(0, 0, 595.28, 108).fill(INK);
-  doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(24).text(co.company_name || settings.company_name || 'Company Name', M, 34);
-  const sub = [co.company_address || settings.company_address, co.company_abn && 'ABN ' + co.company_abn || settings.company_abn && 'ABN ' + settings.company_abn, co.company_phone || settings.company_phone, co.company_email || settings.company_email]
-    .filter(Boolean).join('  ·  ');
-  doc.font('Helvetica').fontSize(8).fillColor('#B8BEC9').text(sub, M, 70, { width: 340 });
+  doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(24).text(repName, M, 34);
+  const repSub = [repAbn && 'ABN ' + repAbn].filter(Boolean).join('  ·  ');
+  if (repSub) doc.font('Helvetica').fontSize(8).fillColor('#B8BEC9').text(repSub, M, 70, { width: 340 });
 
   doc.fillColor(ACCENT).font('Helvetica-Bold').fontSize(22).text('INVOICE', RIGHT, 26, { align: 'right', width: 0 });
-  doc.fillColor('#EDE8DC').font('Helvetica-Bold').fontSize(10).text(invoice.invoice_number, RIGHT, 58, { align: 'right', width: 0 });
+  doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(10).text(invoice.invoice_number, RIGHT, 58, { align: 'right', width: 0 });
   doc.fillColor(GRAY).font('Helvetica').fontSize(8).text(invoice.issue_date, RIGHT, 78, { align: 'right', width: 0 });
 
   let y = 132;
@@ -173,8 +173,6 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
 
   let my = 132;
   my = meta(doc, RIGHT, my, 'Due date', invoice.due_date || '—');
-  my = meta(doc, RIGHT, my, 'Prepared by', invoice.rep_name || invoice.user_name);
-  if (invoice.rep_abn) my = meta(doc, RIGHT, my, 'Contractor ABN', invoice.rep_abn);
   my = meta(doc, RIGHT, my, 'Payment terms', settings.payment_terms || '—');
 
   y = Math.max(y + 16, 220);
