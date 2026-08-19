@@ -107,7 +107,7 @@
       btn.setAttribute('aria-checked', active ? 'true' : 'false');
     });
     var nameInput = document.getElementById('customer_name');
-    if (nameInput && !nameInput.value) {
+    if (nameInput) {
       nameInput.value = templateCompanies[name] || '';
     }
   }
