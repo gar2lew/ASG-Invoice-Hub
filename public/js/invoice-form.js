@@ -14,22 +14,16 @@
 
   var tplMeta = {
     asg: {
-      name: 'Amplify Solutions Group',
-      abn: '43 663 126 725',
-      address: '14C, 1 The Esplanade, Mount pleasant, 6153',
-      phone: '08 6147 7927',
+      name: 'ASG',
       contact: 'Natalie Simich',
       email: 'Natalie@sjssolutionscorp.com.au',
-      clientAddress: 'Unit 14C, 1/1 The Esplanade, Mount Pleasant, WA 6053.',
+      address: 'Unit 14C, 1/1 The Esplanade, Mount Pleasant, WA 6053.',
     },
     sjs: {
-      name: 'SJS WEALTH SOLUTIONS PTY LTD',
-      abn: '89 622 469 845',
-      address: '',
-      phone: '',
+      name: 'SJS',
       contact: 'Natalie Simich',
       email: 'Natalie@sjssolutionscorp.com.au',
-      clientAddress: 'PO Box 3330, Beeliar Drive, Success WA 6964',
+      address: 'PO Box 3330, Beeliar Drive, Success WA 6964',
     },
   };
 
@@ -213,7 +207,7 @@
       if (nameInput) nameInput.value = tpl.name;
       if (contactInput) contactInput.value = tpl.contact;
       if (emailInput) emailInput.value = tpl.email;
-      if (addressInput) addressInput.value = tpl.clientAddress;
+      if (addressInput) addressInput.value = tpl.address;
     }
     updatePreview();
   }
