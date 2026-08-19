@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../src/db');
 const { requireAuth } = require('../src/middleware');
 const { fmtMoney, fmtDate, weekBounds, todayISO, addDaysISO } = require('../src/helpers');
+const { WEEKLY_SEND_TO } = require('../src/templates');
 
 const router = express.Router();
 
@@ -41,6 +42,8 @@ router.get('/', requireAuth, async (req, res, next) => {
       statusCounts,
       todayText: new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' }),
       showEmpty: invoices.length === 0,
+      weeklySendTo: WEEKLY_SEND_TO,
+      draftCount: statusCounts.draft,
     });
   } catch (err) {
     next(err);

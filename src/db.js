@@ -362,6 +362,18 @@ async function repTotals() {
   return r.rows;
 }
 
+async function sentDatesForUser(userId) {
+  await ensureReady();
+  const r = await getPool().query(`
+    SELECT sent_at::date AS sent_date, COUNT(*) AS count, SUM(total) AS total
+    FROM invoices
+    WHERE user_id = $1 AND status IN ('sent','paid') AND sent_at IS NOT NULL
+    GROUP BY sent_date
+    ORDER BY sent_date DESC
+  `, [userId]);
+  return r.rows;
+}
+
 module.exports = {
   initDb,
   ensureAdmin,
@@ -387,4 +399,5 @@ module.exports = {
   statsForUserSince,
   recentInvoices,
   repTotals,
+  sentDatesForUser,
 };

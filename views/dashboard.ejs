@@ -34,6 +34,12 @@
   </div>
 </section>
 
+<% if (draftCount > 0) { %>
+  <div class="flash flash-warn weekly-send-banner" role="status">
+    <strong>Weekly send:</strong> <%= draftCount %> draft<%= draftCount === 1 ? '' : 's' %> pending &mdash; all invoices should be emailed to <strong><%= weeklySendTo %></strong> every Monday.
+  </div>
+<% } %>
+
 <% if (showEmpty) { %>
   <div class="card empty">
     <span class="empty-mark">INV</span>

@@ -64,7 +64,7 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
 
     const created = await db.createInvoice({
       user_id: req.user.id,
-      template: b.template === 'compact' ? 'compact' : 'standard',
+      template: b.template === 'sjs' ? 'sjs' : 'asg',
       customer_name,
       customer_company: String(b.customer_company || '').trim(),
       customer_email: String(b.customer_email || '').trim(),

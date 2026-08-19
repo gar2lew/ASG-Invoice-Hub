@@ -1,5 +1,7 @@
 const PDFDocument = require('pdfkit');
 
+const { getTemplate } = require('./templates');
+
 const INK = '#1B2434';
 const GRAY = '#5A6472';
 const LIGHT = '#EAE5D9';
@@ -73,9 +75,10 @@ function drawItemsTable(doc, items, y0, compact) {
   return y;
 }
 
-function renderStandard(doc, invoice, items, settings) {
-  doc.fillColor(INK).font('Helvetica-Bold').fontSize(22).text(settings.company_name || 'Company Name', M, 50);
-  const sub = [settings.company_address, settings.company_abn && 'ABN ' + settings.company_abn, settings.company_phone, settings.company_email]
+function renderStandard(doc, invoice, items, settings, tplConfig) {
+  const co = tplConfig || {};
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(22).text(co.company_name || settings.company_name || 'Company Name', M, 50);
+  const sub = [co.company_address || settings.company_address, co.company_abn && 'ABN ' + co.company_abn || settings.company_abn && 'ABN ' + settings.company_abn, co.company_phone || settings.company_phone, co.company_email || settings.company_email]
     .filter(Boolean).join('   ·   ');
   if (sub) doc.font('Helvetica').fontSize(8).fillColor(GRAY).text(sub, M, 78, { width: 320 });
 
@@ -145,10 +148,11 @@ function renderStandard(doc, invoice, items, settings) {
   doc.moveTo(M, pageH - 70).lineTo(RIGHT, pageH - 70).lineWidth(0.5).strokeColor(LIGHT).stroke();
 }
 
-function renderCompact(doc, invoice, items, settings) {
+function renderCompact(doc, invoice, items, settings, tplConfig) {
+  const co = tplConfig || {};
   doc.rect(0, 0, 595.28, 108).fill(INK);
-  doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(24).text(settings.company_name || 'Company Name', M, 34);
-  const sub = [settings.company_address, settings.company_abn && 'ABN ' + settings.company_abn, settings.company_phone, settings.company_email]
+  doc.fillColor(WHITE).font('Helvetica-Bold').fontSize(24).text(co.company_name || settings.company_name || 'Company Name', M, 34);
+  const sub = [co.company_address || settings.company_address, co.company_abn && 'ABN ' + co.company_abn || settings.company_abn && 'ABN ' + settings.company_abn, co.company_phone || settings.company_phone, co.company_email || settings.company_email]
     .filter(Boolean).join('  ·  ');
   doc.font('Helvetica').fontSize(8).fillColor('#B8BEC9').text(sub, M, 70, { width: 340 });
 
@@ -212,11 +216,12 @@ function renderInvoice(invoice, items, settings) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: M, bufferPages: true });
     const chunks = [];
+    const tplConfig = getTemplate(invoice.template);
     doc.on('data', (c) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
-    if (invoice.template === 'compact') renderCompact(doc, invoice, items, settings);
-    else renderStandard(doc, invoice, items, settings);
+    if (invoice.template === 'compact') renderCompact(doc, invoice, items, settings, tplConfig);
+    else renderStandard(doc, invoice, items, settings, tplConfig);
     doc.end();
   });
 }

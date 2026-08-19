@@ -38,6 +38,12 @@ router.get('/users', requireAdmin, async (req, res, next) => {
     const totals = await db.repTotals();
     const totalsMap = {};
     totals.forEach((t) => { totalsMap[t.id] = { count: t.count, totalText: fmtMoney(t.total) }; });
+    const sentDatesMap = {};
+    for (const u of users) {
+      if (u.role !== 'admin') {
+        sentDatesMap[u.id] = await db.sentDatesForUser(u.id);
+      }
+    }
     const flashMsg = req.session.flash || null;
     req.session.flash = null;
     res.render('users', {
@@ -47,6 +53,7 @@ router.get('/users', requireAdmin, async (req, res, next) => {
         ...u,
         createdText: fmtDate(u.created_at),
         ...(totalsMap[u.id] || { count: 0, totalText: '$0.00' }),
+        sentDates: sentDatesMap[u.id] || [],
       })),
       error: null,
     });

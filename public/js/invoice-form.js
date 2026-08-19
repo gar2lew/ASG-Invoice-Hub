@@ -201,5 +201,36 @@
       });
   });
 
+  function calcRecalc() {
+    var rate = parseFloat(document.getElementById('calc-rate').value) || 0;
+    var total = 0;
+    var days = document.getElementById('calc-days');
+    if (!days) return;
+    Array.prototype.slice.call(days.querySelectorAll('input[type="checkbox"]')).forEach(function (cb) {
+      total += rate * parseFloat(cb.value);
+    });
+    var el = document.getElementById('calc-total');
+    if (el) el.textContent = fmt(total);
+  }
+
+  var calcRate = document.getElementById('calc-rate');
+  var calcDays = document.getElementById('calc-days');
+  var calcAdd = document.getElementById('calc-add');
+  if (calcRate) calcRate.addEventListener('input', calcRecalc);
+  if (calcDays) calcDays.addEventListener('change', calcRecalc);
+  if (calcAdd) calcAdd.addEventListener('click', function () {
+    var rate = parseFloat(calcRate.value) || 0;
+    var daysCount = 0;
+    var labels = [];
+    Array.prototype.slice.call(calcDays.querySelectorAll('input[type="checkbox"]:checked')).forEach(function (cb) {
+      daysCount += parseFloat(cb.value);
+      labels.push(cb.parentElement.querySelector('span').textContent.trim());
+    });
+    if (daysCount === 0) return;
+    var desc = 'Weekly wage (' + labels.join(', ') + ')';
+    var amount = Math.round(rate * daysCount * 100) / 100;
+    addLine({ description: desc, quantity: 1, rate: amount });
+  });
+
   addLine();
 })();

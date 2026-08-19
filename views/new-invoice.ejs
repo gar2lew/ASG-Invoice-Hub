@@ -10,29 +10,29 @@
 <form id="invoice-form" class="invoice-form" data-next-number="<%= settings.invoice_prefix %>">
   <section class="card">
     <div class="card-head">
-      <h2 class="card-title">Template</h2>
-      <p class="card-sub">Pick the layout used for the PDF.</p>
+      <h2 class="card-title">Company template</h2>
+      <p class="card-sub">Pick which company this invoice is for.</p>
     </div>
     <div class="tpl-toggle" role="radiogroup" aria-label="Invoice template">
-      <button type="button" class="tpl tpl-active" data-template="standard" role="radio" aria-checked="true">
-        <span class="tpl-preview tpl-preview-standard" aria-hidden="true">
-          <span class="pv-p1"></span><span class="pv-p2"></span><span class="pv-block"></span><span class="pv-rows"><i></i><i></i><i></i></span><span class="pv-tot"></span>
+      <button type="button" class="tpl tpl-active" data-template="asg" role="radio" aria-checked="true">
+        <span class="tpl-preview tpl-preview-asg" aria-hidden="true">
+          <span class="pv-p1"></span><span class="pv-block"></span><span class="pv-rows"><i></i><i></i><i></i></span><span class="pv-tot"></span>
         </span>
         <span class="tpl-meta">
-          <span class="tpl-name">Standard</span>
-          <span class="tpl-desc">Classic ledger layout with a strong header and bordered item table.</span>
+          <span class="tpl-name">ASG</span>
+          <span class="tpl-desc">Amplify Solutions Group</span>
         </span>
       </button>
-      <button type="button" class="tpl" data-template="compact" role="radio" aria-checked="false">
-        <span class="tpl-preview tpl-preview-compact" aria-hidden="true">
+      <button type="button" class="tpl" data-template="sjs" role="radio" aria-checked="false">
+        <span class="tpl-preview tpl-preview-sjs" aria-hidden="true">
           <span class="pv-band"></span><span class="pv-block"></span><span class="pv-rows pv-rows-slim"><i></i><i></i><i></i></span><span class="pv-tot"></span>
         </span>
         <span class="tpl-meta">
-          <span class="tpl-name">Compact</span>
-          <span class="tpl-desc">Streamlined header band and tighter spacing for a shorter one-page invoice.</span>
+          <span class="tpl-name">SJS</span>
+          <span class="tpl-desc">SJS Wealth Solutions</span>
         </span>
       </button>
-      <input type="hidden" name="template" value="standard">
+      <input type="hidden" name="template" value="asg">
     </div>
   </section>
 
@@ -60,6 +60,31 @@
           <span class="field-label">Address</span>
           <textarea class="input" name="customer_address" rows="2"></textarea>
         </label>
+      </section>
+
+      <section class="card card-calc">
+        <div class="card-head">
+          <h2 class="card-title">Weekly wage calculator</h2>
+          <p class="card-sub">Check the days worked, then add as a line item.</p>
+        </div>
+        <div class="calc-grid">
+          <label class="field">
+            <span class="field-label">Per day rate</span>
+            <input class="input" type="number" id="calc-rate" value="181.82" min="0" step="0.01">
+          </label>
+          <div class="calc-days" id="calc-days">
+            <label class="calc-day"><input type="checkbox" value="1" checked><span>Mon</span></label>
+            <label class="calc-day"><input type="checkbox" value="1" checked><span>Tue</span></label>
+            <label class="calc-day"><input type="checkbox" value="1" checked><span>Wed</span></label>
+            <label class="calc-day"><input type="checkbox" value="1" checked><span>Thu</span></label>
+            <label class="calc-day"><input type="checkbox" value="1" checked><span>Fri</span></label>
+            <label class="calc-day calc-day-half"><input type="checkbox" value="0.5" checked><span>Sat <em>&frac12;</em></span></label>
+          </div>
+        </div>
+        <div class="calc-result">
+          <span class="calc-total" id="calc-total">$1,000.00</span>
+          <button type="button" class="btn btn-accent btn-small" id="calc-add">Add to invoice</button>
+        </div>
       </section>
 
       <section class="card">

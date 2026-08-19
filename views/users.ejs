@@ -44,6 +44,16 @@
                 <% } %>
               </td>
             </tr>
+            <% if (u.sentDates && u.sentDates.length) { %>
+            <tr class="sent-dates-row">
+              <td colspan="6" class="sent-dates-cell">
+                <span class="kicker">Sent dates</span>
+                <% u.sentDates.forEach(function(sd) { %>
+                  <span class="badge badge-tpl"><%= fmtDate(sd.sent_date) %> &middot; <%= sd.count %> inv &middot; <%= fmtMoney(sd.total) %></span>
+                <% }) %>
+              </td>
+            </tr>
+            <% } %>
             <% }) %>
           </tbody>
         </table>
