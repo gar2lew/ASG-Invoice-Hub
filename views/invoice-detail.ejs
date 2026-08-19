@@ -84,6 +84,7 @@
       <h2 class="card-title">Details</h2>
       <dl class="dl">
         <div><dt>Prepared by</dt><dd><%= invoice.repName %></dd></div>
+        <% if (invoice.repAbn) { %><div><dt>Contractor ABN</dt><dd><%= invoice.repAbn %></dd></div><% } %>
         <div><dt>Issued</dt><dd><%= invoice.issueDateText %></dd></div>
         <% if (invoice.dueDateText) { %><div><dt>Due</dt><dd><%= invoice.dueDateText %></dd></div><% } %>
         <% if (invoice.sent_at) { %><div><dt>Last emailed</dt><dd><%= fmtDate(invoice.sent_at.slice(0,10)) %></dd></div><% } %>

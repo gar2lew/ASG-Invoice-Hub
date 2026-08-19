@@ -90,6 +90,7 @@ router.get('/invoices/:id', requireAuth, async (req, res, next) => {
         issueDateText: fmtDate(invoice.issue_date),
         dueDateText: fmtDate(invoice.due_date),
         repName: rep ? rep.name : '',
+        repAbn: rep ? rep.abn : '',
       },
       items: items.map((it) => ({ ...it, amountText: fmtMoney(it.amount), rateText: fmtMoney(it.rate) })),
       settings,

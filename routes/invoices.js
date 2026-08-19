@@ -43,7 +43,10 @@ async function loadInvoiceForUser(req) {
 async function pdfForInvoice(invoice) {
   const items = await db.getItems(invoice.id);
   const rep = await db.getUserById(invoice.user_id);
-  if (rep) invoice.rep_name = rep.name;
+  if (rep) {
+    invoice.rep_name = rep.name;
+    invoice.rep_abn = rep.abn;
+  }
   const settings = await db.getSettings();
   return renderInvoice(invoice, items, settings);
 }
@@ -82,6 +85,7 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
 
     const invoice = await db.getInvoice(created.id);
     invoice.rep_name = req.user.name;
+    invoice.rep_abn = req.user.abn;
     const settings = await db.getSettings();
     const pdf = await renderInvoice(invoice, await db.getItems(created.id), settings);
 
@@ -126,7 +130,10 @@ router.post('/invoices/:id/send', requireAuth, async (req, res, next) => {
     }
     const settings = await db.getSettings();
     const rep = await db.getUserById(invoice.user_id);
-    if (rep) invoice.rep_name = rep.name;
+    if (rep) {
+      invoice.rep_name = rep.name;
+      invoice.rep_abn = rep.abn;
+    }
     const items = await db.getItems(invoice.id);
     try {
       const pdf = await renderInvoice(invoice, items, settings);

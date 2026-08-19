@@ -101,6 +101,7 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   my = meta(doc, RIGHT, my, 'Issue date', invoice.issue_date);
   if (invoice.due_date) my = meta(doc, RIGHT, my, 'Due date', invoice.due_date);
   my = meta(doc, RIGHT, my, 'Prepared by', invoice.rep_name || invoice.user_name);
+  if (invoice.rep_abn) my = meta(doc, RIGHT, my, 'Contractor ABN', invoice.rep_abn);
 
   y = Math.max(y + 18, 232);
   const tableBottom = drawItemsTable(doc, items, y);
@@ -173,6 +174,7 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
   let my = 132;
   my = meta(doc, RIGHT, my, 'Due date', invoice.due_date || '—');
   my = meta(doc, RIGHT, my, 'Prepared by', invoice.rep_name || invoice.user_name);
+  if (invoice.rep_abn) my = meta(doc, RIGHT, my, 'Contractor ABN', invoice.rep_abn);
   my = meta(doc, RIGHT, my, 'Payment terms', settings.payment_terms || '—');
 
   y = Math.max(y + 16, 220);

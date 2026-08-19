@@ -94,13 +94,22 @@
     gstRow.hidden = !gstInput.checked;
   }
 
+  var templateCompanies = {
+    asg: 'Amplify Solutions Group',
+    sjs: 'SJS WEALTH SOLUTIONS PTY LTD',
+  };
+
   function setTemplate(name) {
     templateInput.value = name;
     tplButtons.forEach(function (btn) {
-      const active = btn.dataset.template === name;
+      var active = btn.dataset.template === name;
       btn.classList.toggle('tpl-active', active);
       btn.setAttribute('aria-checked', active ? 'true' : 'false');
     });
+    var nameInput = document.getElementById('customer_name');
+    if (nameInput && !nameInput.value) {
+      nameInput.value = templateCompanies[name] || '';
+    }
   }
 
   tplButtons.forEach(function (btn) {
