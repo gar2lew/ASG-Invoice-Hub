@@ -26,16 +26,40 @@
       <% } %>
 
       <form method="post" action="/login" class="stack">
+        <input type="hidden" name="login_type" value="rep">
         <label class="field">
-          <span class="field-label">Username</span>
-          <input class="input" type="text" name="username" autocomplete="username" required autofocus>
+          <span class="field-label">Your name</span>
+          <select class="input" name="user_id" required>
+            <option value="">Select your name&hellip;</option>
+            <% reps.forEach(function(r) { %>
+              <option value="<%= r.id %>"><%= r.name %></option>
+            <% }) %>
+          </select>
         </label>
         <label class="field">
-          <span class="field-label">Password</span>
-          <input class="input" type="password" name="password" autocomplete="current-password" required>
+          <span class="field-label">PIN</span>
+          <input class="input" type="password" name="pin" inputmode="numeric" pattern="\d{4}" maxlength="4" placeholder="4-digit PIN" required autocomplete="off">
         </label>
         <button class="btn btn-accent btn-block" type="submit">Sign in</button>
       </form>
+
+      <p class="login-divider"><span>or</span></p>
+
+      <form method="post" action="/login" class="stack login-admin-form">
+        <input type="hidden" name="login_type" value="admin">
+        <p class="login-admin-label">Administrator</p>
+        <label class="field">
+          <span class="field-label">Username</span>
+          <input class="input" type="text" name="username" autocomplete="username">
+        </label>
+        <label class="field">
+          <span class="field-label">Password</span>
+          <input class="input" type="password" name="password" autocomplete="current-password">
+        </label>
+        <button class="btn btn-ghost btn-block" type="submit">Admin sign in</button>
+      </form>
+
+      <p class="login-foot"><a href="/signup">Create a rep account</a></p>
     </main>
     <p class="login-foot">Internal tool &middot; contact your administrator for access</p>
   </div>

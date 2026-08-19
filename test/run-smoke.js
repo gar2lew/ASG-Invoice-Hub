@@ -41,10 +41,20 @@ async function main() {
   process.env.ADMIN_USERNAME = '';
   process.env.ADMIN_PASSWORD = '';
 
-  await db.createUser({ username: 'rep1', password: 'secret1', name: 'Rep One', email: 'rep1@co.com', role: 'rep' });
+  await db.createUser({ username: 'rep1', password: 'secret1', name: 'Rep One', email: 'rep1@co.com', abn: '12 345 678 901', pin: '1234', role: 'rep' });
   const rep = await db.getUserByUsername('rep1');
   log(Boolean(rep) && rep.name === 'Rep One', 'rep user created');
   log(bcrypt.compareSync('secret1', rep.password_hash), 'rep password verifies');
+  log(rep.abn === '12 345 678 901', 'rep ABN stored');
+  const repAuth = await db.getUserForAuth(rep.id);
+  log(Boolean(repAuth.pin_hash) && bcrypt.compareSync('1234', repAuth.pin_hash), 'rep PIN hashes correctly');
+
+  const reps = await db.getReps();
+  log(reps.length === 1 && reps[0].name === 'Rep One', 'getReps returns reps only');
+
+  await db.resetPin(rep.id, '5678');
+  const repAuth2 = await db.getUserForAuth(rep.id);
+  log(bcrypt.compareSync('5678', repAuth2.pin_hash), 'resetPin updates PIN hash');
 
   const created = await db.createInvoice({
     user_id: rep.id,
@@ -131,10 +141,6 @@ async function main() {
   await db.deleteInvoice(inv2.id);
   const afterDelete = await db.listInvoices({ userId: rep.id, admin: false });
   log(afterDelete.length === 0, 'invoices deleted');
-
-  await db.resetPassword(rep.id, 'newpass');
-  const updated = await db.getUserByUsername('rep1');
-  log(bcrypt.compareSync('newpass', updated.password_hash), 'password reset works');
 
   await db.deleteUser(rep.id);
   const gone = await db.getUserByUsername('rep1');

@@ -8,8 +8,10 @@ const SCHEMA = `
     id SERIAL PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    pin_hash TEXT DEFAULT '',
     name TEXT NOT NULL,
     email TEXT DEFAULT '',
+    abn TEXT DEFAULT '',
     role TEXT NOT NULL DEFAULT 'rep',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
@@ -187,15 +189,34 @@ async function getUserByUsername(username) {
 
 async function getUserById(id) {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, name, email, role, created_at FROM users WHERE id = $1', [id]);
+  const r = await getPool().query('SELECT id, username, name, email, abn, role, created_at FROM users WHERE id = $1', [id]);
   return r.rows[0];
 }
 
-async function createUser({ username, password, name, email, role }) {
+async function getUserForAuth(id) {
+  await ensureReady();
+  const r = await getPool().query('SELECT id, username, password_hash, pin_hash, name, email, abn, role FROM users WHERE id = $1', [id]);
+  return r.rows[0];
+}
+
+async function getReps() {
+  await ensureReady();
+  const r = await getPool().query("SELECT id, name FROM users WHERE role = 'rep' ORDER BY name");
+  return r.rows;
+}
+
+async function createUser({ username, password, name, email, role, abn, pin }) {
   await ensureReady();
   const hash = bcrypt.hashSync(password, 10);
-  await getPool().query('INSERT INTO users (username, password_hash, name, email, role) VALUES ($1,$2,$3,$4,$5)',
-    [username, hash, name, email, role || 'rep']);
+  const pinHash = pin ? bcrypt.hashSync(String(pin), 10) : '';
+  await getPool().query('INSERT INTO users (username, password_hash, pin_hash, name, email, abn, role) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+    [username, hash, pinHash, name, email || '', abn || '', role || 'rep']);
+}
+
+async function resetPin(id, pin) {
+  await ensureReady();
+  const hash = bcrypt.hashSync(String(pin), 10);
+  await getPool().query('UPDATE users SET pin_hash = $1 WHERE id = $2', [hash, id]);
 }
 
 async function resetPassword(id, password) {
@@ -349,8 +370,11 @@ module.exports = {
   getUsers,
   getUserByUsername,
   getUserById,
+  getUserForAuth,
+  getReps,
   createUser,
   resetPassword,
+  resetPin,
   deleteUser,
   createInvoice,
   getInvoice,

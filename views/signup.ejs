@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create account · Invoice Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="login-body">
+  <div class="login-wrap">
+    <main class="login-card">
+      <header class="login-head">
+        <span class="brand-mark">INV</span>
+        <h1>Create account</h1>
+        <p>Set up your rep profile to start invoicing.</p>
+      </header>
+
+      <% if (error) { %>
+        <div class="flash flash-error" role="alert"><%= error %></div>
+      <% } %>
+      <% if (flash) { %>
+        <div class="flash flash-<%= flash.type %>" role="status"><%= flash.text %></div>
+      <% } %>
+
+      <form method="post" action="/signup" class="stack">
+        <label class="field">
+          <span class="field-label">Full name <em>*</em></span>
+          <input class="input" type="text" name="name" required autofocus placeholder="e.g. John Smith">
+        </label>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input class="input" type="email" name="email" placeholder="john@example.com">
+        </label>
+        <label class="field">
+          <span class="field-label">ABN</span>
+          <input class="input" type="text" name="abn" placeholder="e.g. 51 824 753 556">
+        </label>
+        <label class="field">
+          <span class="field-label">PIN <em>*</em></span>
+          <input class="input" type="password" name="pin" inputmode="numeric" pattern="\d{4}" maxlength="4" placeholder="4-digit PIN" required autocomplete="off">
+        </label>
+        <label class="field">
+          <span class="field-label">Confirm PIN <em>*</em></span>
+          <input class="input" type="password" name="pin_confirm" inputmode="numeric" pattern="\d{4}" maxlength="4" placeholder="Repeat your PIN" required autocomplete="off">
+        </label>
+        <button class="btn btn-accent btn-block" type="submit">Create account</button>
+      </form>
+
+      <p class="login-foot"><a href="/login">Back to sign in</a></p>
+    </main>
+    <p class="login-foot">Internal tool &middot; contact your administrator for access</p>
+  </div>
+</body>
+</html>

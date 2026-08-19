@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const db = require('../src/db');
 const { requireAdmin, flash } = require('../src/middleware');
 const { fmtMoney, fmtDate } = require('../src/helpers');
@@ -56,22 +57,30 @@ router.get('/users', requireAdmin, async (req, res, next) => {
 
 router.post('/users', requireAdmin, async (req, res, next) => {
   try {
-    const { username, name, email, password, role } = req.body || {};
-    if (!username || !name || !password) {
-      flash(req, res, 'Username, name and password are required.', 'error');
+    const { name, email, abn, pin } = req.body || {};
+    if (!name || !pin) {
+      flash(req, res, 'Name and PIN are required.', 'error');
       return res.redirect('/users');
     }
-    const existing = await db.getUserByUsername(String(username).trim());
+    const cleanPin = String(pin).trim();
+    if (!/^\d{4}$/.test(cleanPin)) {
+      flash(req, res, 'PIN must be exactly 4 digits.', 'error');
+      return res.redirect('/users');
+    }
+    const username = String(name).trim().toLowerCase().replace(/\s+/g, '.');
+    const existing = await db.getUserByUsername(username);
     if (existing) {
-      flash(req, res, `Username "${username}" is already taken.`, 'error');
+      flash(req, res, `A rep with that name already exists.`, 'error');
       return res.redirect('/users');
     }
     await db.createUser({
-      username: String(username).trim(),
-      password: String(password),
+      username,
+      password: cleanPin,
       name: String(name).trim(),
       email: String(email || '').trim(),
-      role: role === 'admin' ? 'admin' : 'rep',
+      abn: String(abn || '').trim(),
+      pin: cleanPin,
+      role: 'rep',
     });
     flash(req, res, `Account created for ${name}.`);
     res.redirect('/users');
@@ -80,20 +89,20 @@ router.post('/users', requireAdmin, async (req, res, next) => {
   }
 });
 
-router.post('/users/:id/reset', requireAdmin, async (req, res, next) => {
+router.post('/users/:id/reset-pin', requireAdmin, async (req, res, next) => {
   try {
     const user = await db.getUserById(req.params.id);
     if (!user) {
       flash(req, res, 'User not found.', 'error');
       return res.redirect('/users');
     }
-    const password = String((req.body || {}).password || '');
-    if (password.length < 4) {
-      flash(req, res, 'New password must be at least 4 characters.', 'error');
+    const pin = String((req.body || {}).pin || '').trim();
+    if (!/^\d{4}$/.test(pin)) {
+      flash(req, res, 'PIN must be exactly 4 digits.', 'error');
       return res.redirect('/users');
     }
-    await db.resetPassword(user.id, password);
-    flash(req, res, `Password reset for ${user.name}.`);
+    await db.resetPin(user.id, pin);
+    flash(req, res, `PIN reset for ${user.name}.`);
     res.redirect('/users');
   } catch (err) {
     next(err);
