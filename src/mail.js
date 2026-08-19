@@ -1,5 +1,4 @@
-const nodemailer = require('nodemailer');
-
+let nodemailer = null;
 let transporter = null;
 
 function isMailConfigured() {
@@ -8,6 +7,7 @@ function isMailConfigured() {
 
 function initMail() {
   if (!isMailConfigured()) return null;
+  if (!nodemailer) nodemailer = require('nodemailer');
   transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 587),

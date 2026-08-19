@@ -1,4 +1,4 @@
-const PDFDocument = require('pdfkit');
+let PDFDocument = null;
 
 const { getTemplate } = require('./templates');
 
@@ -216,6 +216,7 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
 
 function renderInvoice(invoice, items, settings) {
   return new Promise((resolve, reject) => {
+    if (!PDFDocument) PDFDocument = require('pdfkit');
     const doc = new PDFDocument({ size: 'A4', margin: M, bufferPages: true });
     const chunks = [];
     const tplConfig = getTemplate(invoice.template);
