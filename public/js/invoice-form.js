@@ -94,9 +94,19 @@
     gstRow.hidden = !gstInput.checked;
   }
 
-  var templateCompanies = {
-    asg: 'Amplify Solutions Group',
-    sjs: 'SJS WEALTH SOLUTIONS PTY LTD',
+  var templateData = {
+    asg: {
+      name: 'Amplify Solutions Group',
+      contact: 'Natalie Simich',
+      email: 'Natalie@sjssolutionscorp.com.au',
+      address: 'Unit 14C, 1/1 The Esplanade, Mount Pleasant, WA 6053.',
+    },
+    sjs: {
+      name: 'SJS WEALTH SOLUTIONS PTY LTD',
+      contact: 'Natalie Simich',
+      email: 'Natalie@sjssolutionscorp.com.au',
+      address: 'PO Box 3330, Beeliar Drive, Success WA 6964',
+    },
   };
 
   function setTemplate(name) {
@@ -106,9 +116,16 @@
       btn.classList.toggle('tpl-active', active);
       btn.setAttribute('aria-checked', active ? 'true' : 'false');
     });
-    var nameInput = document.getElementById('customer_name');
-    if (nameInput) {
-      nameInput.value = templateCompanies[name] || '';
+    var tpl = templateData[name];
+    if (tpl) {
+      var nameInput = document.getElementById('customer_name');
+      var contactInput = form.querySelector('input[name="customer_company"]');
+      var emailInput = form.querySelector('input[name="customer_email"]');
+      var addressInput = form.querySelector('textarea[name="customer_address"]');
+      if (nameInput) nameInput.value = tpl.name;
+      if (contactInput) contactInput.value = tpl.contact;
+      if (emailInput) emailInput.value = tpl.email;
+      if (addressInput) addressInput.value = tpl.address;
     }
   }
 
@@ -236,10 +253,10 @@
       labels.push(cb.parentElement.querySelector('span').textContent.trim());
     });
     if (daysCount === 0) return;
-    var desc = 'Weekly wage (' + labels.join(', ') + ')';
     var amount = Math.round(rate * daysCount * 100) / 100;
-    addLine({ description: desc, quantity: 1, rate: amount });
+    addLine({ description: 'Weekly Wage/Retainer', quantity: 1, rate: amount });
   });
 
   addLine();
+  setTemplate('asg');
 })();

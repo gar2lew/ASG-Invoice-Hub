@@ -8,6 +8,9 @@ const TEMPLATES = {
     company_address: '14C, 1 The Esplanade, Mount pleasant, 6153',
     company_phone: '08 6147 7927',
     company_email: '',
+    client_contact: 'Natalie Simich',
+    client_email: 'Natalie@sjssolutionscorp.com.au',
+    client_address: 'Unit 14C, 1/1 The Esplanade, Mount Pleasant, WA 6053.',
   },
   sjs: {
     key: 'sjs',
@@ -18,6 +21,9 @@ const TEMPLATES = {
     company_address: '',
     company_phone: '',
     company_email: '',
+    client_contact: 'Natalie Simich',
+    client_email: 'Natalie@sjssolutionscorp.com.au',
+    client_address: 'PO Box 3330, Beeliar Drive, Success WA 6964',
   },
 };
 
