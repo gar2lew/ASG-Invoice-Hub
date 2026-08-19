@@ -40,8 +40,15 @@
     <div class="form-col">
       <section class="card">
         <div class="card-head">
-          <h2 class="card-title">Client (billed company)</h2>
-          <p class="card-sub">Who this invoice is for.</p>
+          <h2 class="card-title">Invoice details</h2>
+          <p class="card-sub">Invoice number and client information.</p>
+        </div>
+        <div class="grid2">
+          <label class="field">
+            <span class="field-label">Invoice number</span>
+            <input class="input" type="text" name="invoice_number" id="invoice_number" value="<%= nextNumber %>">
+          </label>
+          <span></span>
         </div>
         <div class="grid2">
           <label class="field">
@@ -50,16 +57,16 @@
           </label>
           <label class="field">
             <span class="field-label">Contact / department</span>
-            <input class="input" type="text" name="customer_company">
+            <input class="input" type="text" name="customer_company" id="customer_company">
           </label>
         </div>
         <label class="field">
           <span class="field-label">Email</span>
-          <input class="input" type="email" name="customer_email">
+          <input class="input" type="email" name="customer_email" id="customer_email">
         </label>
         <label class="field">
           <span class="field-label">Address</span>
-          <textarea class="input" name="customer_address" rows="2"></textarea>
+          <textarea class="input" name="customer_address" id="customer_address" rows="2"></textarea>
         </label>
       </section>
 
@@ -95,16 +102,16 @@
         <div class="grid2">
           <label class="field">
             <span class="field-label">Issue date</span>
-            <input class="input" type="date" name="issue_date" value="<%= issueDate %>">
+            <input class="input" type="date" name="issue_date" id="issue_date" value="<%= issueDate %>">
           </label>
           <label class="field">
             <span class="field-label">Due date</span>
-            <input class="input" type="date" name="due_date" value="<%= dueDate %>">
+            <input class="input" type="date" name="due_date" id="due_date" value="<%= dueDate %>">
           </label>
         </div>
         <label class="field">
           <span class="field-label">Notes</span>
-          <textarea class="input" name="notes" rows="3" placeholder="Optional message shown on the invoice"></textarea>
+          <textarea class="input" name="notes" id="notes" rows="3" placeholder="Optional message shown on the invoice"></textarea>
         </label>
       </section>
     </div>
@@ -157,7 +164,86 @@
         </div>
       </section>
     </div>
+
+    <div class="form-col form-col-preview">
+      <section class="card preview-card">
+        <div class="card-head">
+          <h2 class="card-title">Invoice preview</h2>
+          <p class="card-sub">Live preview of your invoice.</p>
+        </div>
+        <div class="preview-page" id="preview-page">
+          <div class="preview-header">
+            <div class="preview-company">
+              <div class="preview-company-name" id="pv-company">Amplify Solutions Group</div>
+              <div class="preview-company-sub" id="pv-company-sub">ABN 43 663 126 725</div>
+            </div>
+            <div class="preview-invoice-label">INVOICE</div>
+            <div class="preview-invoice-num" id="pv-inv-num"><%= nextNumber %></div>
+          </div>
+          <div class="preview-divider"></div>
+          <div class="preview-body">
+            <div class="preview-billto">
+              <div class="preview-label">BILL TO</div>
+              <div class="preview-client-name" id="pv-client-name"></div>
+              <div class="preview-client-contact" id="pv-client-contact"></div>
+              <div class="preview-client-email" id="pv-client-email"></div>
+              <div class="preview-client-address" id="pv-client-address"></div>
+            </div>
+            <div class="preview-meta">
+              <div class="preview-meta-row">
+                <span class="preview-label">ISSUE DATE</span>
+                <span id="pv-issue-date"><%= issueDate %></span>
+              </div>
+              <div class="preview-meta-row">
+                <span class="preview-label">DUE DATE</span>
+                <span id="pv-due-date"><%= dueDate %></span>
+              </div>
+            </div>
+          </div>
+          <div class="preview-divider"></div>
+          <table class="preview-items">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Description</th>
+                <th class="num">Qty</th>
+                <th class="num">Rate</th>
+                <th class="num">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="pv-items">
+              <tr class="preview-empty"><td colspan="5">No items yet</td></tr>
+            </tbody>
+          </table>
+          <div class="preview-divider"></div>
+          <div class="preview-totals">
+            <div class="preview-total-row">
+              <span>Subtotal</span>
+              <span id="pv-subtotal">$0.00</span>
+            </div>
+            <div class="preview-total-row preview-total-gst" id="pv-gst-row" style="display:none">
+              <span>GST (10%)</span>
+              <span id="pv-gst">$0.00</span>
+            </div>
+            <div class="preview-total-row preview-total-grand">
+              <span>TOTAL</span>
+              <span id="pv-total">$0.00</span>
+            </div>
+          </div>
+          <div class="preview-footer">
+            <div id="pv-notes"></div>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 </form>
+
+<script>
+  window.__previewData = {
+    template: 'asg',
+    company: { name: 'Amplify Solutions Group', abn: '43 663 126 725', address: '14C, 1 The Esplanade, Mount pleasant, 6153', phone: '08 6147 7927' }
+  };
+</script>
 
 <%- include('partials/footer', { pageScript: '/js/invoice-form.js' }) %>

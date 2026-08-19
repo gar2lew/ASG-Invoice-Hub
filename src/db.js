@@ -236,11 +236,21 @@ async function createInvoice(tx) {
   const client = await p.connect();
   try {
     await client.query('BEGIN');
-    const num = await client.query(
-      'UPDATE settings SET next_invoice_number = next_invoice_number + 1 WHERE id = 1 RETURNING invoice_prefix, next_invoice_number',
-    );
-    const { invoice_prefix, next_invoice_number } = num.rows[0];
-    const invoice_number = `${invoice_prefix}-${String(Number(next_invoice_number) - 1).padStart(4, '0')}`;
+
+    let invoice_number;
+    if (tx.invoice_number) {
+      invoice_number = tx.invoice_number;
+      await client.query(
+        `UPDATE settings SET next_invoice_number = GREATEST(next_invoice_number, $1 + 1) WHERE id = 1`,
+        [Number(String(invoice_number).replace(/\D/g, ''))],
+      );
+    } else {
+      const num = await client.query(
+        'UPDATE settings SET next_invoice_number = next_invoice_number + 1 WHERE id = 1 RETURNING invoice_prefix, next_invoice_number',
+      );
+      const { invoice_prefix, next_invoice_number } = num.rows[0];
+      invoice_number = `${invoice_prefix}-${String(Number(next_invoice_number) - 1).padStart(4, '0')}`;
+    }
 
     const ins = await client.query(
       `INSERT INTO invoices

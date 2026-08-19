@@ -55,10 +55,12 @@ router.get('/invoices/new', requireAuth, async (req, res, next) => {
     const settings = await db.getSettings();
     const flashMsg = req.session.flash || null;
     req.session.flash = null;
+    const nextNumber = `${settings.invoice_prefix}-${String(settings.next_invoice_number).padStart(4, '0')}`;
     res.render('new-invoice', {
       title: 'New invoice',
       flash: flashMsg,
       settings,
+      nextNumber,
       issueDate: todayISO(),
       dueDate: addDaysISO(14),
     });

@@ -1,33 +1,134 @@
 (function () {
   'use strict';
 
-  const form = document.getElementById('invoice-form');
-  const lines = document.getElementById('lines');
-  const gstInput = document.getElementById('gst');
-  const gstRow = document.getElementById('gst-row');
-  const tSub = document.getElementById('t-subtotal');
-  const tGst = document.getElementById('t-gst');
-  const tTotal = document.getElementById('t-total');
-  const templateInput = form.querySelector('input[name="template"]');
-  const tplButtons = Array.prototype.slice.call(form.querySelectorAll('.tpl'));
-  const submitSend = document.getElementById('submit-send');
+  var form = document.getElementById('invoice-form');
+  var lines = document.getElementById('lines');
+  var gstInput = document.getElementById('gst');
+  var gstRow = document.getElementById('gst-row');
+  var tSub = document.getElementById('t-subtotal');
+  var tGst = document.getElementById('t-gst');
+  var tTotal = document.getElementById('t-total');
+  var templateInput = form.querySelector('input[name="template"]');
+  var tplButtons = Array.prototype.slice.call(form.querySelectorAll('.tpl'));
+  var submitSend = document.getElementById('submit-send');
+
+  var tplMeta = {
+    asg: {
+      name: 'Amplify Solutions Group',
+      abn: '43 663 126 725',
+      address: '14C, 1 The Esplanade, Mount pleasant, 6153',
+      phone: '08 6147 7927',
+      contact: 'Natalie Simich',
+      email: 'Natalie@sjssolutionscorp.com.au',
+      clientAddress: 'Unit 14C, 1/1 The Esplanade, Mount Pleasant, WA 6053.',
+    },
+    sjs: {
+      name: 'SJS WEALTH SOLUTIONS PTY LTD',
+      abn: '89 622 469 845',
+      address: '',
+      phone: '',
+      contact: 'Natalie Simich',
+      email: 'Natalie@sjssolutionscorp.com.au',
+      clientAddress: 'PO Box 3330, Beeliar Drive, Success WA 6964',
+    },
+  };
 
   function fmt(n) {
     return '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
 
+  /* ---- Preview ---- */
+  function updatePreview() {
+    var tpl = tplMeta[templateInput.value] || tplMeta.asg;
+
+    var pvCompany = document.getElementById('pv-company');
+    var pvCompanySub = document.getElementById('pv-company-sub');
+    var pvInvNum = document.getElementById('pv-inv-num');
+    var pvClientName = document.getElementById('pv-client-name');
+    var pvClientContact = document.getElementById('pv-client-contact');
+    var pvClientEmail = document.getElementById('pv-client-email');
+    var pvClientAddress = document.getElementById('pv-client-address');
+    var pvIssueDate = document.getElementById('pv-issue-date');
+    var pvDueDate = document.getElementById('pv-due-date');
+    var pvItems = document.getElementById('pv-items');
+    var pvSubtotal = document.getElementById('pv-subtotal');
+    var pvGstRow = document.getElementById('pv-gst-row');
+    var pvGst = document.getElementById('pv-gst');
+    var pvTotal = document.getElementById('pv-total');
+    var pvNotes = document.getElementById('pv-notes');
+
+    if (pvCompany) pvCompany.textContent = tpl.name;
+    if (pvCompanySub) pvCompanySub.textContent = tpl.abn ? 'ABN ' + tpl.abn : '';
+
+    var invNum = document.getElementById('invoice_number');
+    if (pvInvNum) pvInvNum.textContent = invNum ? invNum.value : '';
+
+    var cn = document.getElementById('customer_name');
+    if (pvClientName) pvClientName.textContent = cn ? cn.value : '';
+    var cc = document.getElementById('customer_company');
+    if (pvClientContact) pvClientContact.textContent = cc ? cc.value : '';
+    var ce = document.getElementById('customer_email');
+    if (pvClientEmail) pvClientEmail.textContent = ce ? ce.value : '';
+    var ca = document.getElementById('customer_address');
+    if (pvClientAddress) pvClientAddress.textContent = ca ? ca.value : '';
+
+    var id = document.getElementById('issue_date');
+    if (pvIssueDate) pvIssueDate.textContent = id ? id.value : '';
+    var dd = document.getElementById('due_date');
+    if (pvDueDate) pvDueDate.textContent = dd ? dd.value : '';
+
+    var rows = itemRows();
+    if (pvItems) {
+      if (rows.length === 0) {
+        pvItems.innerHTML = '<tr class="preview-empty"><td colspan="5">No items yet</td></tr>';
+      } else {
+        var html = '';
+        rows.forEach(function (row, i) {
+          var d = row.querySelector('input[name="item_description"]').value;
+          var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+          var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
+          var a = q * r;
+          html += '<tr><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class="num">' + q + '</td><td class="num">' + fmt(r) + '</td><td class="num">' + fmt(a) + '</td></tr>';
+        });
+        pvItems.innerHTML = html;
+      }
+    }
+
+    var subtotal = 0;
+    rows.forEach(function (row) {
+      var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+      var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
+      subtotal += q * r;
+    });
+    var gst = gstInput.checked ? subtotal * 0.1 : 0;
+    if (pvSubtotal) pvSubtotal.textContent = fmt(subtotal);
+    if (pvGstRow) pvGstRow.style.display = gstInput.checked ? '' : 'none';
+    if (pvGst) pvGst.textContent = fmt(gst);
+    if (pvTotal) pvTotal.textContent = fmt(subtotal + gst);
+
+    var notes = document.getElementById('notes');
+    if (pvNotes) pvNotes.textContent = notes ? notes.value : '';
+  }
+
+  function escHtml(s) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(s));
+    return div.innerHTML;
+  }
+
+  /* ---- Lines ---- */
   function addLine(data) {
-    const row = document.createElement('div');
+    var row = document.createElement('div');
     row.className = 'line-row';
 
-    const desc = document.createElement('input');
+    var desc = document.createElement('input');
     desc.type = 'text';
     desc.className = 'input';
     desc.placeholder = 'Description';
     desc.name = 'item_description';
     desc.value = (data && data.description) || '';
 
-    const qty = document.createElement('input');
+    var qty = document.createElement('input');
     qty.type = 'number';
     qty.className = 'input';
     qty.name = 'item_qty';
@@ -36,7 +137,7 @@
     qty.placeholder = 'Qty';
     qty.value = (data && data.quantity) || '1';
 
-    const rate = document.createElement('input');
+    var rate = document.createElement('input');
     rate.type = 'number';
     rate.className = 'input';
     rate.name = 'item_rate';
@@ -45,11 +146,11 @@
     rate.placeholder = 'Rate';
     rate.value = (data && data.rate) || '';
 
-    const amount = document.createElement('span');
+    var amount = document.createElement('span');
     amount.className = 'line-amount';
     amount.textContent = '$0.00';
 
-    const remove = document.createElement('button');
+    var remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'line-remove';
     remove.setAttribute('aria-label', 'Remove line');
@@ -79,36 +180,23 @@
   }
 
   function recalc() {
-    let subtotal = 0;
+    var subtotal = 0;
     itemRows().forEach(function (row) {
-      const qty = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
-      const rate = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
-      const amount = qty * rate;
+      var qty = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+      var rate = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
+      var amount = qty * rate;
       subtotal += amount;
       row.querySelector('.line-amount').textContent = fmt(amount);
     });
-    const gst = gstInput.checked ? subtotal * 0.1 : 0;
+    var gst = gstInput.checked ? subtotal * 0.1 : 0;
     tSub.textContent = fmt(subtotal);
     tGst.textContent = fmt(gst);
     tTotal.textContent = fmt(subtotal + gst);
     gstRow.hidden = !gstInput.checked;
+    updatePreview();
   }
 
-  var templateData = {
-    asg: {
-      name: 'Amplify Solutions Group',
-      contact: 'Natalie Simich',
-      email: 'Natalie@sjssolutionscorp.com.au',
-      address: 'Unit 14C, 1/1 The Esplanade, Mount Pleasant, WA 6053.',
-    },
-    sjs: {
-      name: 'SJS WEALTH SOLUTIONS PTY LTD',
-      contact: 'Natalie Simich',
-      email: 'Natalie@sjssolutionscorp.com.au',
-      address: 'PO Box 3330, Beeliar Drive, Success WA 6964',
-    },
-  };
-
+  /* ---- Template ---- */
   function setTemplate(name) {
     templateInput.value = name;
     tplButtons.forEach(function (btn) {
@@ -116,17 +204,18 @@
       btn.classList.toggle('tpl-active', active);
       btn.setAttribute('aria-checked', active ? 'true' : 'false');
     });
-    var tpl = templateData[name];
+    var tpl = tplMeta[name];
     if (tpl) {
       var nameInput = document.getElementById('customer_name');
-      var contactInput = form.querySelector('input[name="customer_company"]');
-      var emailInput = form.querySelector('input[name="customer_email"]');
-      var addressInput = form.querySelector('textarea[name="customer_address"]');
+      var contactInput = document.getElementById('customer_company');
+      var emailInput = document.getElementById('customer_email');
+      var addressInput = document.getElementById('customer_address');
       if (nameInput) nameInput.value = tpl.name;
       if (contactInput) contactInput.value = tpl.contact;
       if (emailInput) emailInput.value = tpl.email;
-      if (addressInput) addressInput.value = tpl.address;
+      if (addressInput) addressInput.value = tpl.clientAddress;
     }
+    updatePreview();
   }
 
   tplButtons.forEach(function (btn) {
@@ -141,8 +230,16 @@
     addLine();
   });
 
+  /* ---- Preview live bindings ---- */
+  var previewFields = ['invoice_number', 'customer_name', 'customer_company', 'customer_email', 'customer_address', 'issue_date', 'due_date', 'notes'];
+  previewFields.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', updatePreview);
+  });
+
+  /* ---- Form submit ---- */
   function showError(msg) {
-    let box = document.getElementById('form-error');
+    var box = document.getElementById('form-error');
     if (!box) {
       box = document.createElement('div');
       box.id = 'form-error';
@@ -153,13 +250,13 @@
   }
 
   function clearError() {
-    const box = document.getElementById('form-error');
+    var box = document.getElementById('form-error');
     if (box) box.remove();
   }
 
   function buildPayload() {
-    const data = new FormData(form);
-    const items = itemRows().map(function (row) {
+    var data = new FormData(form);
+    var items = itemRows().map(function (row) {
       return {
         description: row.querySelector('input[name="item_description"]').value.trim(),
         quantity: parseFloat(row.querySelector('input[name="item_qty"]').value) || 0,
@@ -169,6 +266,7 @@
 
     return {
       template: templateInput.value,
+      invoice_number: data.get('invoice_number'),
       customer_name: data.get('customer_name'),
       customer_company: data.get('customer_company'),
       customer_email: data.get('customer_email'),
@@ -184,11 +282,11 @@
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    const action = document.activeElement && document.activeElement.name === 'action'
+    var action = document.activeElement && document.activeElement.name === 'action'
       ? document.activeElement.value
       : 'draft';
     document.getElementById('send_now').checked = action === 'send';
-    const payload = buildPayload();
+    var payload = buildPayload();
 
     if (!payload.items.length) {
       showError('Add at least one line item with a description.');
@@ -227,6 +325,7 @@
       });
   });
 
+  /* ---- Wage calculator ---- */
   function calcRecalc() {
     var rate = parseFloat(document.getElementById('calc-rate').value) || 0;
     var total = 0;
@@ -247,10 +346,8 @@
   if (calcAdd) calcAdd.addEventListener('click', function () {
     var rate = parseFloat(calcRate.value) || 0;
     var daysCount = 0;
-    var labels = [];
     Array.prototype.slice.call(calcDays.querySelectorAll('input[type="checkbox"]:checked')).forEach(function (cb) {
       daysCount += parseFloat(cb.value);
-      labels.push(cb.parentElement.querySelector('span').textContent.trim());
     });
     if (daysCount === 0) return;
     var amount = Math.round(rate * daysCount * 100) / 100;
