@@ -206,7 +206,7 @@
     var total = 0;
     var days = document.getElementById('calc-days');
     if (!days) return;
-    Array.prototype.slice.call(days.querySelectorAll('input[type="checkbox"]')).forEach(function (cb) {
+    Array.prototype.slice.call(days.querySelectorAll('input[type="checkbox"]:checked')).forEach(function (cb) {
       total += rate * parseFloat(cb.value);
     });
     var el = document.getElementById('calc-total');
