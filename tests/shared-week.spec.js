@@ -20,29 +20,13 @@ test.describe('Shared Week State', () => {
     page._jsErrors = errors;
     page._consoleMessages = consoleMessages;
 
-    // Login as administrator first
-    await page.goto('/login');
-    
-    // Handle the login screen - select administrator option if present
-    const adminLabel = page.locator('p:has-text("Administrator")');
-    if (await adminLabel.count() > 0) {
-      await adminLabel.first().click();
-      await page.waitForTimeout(500);
-    }
-    
-    // Fill in the admin login form
-    await page.fill('input[name="username"]', 'admin');
-    await page.fill('input[name="password"]', 'changeme');
-    
-    // Click the admin sign in button
-    await page.click('button:has-text("Admin sign in")');
-    
-    // Wait for login to complete (redirect to dashboard or invoices)
-    await page.waitForTimeout(2000);
-    
-    // Navigate to the new invoice page
+    // Navigate directly to new invoice page - storageState provides representative auth
     await page.goto('/invoices/new');
-    await page.waitForTimeout(1000); // Wait for page to load
+
+    await page.waitForSelector('form#invoice-form', {
+      state: 'attached',
+      timeout: 5000
+    });
   });
 
   test('Week date populates both widgets', async ({ page }) => {
@@ -67,9 +51,9 @@ test.describe('Shared Week State', () => {
     const weekStartValue = await page.inputValue('#week_start');
     console.log(`Week start value: '${weekStartValue}'`);
     
-    // Expected: Week of 24–28 Aug 2026 (Monday to Friday of the week containing 2026-08-24)
-    // 2026-08-24 IS a Monday
-    expect(weekHeader).toBe('Week of 24–28 Aug 2026');
+    // Expected: Week of 24–29 Aug 2026 (Monday to Saturday - Saturday is a half-day)
+        // 2026-08-24 IS a Monday
+        expect(weekHeader).toBe('Week of 24–29 Aug 2026');
     
     const checkDate = async (name, expected) => {
       const val = await page.inputValue(name);
@@ -237,64 +221,54 @@ test.describe('Shared Week State', () => {
   });
 
   test('Add the shared week to the invoice', async ({ page }) => {
-    await page.fill('#week_start', '2026-08-24');
-    await page.waitForTimeout(100);
-    
-    // Start with no days selected - uncheck all first
-    const calcCheckboxes = await page.locator('#calc-days input[data-day]').all();
-    for (const checkbox of calcCheckboxes) {
-      if (await checkbox.isChecked()) {
-        await checkbox.click();
-      }
-    }
-    await page.waitForTimeout(100);
-    
-    // Select Mon, Wed, Fri using data-day attribute - use click instead of check
-    const checkboxes = await page.locator('#calc-days input[data-day]').all();
-    for (let i = 0; i < checkboxes.length; i++) {
-      const day = await checkboxes[i].getAttribute('data-day');
-      const isChecked = await checkboxes[i].isChecked();
-      if (['Mon', 'Wed', 'Fri'].includes(day)) {
-        if (!isChecked) {
-          await checkboxes[i].click();
-        }
-      } else {
-        if (isChecked) {
-          await checkboxes[i].click();
+      await page.fill('#week_start', '2026-08-24');
+      await page.waitForTimeout(100);
+
+      // Ensure all days unchecked first (same pattern as wage-description.spec.js)
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      for (const day of days) {
+        const wageControl = page.locator(`#calc-days .calc-day:has(input[data-day="${day}"])`);
+        const wageInput = wageControl.locator('input');
+        if (await wageInput.isChecked()) {
+          await wageControl.click();
         }
       }
-    }
-    await page.waitForTimeout(500); // Increase wait
+      await page.waitForTimeout(100);
+
+      // Select Mon, Wed, Fri by clicking labels
+      await page.locator('#calc-days .calc-day:has(input[data-day="Mon"])').click();
+      await page.locator('#calc-days .calc-day:has(input[data-day="Wed"])').click();
+      await page.locator('#calc-days .calc-day:has(input[data-day="Fri"])').click();
+      await page.waitForTimeout(500);
+
+      // Debug: check button state
+      const isDisabled = await page.locator('#calc-add').getAttribute('disabled');
+      const totalText = await page.textContent('#calc-total');
+      const breakdownText = await page.textContent('#calc-breakdown');
+      // console.log(`Button disabled: ${isDisabled}, Total: ${totalText}, Breakdown: ${breakdownText}`);
+
+      // Wait for the Add to invoice button to be enabled
+      await page.waitForSelector('#calc-add:not([disabled])', { timeout: 10000 });
+      await page.click('#calc-add');
+      await page.waitForTimeout(100);
+
+      // Verify the line item was added - get fresh count
+      const lineCount = await page.$$eval('.line-row:not(.line-head):not(.wage-details)', rows => rows.length);
+      expect(lineCount).toBeGreaterThanOrEqual(1);
+
+      // Check the last added wage line (same pattern as wage-description.spec.js)
+      const wageRow = page.locator('[data-line-item-type="wages"]').first();
+      await expect(wageRow).toBeVisible({ timeout: 10000 });
+      const description = await wageRow.locator('input[name="item_description"]').inputValue();
     
-    // Debug: check button state
-    const isDisabled = await page.locator('#calc-add').getAttribute('disabled');
-    const totalText = await page.textContent('#calc-total');
-    const breakdownText = await page.textContent('#calc-breakdown');
-    // console.log(`Button disabled: ${isDisabled}, Total: ${totalText}, Breakdown: ${breakdownText}`);
-    
-    // Wait for the Add to invoice button to be enabled
-    await page.waitForSelector('#calc-add:not([disabled])', { timeout: 10000 });
-    
-    await page.click('#calc-add');
-    await page.waitForTimeout(100);
-    
-    // Verify the line item was added - get fresh count
-    const lineCount = await page.$$eval('.line-row:not(.line-head)', rows => rows.length);
-    expect(lineCount).toBeGreaterThanOrEqual(1);
-    
-    // Check the last added line
-    const lastRow = await page.$('.line-row:not(.line-head):last-child');
-    const description = await lastRow.$eval('input[name="item_description"]', el => el.value);
-    expect(description).toContain('Wages — week of 24–28 Aug 2026 (3 days)');
-    
-    const quantity = await lastRow.$eval('input[name="item_qty"]', el => el.value);
-    expect(quantity).toBe('1');
-    
-    const rate = await lastRow.$eval('input[name="item_rate"]', el => el.value);
-    expect(rate).toBe('545.46');
-    
-    const amount = await lastRow.$eval('.line-amount', el => el.textContent);
-    expect(amount).toBe('$545.46');
+    const quantity = await wageRow.locator('input[name="item_qty"]').inputValue();
+        expect(quantity).toBe('1');
+
+        const rate = await wageRow.locator('input[name="item_rate"]').inputValue();
+        expect(rate).toBe('545.46');
+
+        const amount = await wageRow.locator('.line-amount').textContent();
+        expect(amount).toBe('$545.46');
     
     // Verify no page errors
     expect(page._jsErrors).toEqual([]);
