@@ -36,6 +36,11 @@ app.use((req, res) => {
   res.status(404).render('notfound', { title: 'Not found', flash: null });
 });
 
+app.use((req, res, next) => {
+  console.log('ROUTE HIT', req.method, req.originalUrl);
+  next();
+});
+
 app.use((err, req, res, next) => {
   console.error(`[${req.method} ${req.originalUrl}]`, err);
   if (res.headersSent) return next(err);

@@ -6,3 +6,11 @@ data/
 
 .vercel
 .env*
+
+playwright-report/
+test-results/
+e2e-storage-state.json
+cookies.txt
+debug-*.png
+playwright-*.png
+.hermes/

@@ -12,6 +12,7 @@ const WHITE = '#FFFFFF';
 const M = 50;
 const W = 495;
 const RIGHT = M + W;
+const PAGE_H = 841.89;
 
 function money(n) {
   return '$' + Number(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -55,12 +56,19 @@ function drawItemsTable(doc, items, y0, compact) {
       .moveTo(x0, y + rh).lineTo(RIGHT, y + rh).stroke();
     doc.fillColor(INK).font('Helvetica').fontSize(9);
     let cx = x0;
-    const descLines = doc.heightOfString(item.description, { width: cols[1] - 12 });
+    
+    // Build description with wage details if present
+    let fullDescription = item.description;
+    if (item.details && item.details.length > 0) {
+      fullDescription += '\n' + item.details.join('\n');
+    }
+    
+    const descLines = doc.heightOfString(fullDescription, { width: cols[1] - 12 });
     const rowH = Math.max(rh, descLines + 10);
     doc.rect(x0, y, W, rowH).fill(fill);
     doc.text(String(idx + 1), cx + 6, y + 6, { width: cols[0] - 12 });
     cx += cols[0];
-    doc.font('Helvetica').text(item.description, cx + 6, y + 6, { width: cols[1] - 12, lineGap: 2 });
+    doc.font('Helvetica').text(fullDescription, cx + 6, y + 6, { width: cols[1] - 12, lineGap: 2 });
     cx += cols[1];
     doc.font('Helvetica').text(String(item.quantity), cx + 6, y + 6, { width: cols[2] - 12, align: 'right' });
     cx += cols[2];
@@ -91,12 +99,24 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   let y = 128;
   doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('BILL TO', M, y);
   y += 16;
-  doc.fillColor(INK).font('Helvetica-Bold').fontSize(13).text(invoice.customer_name, M, y);
+  // Company (ASG/SJS) details from template config
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(13).text(tplConfig.company || '', M, y);
   y += 18;
   doc.font('Helvetica').fontSize(10).fillColor(GRAY);
-  if (invoice.customer_company) { doc.text(invoice.customer_company, M, y); y += 14; }
+  if (tplConfig.address) { doc.text(tplConfig.address, M, y); y += 14; }
+  if (tplConfig.abn) { doc.text('ABN: ' + tplConfig.abn, M, y); y += 14; }
+  if (tplConfig.email) { doc.text(tplConfig.email, M, y); y += 14; }
+  if (tplConfig.phone) { doc.text('Ph: ' + tplConfig.phone, M, y); y += 14; }
+
+  // Customer details section
+  y += 18;
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('CUSTOMER', M, y);
+  y += 12;
+  doc.font('Helvetica').fontSize(10).fillColor(INK);
+  if (invoice.customer_name) { doc.text(invoice.customer_name, M, y); y += 14; }
   if (invoice.customer_address) { doc.text(invoice.customer_address, M, y); y += 14; }
   if (invoice.customer_email) { doc.text(invoice.customer_email, M, y); y += 14; }
+  if (invoice.customer_company) { doc.text(invoice.customer_company, M, y); y += 14; }
 
   let my = 124;
   my = meta(doc, RIGHT, my, 'Issue date', invoice.issue_date);
@@ -142,10 +162,9 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
     if (settings.payment_terms) { doc.text(`Terms: ${settings.payment_terms}`, M, ty); ty += 13; }
   }
 
-  const pageH = 841.89;
   doc.font('Helvetica').fontSize(8).fillColor(GRAY)
-    .text(settings.footer_note || '', M, pageH - 60, { width: W, align: 'center' });
-  doc.moveTo(M, pageH - 70).lineTo(RIGHT, pageH - 70).lineWidth(0.5).strokeColor(LIGHT).stroke();
+    .text(settings.footer_note || '', M, PAGE_H - 60, { width: W, align: 'center' });
+  doc.moveTo(M, PAGE_H - 70).lineTo(RIGHT, PAGE_H - 70).lineWidth(0.5).strokeColor(LIGHT).stroke();
 }
 
 function renderCompact(doc, invoice, items, settings, tplConfig) {
@@ -164,12 +183,24 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
   let y = 132;
   doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('BILL TO', M, y);
   y += 15;
-  doc.fillColor(INK).font('Helvetica-Bold').fontSize(12).text(invoice.customer_name, M, y);
+  // Company (ASG/SJS) details from template config
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(12).text(tplConfig.company || '', M, y);
   y += 16;
   doc.font('Helvetica').fontSize(9).fillColor(GRAY);
-  if (invoice.customer_company) { doc.text(invoice.customer_company, M, y); y += 13; }
+  if (tplConfig.address) { doc.text(tplConfig.address, M, y); y += 13; }
+  if (tplConfig.abn) { doc.text('ABN: ' + tplConfig.abn, M, y); y += 13; }
+  if (tplConfig.email) { doc.text(tplConfig.email, M, y); y += 13; }
+  if (tplConfig.phone) { doc.text('Ph: ' + tplConfig.phone, M, y); y += 13; }
+
+  // Customer details section
+  y += 16;
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('CUSTOMER', M, y);
+  y += 12;
+  doc.font('Helvetica').fontSize(9).fillColor(INK);
+  if (invoice.customer_name) { doc.text(invoice.customer_name, M, y); y += 13; }
   if (invoice.customer_address) { doc.text(invoice.customer_address, M, y); y += 13; }
   if (invoice.customer_email) { doc.text(invoice.customer_email, M, y); y += 13; }
+  if (invoice.customer_company) { doc.text(invoice.customer_company, M, y); y += 13; }
 
   let my = 132;
   my = meta(doc, RIGHT, my, 'Due date', invoice.due_date || '—');
@@ -201,7 +232,7 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
     ty += doc.heightOfString(invoice.notes, { width: W }) + 12;
   }
 
-  const pageH = 841.89;
+  const pageH = 595.28;
   doc.moveTo(M, pageH - 56).lineTo(RIGHT, pageH - 56).lineWidth(0.5).strokeColor(LIGHT).stroke();
   const foot = [
     settings.bank_name && `Bank: ${settings.bank_name}`,

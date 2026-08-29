@@ -5,7 +5,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/run-smoke.js"
+    "test": "node test/run-smoke.js",
+    "test:e2e": "playwright test",
+    "start:e2e": "node test/start-e2e-server.js",
+    "setup:e2e": "node test/setup-e2e-db.js"
   },
   "engines": {
     "node": ">=18"
@@ -21,6 +24,9 @@
     "pg": "^8.13.1"
   },
   "devDependencies": {
-    "pg-mem": "^3.0.5"
+    "@playwright/test": "^1.62.1",
+    "pdf-parse": "^2.4.5",
+    "pg-mem": "^3.0.5",
+    "playwright": "^1.62.1"
   }
 }

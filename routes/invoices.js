@@ -14,12 +14,14 @@ function validateItems(items) {
     const description = String(raw.description || '').trim();
     const quantity = Number(raw.quantity);
     const rate = Number(raw.rate);
+    const details = Array.isArray(raw.details) ? raw.details : [];
     if (!description) continue;
     clean.push({
       description,
       quantity: quantity > 0 ? quantity : 1,
       rate: rate >= 0 ? rate : 0,
       amount: round2(quantity * rate),
+      details,
     });
   }
   if (!clean.length) return { error: 'Add at least one line item with a description.' };
@@ -90,6 +92,12 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
     const settings = await db.getSettings();
     const pdf = await renderInvoice(invoice, await db.getItems(created.id), settings);
 
+    if (b.action === 'download') {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${created.invoice_number}.pdf"`);
+      return res.send(pdf);
+    }
+
     if (b.send_now) {
       try {
         const recipients = buildRecipients(settings, req.user);
@@ -105,6 +113,13 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
 
     res.json({ id: created.id, invoice_number: created.invoice_number, sent: false });
   } catch (err) {
+    console.error('Invoice API error:', err);
+    const message = err && err.message ? err.message : 'Something went wrong.';
+    const payload = { error: message };
+    if (!res.headersSent) {
+      res.status(500);
+      if (req.accepts('json')) return res.json(payload);
+    }
     next(err);
   }
 });

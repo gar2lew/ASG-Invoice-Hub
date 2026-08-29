@@ -13,7 +13,7 @@ var tTotalInline = document.getElementById('t-total-inline');
 var gstRowInline = document.getElementById('gst-row-inline');
 var wageDays = document.getElementById('wage-days');
 var weekRangeEl = document.getElementById('calc-week-range');
-var templateInput = form ? form.querySelector('input[name="template"]') : null;
+var templateInput = form ? form.querySelector('input[name=\"template\"]') : null;
 var tplButtons = form ? Array.prototype.slice.call(form.querySelectorAll('.tpl')) : [];
 var submitSend = document.getElementById('submit-send');
 
@@ -39,26 +39,26 @@ var tplMeta = {
 };
 
 function fmt(n) {
-  return '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '$' + Number(n).toFixed(2).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
 }
 
 // Helper function to parse a local date string (YYYY-MM-DD) as a Date object
 function parseLocalDate(dateString) {
   const parts = dateString.split('-');
   if (parts.length !== 3) return null;
-  
+
   const year = parseInt(parts[0], 10);
   const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
   const day = parseInt(parts[2], 10);
-  
+
   if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
   if (month < 0 || month > 11) return null;
   if (day < 1 || day > 31) return null;
-  
+
   return new Date(year, month, day);
 }
 
-// Format a date range as "DD–DD Mon YYYY"
+// Format a date range as \"DD–DD Mon YYYY\"
 function formatWeekRange(startDate, endDate) {
   const startDay = String(startDate.getDate()).padStart(2, '0');
   const endDay = String(endDate.getDate()).padStart(2, '0');
@@ -69,10 +69,10 @@ function formatWeekRange(startDate, endDate) {
 // Format week range from YYYY-MM-DD string
 function fmtWeekRange(weekStarting) {
   if (!weekStarting) return '';
-  
+
   const startDate = parseLocalDate(weekStarting);
   if (!startDate) return '';
-  
+
   // Normalize to Monday: difference from Sunday (0) to Monday (1)
   const day = startDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
   // Days to subtract to get to Monday
@@ -80,12 +80,12 @@ function fmtWeekRange(weekStarting) {
   const monday = new Date(startDate);
   monday.setDate(startDate.getDate() - diff);
   monday.setHours(0, 0, 0, 0);
-  
-  // Friday is Monday + 4 days
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
-  
-  return formatWeekRange(monday, friday);
+
+  // Saturday is Monday + 5 days
+  const saturday = new Date(monday);
+  saturday.setDate(monday.getDate() + 5);
+
+  return formatWeekRange(monday, saturday);
 }
 
 function fmtDate(d) {
@@ -100,6 +100,12 @@ function formatDateForInput(d) {
   return year + '-' + month + '-' + day;
 }
 
+function getOrdinalSuffix(n) {
+  var s = ['th', 'st', 'nd', 'rd'];
+  var v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
+}
+
 var weekState = {
   company: 'asg',
   weekStarting: '',
@@ -107,6 +113,7 @@ var weekState = {
   perDayRate: 181.82,
   notes: '',
 };
+var isEditing = typeof window.existingItems !== 'undefined' && Array.isArray(window.existingItems);
 
 var companyConfigs = {
   asg: {
@@ -123,7 +130,9 @@ var companyConfigs = {
   },
 };
 
-var dayOffsets = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4 };
+var dayOffsets = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
+
+var dayMultipliers = { Mon: 1, Tue: 1, Wed: 1, Thu: 1, Fri: 1, Sat: 0.5 };
 
 function loadPersistedSettings() {
   try {
@@ -201,15 +210,25 @@ function renderWageCalculator() {
   var totalEl = document.getElementById('calc-total');
   var addBtn = document.getElementById('calc-add');
   var selected = weekState.workedDays;
-  var total = Math.round(selected.length * weekState.perDayRate * 100) / 100;
+  // Calculate total using multipliers (Sat = 0.5)
+  var total = 0;
+  selected.forEach(function(day) {
+    total += weekState.perDayRate * (dayMultipliers[day] || 1);
+  });
+  total = Math.round(total * 100) / 100;
   if (totalEl) totalEl.textContent = fmt(total);
 
   var breakdownEl = document.getElementById('calc-breakdown');
   if (breakdownEl) {
     if (!selected.length) {
-      breakdownEl.innerHTML = '<span class="muted">Select days worked to calculate wages.</span>';
+      breakdownEl.innerHTML = '<span class=\"muted\">Select days worked to calculate wages.</span>';
     } else {
-      var parts = selected.map(function (day) { return day + ': ' + fmt(weekState.perDayRate); });
+      var parts = selected.map(function (day) {
+        var mult = dayMultipliers[day] || 1;
+        var label = day;
+        if (mult === 0.5) label += ' ½';
+        return label + ': ' + fmt(weekState.perDayRate * mult);
+      });
       breakdownEl.innerHTML = parts.join(' | ') + ' → ' + fmt(total);
     }
   }
@@ -221,23 +240,23 @@ function renderDatesNotes() {
   var weekStart = document.getElementById('week_start');
   var startVal = weekStart ? weekStart.value : '';
   if (!startVal) return;
-  
+
   var startDate = parseLocalDate(startVal);
   if (!startDate) return;
-  
+
   // Normalize to Monday: difference from Sunday (0) to Monday (1)
   var day = startDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
   var diff = (day + 6) % 7;
   var normalizedStart = new Date(startDate);
   normalizedStart.setDate(startDate.getDate() - diff);
   normalizedStart.setHours(0, 0, 0, 0);
-  
-  var dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+  var dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   dayNames.forEach(function (dayName, idx) {
     var d = new Date(normalizedStart);
     d.setDate(normalizedStart.getDate() + idx);
     var iso = formatDateForInput(d);
-    var dateInput = document.querySelector('input[name="date_' + dayName + '"]');
+    var dateInput = document.querySelector('input[name=\"date_' + dayName + '\"]');
     if (dateInput) dateInput.value = iso;
   });
 }
@@ -304,15 +323,26 @@ function updatePreview() {
   var rows = itemRows();
   if (pvItems) {
     if (rows.length === 0) {
-      pvItems.innerHTML = '<tr class="preview-empty"><td colspan="5">No items yet</td></tr>';
+      pvItems.innerHTML = '<tr class=\"preview-empty\"><td colspan=\"5\">No items yet</td></tr>';
     } else {
       var html = '';
       rows.forEach(function (row, i) {
-        var d = row.querySelector('input[name="item_description"]').value;
-        var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
-        var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
+        var d = row.querySelector('input[name=\"item_description\"]').value;
+        var q = parseFloat(row.querySelector('input[name=\"item_qty\"]').value) || 0;
+        var r = parseFloat(row.querySelector('input[name=\"item_rate\"]').value) || 0;
         var a = q * r;
-        html += '<tr><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class="num">' + q + '</td><td class="num">' + fmt(r) + '</td><td class="num">' + fmt(a) + '</td></tr>';
+        html += '<tr><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class=\"num\">' + q + '</td><td class=\"num\">' + fmt(r) + '</td><td class=\"num\">' + fmt(a) + '</td></tr>';
+        // If this row has wage details, add them
+        var detailsRow = row.nextElementSibling;
+        if (detailsRow && detailsRow.classList && detailsRow.classList.contains('wage-details')) {
+          var detailsHtml = '<tr><td colspan=\"5\" style=\"padding-left: 20px; font-size: 12px; color: var(--muted);\">';
+          var detailItems = detailsRow.querySelectorAll('.wage-details-container div');
+          detailItems.forEach(function(detailEl) {
+            detailsHtml += escHtml(detailEl.textContent) + '<br>';
+          });
+          detailsHtml += '</td></tr>';
+          html += detailsHtml;
+        }
       });
       pvItems.innerHTML = html;
     }
@@ -320,8 +350,8 @@ function updatePreview() {
 
   var subtotal = 0;
   rows.forEach(function (row) {
-    var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
-    var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
+    var q = parseFloat(row.querySelector('input[name=\"item_qty\"]').value) || 0;
+    var r = parseFloat(row.querySelector('input[name=\"item_rate\"]').value) || 0;
     subtotal += q * r;
   });
   var gst = gstInput.checked ? subtotal * 0.1 : 0;
@@ -335,7 +365,7 @@ function updatePreview() {
     if (!notes || !notes.value.trim()) {
       pvNotes.innerHTML = '';
     } else {
-      pvNotes.innerHTML = '<span class="kicker">Notes</span>' + escHtml(notes.value).replace(/\n/g, '<br>');
+      pvNotes.innerHTML = '<span class=\"kicker\">Notes</span>' + escHtml(notes.value).replace(/\\n/g, '<br>');
     }
   }
 }
@@ -350,6 +380,10 @@ function escHtml(s) {
 function addLine(data) {
   var row = document.createElement('div');
   row.className = 'line-row';
+  // Mark wage lines for stable test selection
+  if (data && data.description && data.description.startsWith('Wages')) {
+    row.setAttribute('data-line-item-type', 'wages');
+  }
 
   var desc = document.createElement('input');
   desc.type = 'text';
@@ -392,6 +426,43 @@ function addLine(data) {
   row.appendChild(amount);
   row.appendChild(remove);
 
+  // If wage details provided, add them as a sub-row
+  if (data && data.wageDetails && data.wageDetails.length > 0) {
+    var detailsRow = document.createElement('div');
+    detailsRow.className = 'line-row wage-details';
+    detailsRow.style.marginTop = '4px';
+    detailsRow.style.paddingLeft = '12px';
+    detailsRow.style.borderLeft = '2px solid var(--accent-soft)';
+
+    var detailsContainer = document.createElement('div');
+    detailsContainer.className = 'wage-details-container';
+    detailsContainer.style.fontSize = '12px';
+    detailsContainer.style.color = 'var(--muted)';
+    detailsContainer.style.lineHeight = '1.8';
+
+    data.wageDetails.forEach(function(detail) {
+      var detailEl = document.createElement('div');
+      detailEl.textContent = detail;
+      detailsContainer.appendChild(detailEl);
+    });
+
+    detailsRow.appendChild(detailsContainer);
+    lines.appendChild(row);
+    lines.appendChild(detailsRow);
+
+    [desc, qty, rate].forEach(function (el) {
+      el.addEventListener('input', recalc);
+    });
+    remove.addEventListener('click', function () {
+      row.remove();
+      detailsRow.remove();
+      recalc();
+    });
+    recalc();
+    if (desc && typeof desc.focus === 'function') desc.focus();
+    return { row: row, detailsRow: detailsRow };
+  }
+
   [desc, qty, rate].forEach(function (el) {
     el.addEventListener('input', recalc);
   });
@@ -407,14 +478,14 @@ function addLine(data) {
 }
 
 function itemRows() {
-  return Array.prototype.slice.call(lines.querySelectorAll('.line-row:not(.line-head)'));
+  return Array.prototype.slice.call(lines.querySelectorAll('.line-row:not(.line-head):not(.wage-details)'));
 }
 
 function recalc() {
   var subtotal = 0;
   itemRows().forEach(function (row) {
-    var qty = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
-    var rate = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
+    var qty = parseFloat(row.querySelector('input[name=\"item_qty\"]').value) || 0;
+    var rate = parseFloat(row.querySelector('input[name=\"item_rate\"]').value) || 0;
     var amount = qty * rate;
     subtotal += amount;
     row.querySelector('.line-amount').textContent = fmt(amount);
@@ -445,19 +516,24 @@ function setTemplate(name) {
   var tpl = tplMeta[name];
   if (tpl) {
     var nameInput = document.getElementById('customer_name');
-    var contactInput = document.getElementById('customer_company');
     var emailInput = document.getElementById('customer_email');
     var addressInput = document.getElementById('customer_address');
-    if (nameInput) nameInput.value = tpl.company || tpl.name;
-    if (contactInput) contactInput.value = tpl.email || '';
-    if (emailInput) emailInput.value = tpl.email || '';
-    if (addressInput) addressInput.value = tpl.full_address || tpl.address || '';
+    if (!isEditing) {
+      // For new invoices, always update to template values when switching templates
+      if (nameInput) {
+        nameInput.value = tpl.company || tpl.name;
+      }
+      if (emailInput) emailInput.value = tpl.email || '';
+      if (addressInput) addressInput.value = tpl.full_address || tpl.address || '';
+    }
+    // else editing: preserve existing customer fields
   }
+
   var rateInput = document.getElementById('calc-rate');
   if (rateInput && cfg.perDayRate) rateInput.value = cfg.perDayRate;
 
   var notes = document.getElementById('notes');
-  if (notes && tpl) {
+  if (notes && tpl && !isEditing) {
     notes.value = '';
   }
 
@@ -500,9 +576,15 @@ if (submitDraft) submitDraft.addEventListener('click', function () {
 if (submitSendBtn) submitSendBtn.addEventListener('click', function () {
   actionField.value = 'send';
 });
-if (submitDownload) submitDownload.addEventListener('click', function () {
+if (submitDownload) submitDownload.addEventListener('click', function (e) {
+  e.preventDefault();
   actionField.value = 'download';
-  if (form) form.submit();
+  if (form) {
+    // Manually trigger the submit handler logic instead of form.submit()
+    // which bypasses the submit event
+    var submitEvent = new Event('submit', { cancelable: true, bubbles: true });
+    form.dispatchEvent(submitEvent);
+  }
 });
 
 function showError(msg) {
@@ -524,10 +606,29 @@ function clearError() {
 function buildPayload() {
   var data = new FormData(form);
   var items = itemRows().map(function (row) {
+    var description = row.querySelector('input[name=\"item_description\"]').value.trim();
+    var quantity = parseFloat(row.querySelector('input[name=\"item_qty\"]').value) || 0;
+    var rate = parseFloat(row.querySelector('input[name=\"item_rate\"]').value) || 0;
+
+    // Check if this is a wage line with details
+    var details = [];
+    if (row.getAttribute('data-line-item-type') === 'wages') {
+      // Find the corresponding wage-details sibling row
+      var detailsRow = row.nextElementSibling;
+      if (detailsRow && detailsRow.classList.contains('wage-details')) {
+        var detailElements = detailsRow.querySelectorAll('.wage-details-container > div');
+        detailElements.forEach(function(el) {
+          var text = el.textContent.trim();
+          if (text) details.push(text);
+        });
+      }
+    }
+
     return {
-      description: row.querySelector('input[name="item_description"]').value.trim(),
-      quantity: parseFloat(row.querySelector('input[name="item_qty"]').value) || 0,
-      rate: parseFloat(row.querySelector('input[name="item_rate"]').value) || 0,
+      description: description,
+      quantity: quantity,
+      rate: rate,
+      details: details,
     };
   }).filter(function (it) { return it.description; });
 
@@ -551,11 +652,13 @@ if (form) form.addEventListener('submit', function (e) {
   var action = actionField.value || 'draft';
   if (action === 'download') {
     document.getElementById('send_now').checked = false;
-    var fd = new FormData(form);
-    fd.set('action', 'download');
+    var payload = buildPayload();
+    payload.action = 'download';
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', form.action || '/api/invoices', true);
+    var actionUrl = form.getAttribute('action') || '/api/invoices';
+    xhr.open('POST', actionUrl, true);
     xhr.responseType = 'blob';
+    xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function () {
       if (xhr.status === 200) {
         var blob = xhr.response;
@@ -572,7 +675,7 @@ if (form) form.addEventListener('submit', function (e) {
       }
     };
     xhr.onerror = function () { showError('Network error.'); };
-    xhr.send(fd);
+    xhr.send(JSON.stringify(payload));
     return;
   }
   e.preventDefault();
@@ -644,21 +747,34 @@ function onWeekStateChanged(source) {
   if (source === 'wage-days') {
     syncDayToggles(document.getElementById('wage-days'), document.getElementById('calc-days'));
   }
-  
+  // When source is week-start, we need to sync from wage-days to calc-days to preserve worked days
+  else if (source === 'week-start') {
+    syncDayToggles(document.getElementById('wage-days'), document.getElementById('calc-days'));
+  }
+
   updateWeekState();
   renderWageCalculator();
   renderDatesNotes();
-  
+
   // After updating state, sync the other direction
   if (source === 'calc-days' || source === 'calc-rate' || source === 'week-start') {
     syncDayToggles(document.getElementById('calc-days'), document.getElementById('wage-days'));
   } else if (source === 'wage-days') {
     // Already synced above, but do it again to ensure consistency
-    syncDayToggles(document.getElementById('wage-days'), document.getElementById('calc-days'));
+    syncDayToggles(document.getElementById('wage-days'), document.getElementById('wage-days'));
   }
-  
+
   updatePreview();
   recalc();
+}
+
+// Initialize week state from authoritative source, then render both widgets
+function initializeWeekState() {
+  // Authoritative initial state - no days worked
+  weekState.workedDays = [];
+  // Render both widgets from the same state
+  renderWageCalculator();
+  renderDatesNotes();
 }
 
 // Set up workers without race conditions using a single source of truth
@@ -692,20 +808,56 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
   if (!selected.length) return;
   var cfg = companyConfigs[weekState.company] || companyConfigs.asg;
   var mode = cfg.wageLineMode || 'aggregated';
-  var amount = Math.round(selected.length * weekState.perDayRate * 100) / 100;
+
+  // Calculate amount using multipliers
+  var amount = 0;
+  selected.forEach(function(day) {
+    amount += weekState.perDayRate * (dayMultipliers[day] || 1);
+  });
+  amount = Math.round(amount * 100) / 100;
   var rate = weekState.perDayRate;
-  var dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+  // Build day details for description
+  var dayDetails = [];
+  var weekStartDate = parseLocalDate(weekState.weekStarting);
+  if (weekStartDate) {
+    // Normalize to Monday
+    var day = weekStartDate.getDay();
+    var diff = (day + 6) % 7;
+    var monday = new Date(weekStartDate);
+    monday.setDate(weekStartDate.getDate() - diff);
+    monday.setHours(0, 0, 0, 0);
+
+    selected.forEach(function(dayName) {
+      var offset = dayOffsets[dayName] || 0;
+      var dayDate = new Date(monday);
+      dayDate.setDate(monday.getDate() + offset);
+      var dayNum = dayDate.getDate();
+      var suffix = getOrdinalSuffix(dayNum);
+      var detail = dayName + ' — ' + dayNum + suffix;
+      if (dayMultipliers[dayName] === 0.5) {
+        detail += ' (½ day)';
+      }
+      dayDetails.push(detail);
+    });
+  }
 
   if (mode === 'daily') {
     selected.forEach(function (day) {
-      var dateInput = document.querySelector('input[name="date_' + day + '"]');
+      var dateInput = document.querySelector('input[name=\"date_' + day + '\"]');
       var dateText = dateInput && dateInput.value ? ' ' + dateInput.value : '';
       addLine({ description: 'Wages — ' + day + dateText, quantity: 1, rate: rate, amount: rate });
     });
   } else {
-    var range = weekState.weekStarting ? 'week of ' + fmtWeekRange(weekState.weekStarting) : '';
-    var suffix = selected.length === 1 ? ' (1 day)' : ' (' + selected.length + ' days)';
-    addLine({ description: 'Wages — ' + range + suffix, quantity: 1, rate: amount, amount: amount });
+    var range = weekState.weekStarting ? 'Week of ' + fmtWeekRange(weekState.weekStarting) : '';
+    var primaryDesc = 'Wages/Retainer — ' + range + ' — ' + fmt(amount);
+    addLine({
+      description: primaryDesc,
+      quantity: 1,
+      rate: amount,
+      amount: amount,
+      wageDetails: dayDetails
+    });
   }
 });
 
@@ -719,6 +871,19 @@ var initRate = document.getElementById('calc-rate');
 if (initRate && initCfg.perDayRate) initRate.value = initCfg.perDayRate;
 
 setTemplate(initialCompany);
-onWeekStateChanged();
+initializeWeekState();
 
-addLine();
+// Handle existing items when editing an invoice
+if (typeof window.existingItems !== 'undefined' && Array.isArray(window.existingItems) && window.existingItems.length > 0) {
+  window.existingItems.forEach(function(item) {
+    addLine({
+      description: item.description,
+      quantity: item.quantity,
+      rate: item.rate,
+      amount: item.amount,
+      wageDetails: item.details
+    });
+  });
+} else {
+  addLine();
+}

@@ -50,7 +50,7 @@
 <% } else { %>
   <section class="card">
     <div class="card-head">
-      <h2 class="card-title">Your invoices</h2>
+      <h2 class="card-title">Outstanding invoices</h2>
       <label class="filter">
         <span class="sr-only">Filter by status</span>
         <select class="input input-sm" data-filter-status>
@@ -76,7 +76,57 @@
           </tr>
         </thead>
         <tbody>
-          <% invoices.forEach(function(i) { %>
+          <% var outstandingList = outstanding || invoices || []; %>
+          <% outstandingList.forEach(function(i) { %>
+          <tr data-status="<%= i.status %>">
+            <td class="mono"><a href="/invoices/<%= i.id %>"><%= i.invoice_number %></a></td>
+            <td>
+              <span class="cell-main"><%= i.customer_name %></span>
+              <% if (i.customer_company) { %><span class="cell-sub"><%= i.customer_company %></span><% } %>
+            </td>
+            <td class="muted"><%= i.issueDateText %></td>
+            <% if (admin) { %><td class="muted"><%= i.rep_name %></td><% } %>
+            <td><span class="badge badge-tpl"><%= i.template %></span></td>
+            <td class="num mono strong"><%= i.totalText %></td>
+            <td><span class="badge badge-<%= i.status %>"><%= i.status %></span></td>
+            <td class="actions">
+              <a class="btn btn-ghost btn-tiny" href="/invoices/<%= i.id %>">View</a>
+              <a class="btn btn-ghost btn-tiny" href="/invoices/<%= i.id %>/download">PDF</a>
+              <% if (i.status !== 'paid') { %>
+                <form method="post" action="/invoices/<%= i.id %>/paid" onsubmit="return confirm('Mark invoice <%= i.invoice_number %> as paid?');">
+                  <button class="btn btn-ghost btn-tiny" type="submit">Mark paid</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <% if (paidInvoices.length) { %>
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Paid / completed invoices</h2>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Customer</th>
+            <th>Issued</th>
+            <% if (admin) { %><th>Rep</th><% } %>
+            <th>Template</th>
+            <th class="num">Total</th>
+            <th>Status</th>
+            <th class="actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% var paidList = paidInvoices || []; %>
+          <% paidList.forEach(function(i) { %>
           <tr data-status="<%= i.status %>">
             <td class="mono"><a href="/invoices/<%= i.id %>"><%= i.invoice_number %></a></td>
             <td>
@@ -98,6 +148,7 @@
       </table>
     </div>
   </section>
+  <% } %>
 <% } %>
 
 <%- include('partials/footer', { pageScript: '/js/dashboard.js' }) %>

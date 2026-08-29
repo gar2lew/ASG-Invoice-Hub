@@ -55,16 +55,15 @@
         <div class="grid2">
           <label class="field">
             <span class="field-label">Company name <em>*</em></span>
-            <input class="input" type="text" name="customer_name" id="customer_name" required>
+            <input class="input" type="text" name="customer_name" id="customer_name" required value="<%= typeof customer_name !== 'undefined' && customer_name ? customer_name : '' %>"/>
           </label>
-        </div>
         <label class="field">
           <span class="field-label">Email</span>
-          <input class="input" type="email" name="customer_email" id="customer_email" value="Natalie@sjssolutionscorp.com.au">
+          <input class="input" type="email" name="customer_email" id="customer_email" value="<%= typeof customer_email !== 'undefined' && customer_email ? customer_email : '' %>">
         </label>
         <label class="field">
           <span class="field-label">Address</span>
-          <textarea class="input" name="customer_address" id="customer_address" rows="2"></textarea>
+          <textarea class="input" name="customer_address" id="customer_address" rows="2"><%= typeof customer_address !== 'undefined' && customer_address ? customer_address : '' %></textarea>
         </label>
       </section>
 
@@ -262,5 +261,9 @@
     </div>
   </div>
 </form>
-
+<% if (typeof existingItems !== 'undefined') { %>
+<script>
+  window.existingItems = <%- JSON.stringify(existingItems) %>;
+</script>
+<% } %>
 <%- include('partials/footer', { pageScript: '/js/invoice-form.js' }) %>

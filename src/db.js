@@ -58,7 +58,8 @@ const SCHEMA = `
     description TEXT NOT NULL,
     quantity DOUBLE PRECISION NOT NULL DEFAULT 1,
     rate DOUBLE PRECISION NOT NULL DEFAULT 0,
-    amount DOUBLE PRECISION NOT NULL DEFAULT 0
+    amount DOUBLE PRECISION NOT NULL DEFAULT 0,
+    details JSONB DEFAULT '[]'::jsonb
   );
 `;
 
@@ -266,8 +267,8 @@ async function createInvoice(tx) {
     const invoiceId = Number(ins.rows[0].id);
     for (const item of tx.items) {
       await client.query(
-        'INSERT INTO invoice_items (invoice_id, description, quantity, rate, amount) VALUES ($1,$2,$3,$4,$5)',
-        [invoiceId, item.description, item.quantity, item.rate, item.amount],
+        'INSERT INTO invoice_items (invoice_id, description, quantity, rate, amount, details) VALUES ($1,$2,$3,$4,$5,$6)',
+        [invoiceId, item.description, item.quantity, item.rate, item.amount, JSON.stringify(item.details || [])],
       );
     }
     await client.query('COMMIT');
@@ -295,7 +296,10 @@ async function getInvoiceByNumber(number) {
 async function getItems(invoiceId) {
   await ensureReady();
   const r = await getPool().query('SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY id', [invoiceId]);
-  return r.rows;
+  return r.rows.map(row => ({
+    ...row,
+    details: row.details || []
+  }));
 }
 
 async function listInvoices({ userId, admin }) {
@@ -410,4 +414,5 @@ module.exports = {
   recentInvoices,
   repTotals,
   sentDatesForUser,
+  getPool,
 };

@@ -27,12 +27,30 @@ router.get('/', requireAuth, async (req, res, next) => {
     const statusCounts = { draft: 0, sent: 0, paid: 0 };
     invoices.forEach((i) => { statusCounts[i.status] = (statusCounts[i.status] || 0) + 1; });
 
+    const outstanding = rows.filter((i) => i.status !== 'paid').sort((a, b) => {
+      if (a.status === b.status) return 0;
+      return a.status === 'draft' ? -1 : 1;
+    });
+    const paidInvoices = rows.filter((i) => i.status === 'paid');
+
+    console.log('DASHBOARD RENDER', {
+      hasOutstanding: 'outstanding' in { outstanding, paidInvoices },
+      outstandingCount: outstanding.length,
+      paidCount: paidInvoices.length,
+      rowsCount: rows.length,
+      admin,
+      userId: req.user ? req.user.id : null,
+      userRole: req.user ? req.user.role : null,
+    });
     res.render('dashboard', {
       title: 'Dashboard',
       flash: flashMsg,
       invoices: rows,
+      outstanding,
+      paidInvoices,
       recent,
       admin,
+      currentUser: req.user,
       weekStats: { ...weekStats, totalText: fmtMoney(weekStats.total), count: weekStats.count },
       allStats: {
         ...allStats,
@@ -99,6 +117,51 @@ router.get('/invoices/:id', requireAuth, async (req, res, next) => {
       items: items.map((it) => ({ ...it, amountText: fmtMoney(it.amount), rateText: fmtMoney(it.rate) })),
       settings,
       mailEnabled: require('../src/mail').isMailConfigured(),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/invoices/:id/edit', requireAuth, async (req, res, next) => {
+  try {
+    const invoice = await db.getInvoice(req.params.id);
+    if (!invoice) return res.status(404).render('notfound', { title: 'Not found', flash: null });
+    if (req.user.role !== 'admin' && invoice.user_id !== req.user.id) {
+      return res.status(404).render('notfound', { title: 'Not found', flash: null });
+    }
+    if (invoice.status !== 'draft') {
+      return res.status(400).render('notfound', { title: 'Cannot edit', flash: { type: 'error', text: 'Only draft invoices can be edited.' } });
+    }
+    const items = await db.getItems(invoice.id);
+    const settings = await db.getSettings();
+    const rep = await db.getUserById(invoice.user_id);
+    const flashMsg = req.session.flash || null;
+    req.session.flash = null;
+    res.render('new-invoice', {
+      title: 'Edit invoice',
+      flash: flashMsg,
+      settings,
+      nextNumber: invoice.invoice_number,
+      repName: req.user.name || '',
+      repAbn: req.user.abn || '',
+      issueDate: invoice.issue_date,
+      dueDate: invoice.due_date,
+      editingInvoice: invoice,
+      existingItems: items.map(it => ({
+        description: it.description,
+        quantity: it.quantity,
+        rate: it.rate,
+        amount: it.amount,
+        details: it.details || []
+      })),
+      customer_name: invoice.customer_name,
+      customer_company: invoice.customer_company,
+      customer_email: invoice.customer_email,
+      customer_address: invoice.customer_address,
+      notes: invoice.notes,
+      gst: invoice.tax_rate > 0,
+      template: invoice.template,
     });
   } catch (err) {
     next(err);
