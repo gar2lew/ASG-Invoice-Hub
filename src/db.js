@@ -97,6 +97,13 @@ async function initDb() {
     const p = getPool();
     await p.query(SCHEMA);
     await p.query("INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING");
+    // Idempotent migration: production tables that were created before the
+    // `details` column existed will 500 on invoice creation otherwise.
+    try {
+      await p.query("ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS details JSONB DEFAULT '[]'::jsonb");
+    } catch (e) {
+      console.warn('invoice_items.details migration skipped:', e.message);
+    }
     await ensureAdmin();
   })().catch((err) => {
     readyPromise = null;
