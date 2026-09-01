@@ -39,7 +39,9 @@
   </section>
 
   <div class="form-cols">
+    <!-- LEFT COLUMN ~60% -->
     <div class="form-col">
+      <!-- Invoice Details -->
       <section class="card">
         <div class="card-head">
           <h2 class="card-title">Invoice details</h2>
@@ -50,16 +52,14 @@
             <span class="field-label">Invoice number</span>
             <input class="input" type="text" name="invoice_number" id="invoice_number" value="<%= nextNumber %>">
           </label>
-          <span></span>
-        </div>
-        <div class="grid2">
           <label class="field">
-            <span class="field-label">Company name <em>*</em></span>
-            <input class="input" type="text" name="customer_name" id="customer_name" required value="<%= typeof customer_name !== 'undefined' && customer_name ? customer_name : '' %>"/>
+            <span class="field-label">Email</span>
+            <input class="input" type="email" name="customer_email" id="customer_email" value="<%= typeof customer_email !== 'undefined' && customer_email ? customer_email : '' %>">
           </label>
+        </div>
         <label class="field">
-          <span class="field-label">Email</span>
-          <input class="input" type="email" name="customer_email" id="customer_email" value="<%= typeof customer_email !== 'undefined' && customer_email ? customer_email : '' %>">
+          <span class="field-label">Company name <em>*</em></span>
+          <input class="input" type="text" name="customer_name" id="customer_name" required value="<%= typeof customer_name !== 'undefined' && customer_name ? customer_name : '' %>"/>
         </label>
         <label class="field">
           <span class="field-label">Address</span>
@@ -67,6 +67,7 @@
         </label>
       </section>
 
+      <!-- Weekly Wage Calculator + Dates & Notes integrated -->
       <section class="card card-calc">
         <div class="card-head">
           <h2 class="card-title">Weekly wage calculator</h2>
@@ -74,10 +75,16 @@
         </div>
         <div id="calc-week-range" class="week-range-display"></div>
         <div class="calc-grid">
-          <label class="field">
-            <span class="field-label">Per day rate</span>
-            <input class="input" type="number" id="calc-rate" value="181.82" min="0" step="0.01">
-          </label>
+          <div class="grid2">
+            <label class="field">
+              <span class="field-label">Per day rate</span>
+              <input class="input" type="number" id="calc-rate" value="181.82" min="0" step="0.01">
+            </label>
+            <label class="field">
+              <span class="field-label">Week starting</span>
+              <input class="input" type="date" name="week_start" id="week_start" value="<%= issueDate %>">
+            </label>
+          </div>
           <div id="calc-breakdown" class="calc-breakdown"></div>
           <div class="calc-days" id="calc-days">
             <label class="calc-day"><input type="checkbox" data-day="Mon" checked><span>Mon</span></label>
@@ -92,17 +99,9 @@
           <span class="calc-total" id="calc-total">$0.00</span>
           <button type="button" class="btn btn-accent btn-small" id="calc-add">Add to invoice</button>
         </div>
-      </section>
 
-      <section class="card">
-        <div class="card-head">
-          <h2 class="card-title">Dates & notes</h2>
-        </div>
-        <div class="wage-dates" id="wage-dates">
-          <label class="field">
-            <span class="field-label">Week starting</span>
-            <input class="input" type="date" name="week_start" id="week_start" value="<%= issueDate %>">
-          </label>
+        <!-- Dates grid integrated below calculator -->
+        <div class="wage-dates" id="wage-dates" style="margin-top: 16px; border-top: 1px solid var(--line-strong); padding-top: 16px;">
           <div class="wage-days" id="wage-days">
             <label class="wage-day"><input type="checkbox" name="wage_day" data-day="Mon"><span>Mon <input class="input input-sm wage-date" type="date" name="date_Mon"></span></label>
             <label class="wage-day"><input type="checkbox" name="wage_day" data-day="Tue"><span>Tue <input class="input input-sm wage-date" type="date" name="date_Tue"></span></label>
@@ -112,14 +111,17 @@
             <label class="wage-day"><input type="checkbox" name="wage_day" data-day="Sat"><span>Sat <input class="input input-sm wage-date" type="date" name="date_Sat"></span></label>
           </div>
         </div>
-        <label class="field">
+
+        <label class="field" style="margin-top: 16px;">
           <span class="field-label">Notes</span>
-          <textarea class="input" name="notes" id="notes" rows="3" placeholder="Optional message shown on the invoice"></textarea>
+          <textarea class="input" name="notes" id="notes" rows="2" placeholder="Optional message shown on the invoice"></textarea>
         </label>
       </section>
     </div>
 
+    <!-- RIGHT COLUMN ~40% -->
     <div class="form-col">
+      <!-- Line Items -->
       <section class="card">
         <div class="card-head">
           <h2 class="card-title">Line items</h2>
@@ -153,21 +155,8 @@
         </div>
       </section>
 
+      <!-- Actions -->
       <section class="card card-actions">
-        <div class="inline-totals" aria-live="polite">
-          <div class="total-row">
-            <span>Subtotal</span>
-            <span class="mono" id="t-subtotal-inline">$0.00</span>
-          </div>
-          <div class="total-row total-row-gst" id="gst-row-inline" hidden>
-            <span>GST</span>
-            <span class="mono" id="t-gst-inline">$0.00</span>
-          </div>
-          <div class="total-row total-row-grand">
-            <span>Total</span>
-            <span class="mono" id="t-total-inline">$0.00</span>
-          </div>
-        </div>
         <label class="checkline">
           <input type="checkbox" name="send_now" id="send_now" checked>
           <span>Email this invoice to accounts as soon as it&rsquo;s created</span>
@@ -176,19 +165,12 @@
           <input type="hidden" name="action" id="action-field" value="draft">
           <button type="button" class="btn btn-ghost" id="submit-download" data-action="download">Download PDF</button>
           <button type="submit" class="btn btn-ghost" id="submit-draft" data-action="draft">Save draft</button>
-          <button type="submit" class="btn btn-ink" id="submit-send" data-action="save">
-            <svg aria-hidden="true" viewBox="0 0 16 16" width="15" height="15"><path d="M2 8l11-5-3.5 10-2.5-4.5L2 8zM7 11.5V8l6-5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" fill="none"/></svg>
-            Save
-          </button>
-          <button type="submit" class="btn btn-accent" id="submit-send-email" data-action="send">
-            <svg aria-hidden="true" viewBox="0 0 16 16" width="15" height="15"><path d="M2 8l11-5-3.5 10-2.5-4.5L2 8zM7 11.5V8l6-5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" fill="none"/></svg>
-            Send & email
-          </button>
+          <button type="submit" class="btn btn-ink" id="submit-send" data-action="save">Save</button>
+          <button type="submit" class="btn btn-accent" id="submit-send-email" data-action="send">Send & email</button>
         </div>
       </section>
-    </div>
 
-    <div class="form-col form-col-preview">
+      <!-- Invoice Preview -->
       <section class="card preview-card">
         <div class="card-head">
           <h2 class="card-title">Invoice preview</h2>
