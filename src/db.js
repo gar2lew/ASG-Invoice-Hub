@@ -104,6 +104,13 @@ async function initDb() {
     } catch (e) {
       console.warn('invoice_items.details migration skipped:', e.message);
     }
+    // Idempotent migration: download tracking fields
+    try {
+      await p.query("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS downloaded_at TIMESTAMPTZ");
+      await p.query("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS download_count INTEGER NOT NULL DEFAULT 0");
+    } catch (e) {
+      console.warn('invoices download tracking migration skipped:', e.message);
+    }
     await ensureAdmin();
   })().catch((err) => {
     readyPromise = null;
@@ -395,6 +402,105 @@ async function sentDatesForUser(userId) {
   return r.rows;
 }
 
+// ---------- Download tracking ----------
+
+async function recordInvoiceDownload(invoiceId) {
+  await ensureReady();
+  const stamp = new Date().toISOString();
+  await getPool().query(
+    `UPDATE invoices SET downloaded_at = $1, download_count = download_count + 1 WHERE id = $2`,
+    [stamp, invoiceId]
+  );
+}
+
+// ---------- Admin reporting ----------
+
+async function listInvoicesForAdmin(filters = {}) {
+  await ensureReady();
+  const where = [];
+  const params = [];
+  if (filters.repId) {
+    params.push(Number(filters.repId));
+    where.push(`i.user_id = $${params.length}`);
+  }
+  if (filters.status) {
+    params.push(filters.status);
+    where.push(`i.status = $${params.length}`);
+  }
+  if (filters.dateFrom) {
+    params.push(filters.dateFrom);
+    where.push(`i.issue_date >= $${params.length}`);
+  }
+  if (filters.dateTo) {
+    params.push(filters.dateTo);
+    where.push(`i.issue_date <= $${params.length}`);
+  }
+  const sql = `
+    SELECT i.*, u.name AS rep_name
+    FROM invoices i
+    JOIN users u ON u.id = i.user_id
+    ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+    ORDER BY i.created_at DESC, i.id DESC
+  `;
+  const r = await getPool().query(sql, params);
+  return r.rows;
+}
+
+async function getAdminInvoiceSummary(filters = {}) {
+  await ensureReady();
+  const where = [];
+  const params = [];
+  if (filters.repId) {
+    params.push(Number(filters.repId));
+    where.push(`i.user_id = $${params.length}`);
+  }
+  if (filters.status) {
+    params.push(filters.status);
+    where.push(`i.status = $${params.length}`);
+  }
+  if (filters.dateFrom) {
+    params.push(filters.dateFrom);
+    where.push(`i.issue_date >= $${params.length}`);
+  }
+  if (filters.dateTo) {
+    params.push(filters.dateTo);
+    where.push(`i.issue_date <= $${params.length}`);
+  }
+  const sql = `
+    SELECT
+      COUNT(*) AS count,
+      COALESCE(SUM(total), 0) AS total,
+      COALESCE(SUM(CASE WHEN status = 'draft' THEN total ELSE 0 END), 0) AS draft_value,
+      COALESCE(SUM(CASE WHEN status = 'sent' THEN total ELSE 0 END), 0) AS outstanding_value,
+      COALESCE(SUM(CASE WHEN status = 'paid' THEN total ELSE 0 END), 0) AS paid_value
+    FROM invoices i
+    ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+  `;
+  const r = await getPool().query(sql, params);
+  return r.rows[0];
+}
+
+// ---------- User management ----------
+
+async function createAdminUser({ username, password, name, email, role }) {
+  await ensureReady();
+  const hash = bcrypt.hashSync(password, 10);
+  await getPool().query(
+    'INSERT INTO users (username, password_hash, name, email, role) VALUES ($1,$2,$3,$4,$5)',
+    [username, hash, name, email || '', role || 'admin']
+  );
+}
+
+async function createRepUser({ name, email, abn, pin }) {
+  await ensureReady();
+  const username = String(name).trim().toLowerCase().replace(/\s+/g, '.');
+  const pinHash = pin ? bcrypt.hashSync(String(pin), 10) : '';
+  await getPool().query(
+    'INSERT INTO users (username, password_hash, pin_hash, name, email, abn, role) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+    [username, '', pinHash, name, email || '', abn || '', 'rep']
+  );
+}
+
 module.exports = {
   initDb,
   ensureAdmin,
@@ -421,5 +527,10 @@ module.exports = {
   recentInvoices,
   repTotals,
   sentDatesForUser,
+  recordInvoiceDownload,
+  listInvoicesForAdmin,
+  getAdminInvoiceSummary,
+  createAdminUser,
+  createRepUser,
   getPool,
 };

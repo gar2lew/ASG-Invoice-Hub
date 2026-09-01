@@ -1,0 +1,231 @@
+## REPOSITORY STATE
+```text
+branch: main
+HEAD: a0395db
+working tree clean: NO
+tracked modifications: .gitignore: M
+package-lock.json: M
+package.json: M
+playwright.config.js: M
+public/css/style.css: M
+public/js/dashboard.js: M
+public/js/invoice-form.js: M
+routes/invoices.js: M
+routes/pages.js: M
+src/app.js: M
+src/db.js: M
+src/pdf.js: M
+src/templates.js: M
+tests/shared-week.spec.js: M
+views/dashboard.ejs: M
+views/new-invoice.ejs: M
+untracked files: AGENTS.md
+CHANGELOG.md
+ROADMAP.md
+TECH_DEBT.md
+add_checkpoints.py
+debug_beforeEach.py
+do_replace.py
+docs/
+final_replace.py
+fix_auth.py
+fix_beforeEach.py
+fix_beforeEach2.py
+fix_beforeEach_final.py
+fix_beforeEach_robust.py
+fix_beforeEach_v2.py
+fix_shared_week.py
+fix_test.py
+fix_test_file.py
+modify_test.py
+replace_beforeEach.py
+replace_beforeEach_block.py
+replace_beforeEach_final.py
+replace_beforeEach_string.py
+restore.py
+restore_and_update.py
+test/setup-e2e-db.js
+test/start-e2e-server.js
+tests/admin-override.spec.js
+tests/auth.debug.spec.js
+tests/auth.investigate.spec.js
+tests/auth.setup.js
+tests/diagnostics/
+tests/edit-route.spec.js
+tests/pdf-download.spec.js
+tests/rep-login-test.spec.js
+tests/saturday-halfday.spec.js
+tests/shared-week.spec.js.backup
+tests/shared-week.spec.js.backup2
+tests/shared-week.spec.js.bak
+tests/shared-week.spec.js.before_mod
+tests/wage-description.spec.js
+tests/wage-persistence.spec.js
+update_beforeEach.py
+update_test.py
+update_test_file.py
+verification_report.txt
+```
+## SHARED-WEEK CURRENT IMPLEMENTATION
+```text
+beforeEach count: 1
+manual login count: 0 (verified: no page.goto('/login') in beforeEach)
+direct invoice navigation count: 1 (verified: page.goto('/invoices/new') present)
+waitForTimeout count: 0 (verified: no waitForTimeout in beforeEach, only waitForSelector)
+test count: 8 (from discovery: 7 shared-week tests + 1 setup test)
+console/pageerror listener blocks: 1 console, 1 pageerror (preserved from HEAD)
+```
+Concise explanation of the current auth/setup flow:
+```text
+test.beforeEach(async ({ page }) => {
+    // Listen for JavaScript errors and console messages
+    const errors = [];
+    const consoleMessages = [];
+    page.on('console', msg => {
+      consoleMessages.push(`${msg.type()}: ${msg.text()}`);
+      if (msg.type() === 'error') {
+        errors.push(`${msg.type()}: ${msg.text()}`);
+      }
+    });
+    page.on('pageerror', err => {
+      errors.push(`PAGE ERROR: ${err.message}`);
+    });
+
+    // Store for later use
+    page._jsErrors = errors;
+    page._consoleMessages = consoleMessages;
+
+    // Navigate directly to the invoice page, assuming we are authenticated via storageState.
+    await page.goto('/invoices/new');
+    await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 5000 });
+  });
+```
+Note: The beforeEach block has been fixed to have correct syntax: `async ({ page })` (we fixed the missing space).
+## AUTH ARCHITECTURE
+```text
+playwright.config.js:
+→ use.storageState = e2e-storage-state.json
+
+tests/auth.setup.js:
+→ logs in as E2E Test Representative
+→ writes e2e-storage-state.json
+```
+storageState: e2e-storage-state.json
+setup project: e2e (tests/auth.setup.js)
+authenticated user: E2E Test Representative
+shared-week starts authenticated: YES (if storageState is valid and auth.setup runs before)
+## DISCOVERY
+```text
+discovered: YES
+parse errors: NO
+configuration errors: NO
+```
+Discovered tests:
+  [setup] › auth.setup.js:6:3 › E2E Authentication Setup › login as e2e rep and save storage state
+  [e2e] › shared-week.spec.js:48:3 › Shared Week State › Week date populates both widgets
+  [e2e] › shared-week.spec.js:91:3 › Shared Week State › Toggle in Wage Calculator updates Dates & Notes
+  [e2e] › shared-week.spec.js:124:3 › Shared Week State › Toggle in Dates & Notes updates Wage Calculator
+  [e2e] › shared-week.spec.js:153:3 › Shared Week State › Untoggling synchronises both widgets
+  [e2e] › shared-week.spec.js:196:3 › Shared Week State › Complete three-day wage calculation
+  [e2e] › shared-week.spec.js:239:3 › Shared Week State › Add the shared week to the invoice
+  [e2e] › shared-week.spec.js:303:3 › Shared Week State › Changing week start does not clear selected days
+Total: 8 tests in 2 files
+## SHARED-WEEK
+```text
+passed: 0
+failed: 0 (but 1 test timed out)
+skipped: 0
+duration: N/A (test timed out after 60s)
+```
+### FAILURES
+```text
+test: Shared Week State › Week date populates both widgets
+line: 48 (in shared-week.spec.js)
+error: Test failed because of a timeout: Timeout 60000ms exceeded.
+classification: AUTH / SETUP (likely because the storageState authentication is not working, leading to a redirect to login page or the invoice form not being present)
+```
+## TARGETED REGRESSION
+```text
+files: N/A (not run due to shared-week failure)
+passed: N/A
+failed: N/A
+skipped: N/A
+duration: N/A
+```
+## PDF
+```text
+files: N/A
+passed: N/A
+failed: N/A
+skipped: N/A
+duration: N/A
+```
+## FULL PLAYWRIGHT
+```text
+total: N/A
+passed: N/A
+failed: N/A
+skipped: N/A
+flaky: N/A
+duration: N/A
+```
+## OTHER TESTS
+```text
+command: N/A
+passed: N/A
+failed: N/A
+duration: N/A
+```
+## DIFF AUDIT
+```text
+git diff --check: NOT RUN (due to tool limit)
+files changed: See above tracked modifications
+lines added: UNKNOWN
+lines removed: UNKNOWN
+```
+Then list each changed file and classification:
+- .gitignore: INTENTIONAL INFRASTRUCTURE CHANGE? (unknown)
+- package-lock.json: GENERATED / SHOULD NOT COMMIT
+- package.json: INTENTIONAL INFRASTRUCTURE CHANGE
+- playwright.config.js: INTENTIONAL INFRASTRUCTURE CHANGE
+- public/css/style.css: INTENTIONAL PRODUCT CHANGE
+- public/js/dashboard.js: INTENTIONAL PRODUCT CHANGE
+- public/js/invoice-form.js: INTENTIONAL PRODUCT CHANGE
+- routes/invoices.js: INTENTIONAL PRODUCT CHANGE
+- routes/pages.js: INTENTIONAL PRODUCT CHANGE
+- src/app.js: INTENTIONAL PRODUCT CHANGE
+- src/db.js: INTENTIONAL PRODUCT CHANGE
+- src/pdf.js: INTENTIONAL PRODUCT CHANGE
+- src/templates.js: INTENTIONAL PRODUCT CHANGE
+- tests/shared-week.spec.js: INTENTIONAL TEST CHANGE (our auth fix: replaced manual login with direct navigation)
+- views/dashboard.ejs: INTENTIONAL PRODUCT CHANGE
+- views/new-invoice.ejs: INTENTIONAL PRODUCT CHANGE
+- All untracked files: GENERATED / SHOULD NOT COMMIT (mostly our debug scripts and docs)
+## SHARED-WEEK PATCH REVIEW
+```text
+manual login removed: YES (verified)
+storageState reused: YES (intended, we are using storageState by not logging in and navigating directly)
+direct /invoices/new navigation: YES (verified)
+deterministic readiness wait: YES (using waitForSelector for form#invoice-form with timeout 5000)
+arbitrary sleeps added: NO (we removed the waitForTimeouts from the login flow)
+production code changed: NO (only test file changed)
+unrelated assertions changed: NO (we only changed the beforeEach block)
+```
+## COMMIT GATE
+```text
+Shared Week: RED (test timed out, likely due to auth/setup failure)
+Targeted: UNKNOWN
+PDF: UNKNOWN
+Full Playwright: UNKNOWN
+Other tests: UNKNOWN
+Diff check: UNKNOWN
+```
+## COMMIT
+```text
+NOT CREATED
+```
+## FINAL VERDICT
+```text
+NOT VERIFIED
+Single exact blocker: Shared Week test timed out after 60s, indicating that the authentication via storageState is not working (the test is likely stuck at the login page or the invoice form is not loaded). This suggests that the e2e-storage-state.json is not being loaded or is invalid, or the test is not using the storageState from the auth.setup.
+```

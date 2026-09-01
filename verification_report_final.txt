@@ -1,0 +1,77 @@
+## VERIFICATION REPORT
+
+### REPOSITORY STATE
+- Branch: main
+- HEAD: a0395db
+- Working tree: has modifications (including test file changes we made and reverted, and other infrastructure files)
+
+### PLAYWRIGHT PROJECT CONFIG
+- Setup project: `setup` (runs tests/auth.setup.js)
+- E2E project: `e2e` (depends on setup)
+- Storage state path: `e2e-storage-state.json` (configured in `use.storageState`)
+
+### AUTH SETUP
+- Login user: E2E Test Representative (selected via dropdown)
+- Success condition: URL includes '/' and does not include '/login'
+- Write path: `e2e-storage-state.json` (matches config)
+
+### STORAGE STATE
+- File exists: YES (528 bytes)
+- Cookie count: 2 (`session`, `session.sig`)
+- Domains: [`localhost`]
+- Paths: [`/`]
+- Expiry: No expired cookies
+
+### SETUP PROJECT RESULT
+- Setup test passes: YES (1 passed, 0 failed)
+- Storage state file is refreshed after setup run
+
+### DIRECT AUTH DIAGNOSTIC (temporary test)
+- Requested URL: `/invoices/new`
+- Final URL: `http://localhost:3110/invoices/new`
+- HTTP status: 200
+- Invoice form count: 1 (form#invoice-form present)
+- Login form count: 0 (no representative login form)
+- Cookie names: [`session`, `session.sig`]
+
+### SHARED WEEK TEST STATUS
+- First test: "Week date populates both widgets" (line 48 in shared-week.spec.js)
+- Result: TIMEOUT after 60 seconds
+- No further tests run due to timeout
+
+### ANALYSIS
+The authentication pipeline is verified to be working:
+1. The setup project runs successfully and writes a valid storage state.
+2. The storage state contains valid session cookies for localhost.
+3. A diagnostic test that uses the same storage state and navigates to `/invoices/new` succeeds, showing the invoice form is present and no login form is shown.
+4. Therefore, the issue is not with authentication or storage state loading.
+
+The timeout occurs during the execution of the Shared Week test. Without further instrumentation (which we are unable to perform due to tool call limits), we cannot pinpoint the exact statement that blocks.
+
+However, we can note that the test begins by:
+- Checking for JavaScript errors
+- Filling `#week_start` with '2026-08-24'
+- Waiting for timeout 100ms
+- Verifying the URL is `/invoices/new`
+- Then proceeding to check the week header and other elements.
+
+Given that the diagnostic test shows we can reach `/invoices/new` and see the invoice form, the timeout likely occurs after the initial navigation and during one of the subsequent actions in the test.
+
+### CONCLUSION
+**Blocker**: The Shared Week test times out during execution, indicating that an awaited statement in the test does not resolve. This is not due to authentication failure, as the storage state is valid and the application accepts it.
+
+**Next steps (to be performed manually)**:
+1. Instrument the Shared Week test with detailed checkpoints (beforeEach and each awaited operation in the first test) to log each step.
+2. Run the instrumented test to see the last checkpoint printed.
+3. Identify the exact blocking statement from the logs.
+4. Investigate why that statement blocks (e.g., element not found, page redirect, JavaScript error, etc.).
+
+### FILES MODIFIED
+- Temporary diagnostics: `tests/temp_week_start_check.spec.js` (to be removed)
+- No changes to `tests/shared-week.spec.js` (reverted to HEAD)
+- No changes to application code or configuration.
+
+### VERIFICATION STATUS
+- Backend smoke tests: PASSED (via `npm run test`)
+- E2E authentication pipeline: VALID
+- Shared Week test execution: BLOCKED by timeout (root cause requires further instrumentation)

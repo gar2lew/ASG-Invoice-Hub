@@ -1,0 +1,76 @@
+<%- include('partials/head', { title }) %>
+
+<header class="page-head">
+  <div>
+    <p class="kicker">Administration</p>
+    <h1 class="page-title">Dashboard</h1>
+  </div>
+</header>
+
+<% if (flash) { %>
+  <div class="flash flash-<%= flash.type %>"><%= flash.text %></div>
+<% } %>
+
+<div class="admin-stats">
+  <div class="admin-stat">
+    <span class="admin-stat-label">Total invoices</span>
+    <span class="admin-stat-value"><%= summary.count %></span>
+  </div>
+  <div class="admin-stat">
+    <span class="admin-stat-label">Total value</span>
+    <span class="admin-stat-value"><%= summary.totalText %></span>
+  </div>
+  <div class="admin-stat">
+    <span class="admin-stat-label">Outstanding</span>
+    <span class="admin-stat-value"><%= summary.outstandingValueText %></span>
+  </div>
+  <div class="admin-stat">
+    <span class="admin-stat-label">Paid</span>
+    <span class="admin-stat-value"><%= summary.paidValueText %></span>
+  </div>
+  <div class="admin-stat">
+    <span class="admin-stat-label">Active reps</span>
+    <span class="admin-stat-value"><%= reps.length %></span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">Quick actions</h2>
+      <p class="card-sub">Jump to common admin tasks</p>
+    </div>
+  </div>
+  <div class="actions-row">
+    <a class="btn btn-accent" href="/admin/reports">View reports</a>
+    <a class="btn btn-ink" href="/users">Manage users</a>
+    <a class="btn btn-ghost" href="/settings">Settings</a>
+  </div>
+</div>
+
+<% if (reps.length) { %>
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">Reps</h2>
+      <p class="card-sub">Active representatives</p>
+    </div>
+  </div>
+  <table class="user-table">
+    <thead>
+      <tr><th>Name</th><th>Invoices</th><th>Total</th></tr>
+    </thead>
+    <tbody>
+      <% reps.forEach(function (r) { %>
+        <tr>
+          <td><%= r.name %></td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+
+<%- include('partials/footer') %>

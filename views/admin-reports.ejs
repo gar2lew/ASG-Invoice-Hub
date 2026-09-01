@@ -1,0 +1,111 @@
+<%- include('partials/head', { title }) %>
+
+<header class="page-head">
+  <div>
+    <p class="kicker">Administration</p>
+    <h1 class="page-title">Invoice reports</h1>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="/admin">← Dashboard</a>
+  </div>
+</header>
+
+<% if (flash) { %>
+  <div class="flash flash-<%= flash.type %>"><%= flash.text %></div>
+<% } %>
+
+<form class="filter-toolbar" method="get" action="/admin/reports">
+  <div class="field">
+    <label class="field-label" for="filter-rep">Rep</label>
+    <select class="input" id="filter-rep" name="rep">
+      <option value="">All reps</option>
+      <% reps.forEach(function (r) { %>
+        <option value="<%= r.id %>" <%= filters.repId == r.id ? 'selected' : '' %>><%= r.name %></option>
+      <% }); %>
+    </select>
+  </div>
+  <div class="field">
+    <label class="field-label" for="filter-status">Status</label>
+    <select class="input" id="filter-status" name="status">
+      <option value="">All statuses</option>
+      <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>Draft</option>
+      <option value="sent" <%= filters.status === 'sent' ? 'selected' : '' %>>Outstanding</option>
+      <option value="paid" <%= filters.status === 'paid' ? 'selected' : '' %>>Paid</option>
+    </select>
+  </div>
+  <div class="field">
+    <label class="field-label" for="filter-date-from">Date from</label>
+    <input class="input" type="date" id="filter-date-from" name="date_from" value="<%= filters.dateFrom %>">
+  </div>
+  <div class="field">
+    <label class="field-label" for="filter-date-to">Date to</label>
+    <input class="input" type="date" id="filter-date-to" name="date_to" value="<%= filters.dateTo %>">
+  </div>
+  <button class="btn btn-accent" type="submit">Apply filters</button>
+  <a class="btn btn-ghost" href="/admin/reports">Clear</a>
+</form>
+
+<div class="admin-stats">
+  <div class="admin-stat">
+    <span class="admin-stat-label">Invoice count</span>
+    <span class="admin-stat-value"><%= summary.count %></span>
+  </div>
+  <div class="admin-stat">
+    <span class="admin-stat-label">Total value</span>
+    <span class="admin-stat-value"><%= summary.totalText %></span>
+  </div>
+  <div class="admin-stat">
+    <span class="admin-stat-label">Outstanding</span>
+    <span class="admin-stat-value"><%= summary.outstandingValueText %></span>
+  </div>
+  <div class="admin-stat">
+    <span class="admin-stat-label">Paid</span>
+    <span class="admin-stat-value"><%= summary.paidValueText %></span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">Invoices</h2>
+      <p class="card-sub"><%= summary.count %> invoice<%= summary.count === 1 ? '' : 's' %> matching filters</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-ghost btn-small" href="/admin/reports/csv?<%= csvQuery %>">Export CSV</a>
+    </div>
+  </div>
+  <% if (invoices.length) { %>
+  <div style="overflow-x: auto;">
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Invoice</th>
+          <th>Created</th>
+          <th>Downloaded</th>
+          <th>Rep</th>
+          <th>Customer</th>
+          <th class="num">Amount</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% invoices.forEach(function (i) { %>
+          <tr>
+            <td><a href="/invoices/<%= i.id %>"><%= i.invoice_number %></a></td>
+            <td><%= i.createdText %></td>
+            <td><%= i.downloadedText %></td>
+            <td><%= i.rep_name %></td>
+            <td><%= i.customer_name %></td>
+            <td class="num"><%= i.totalText %></td>
+            <td><span class="status-pill status-<%= i.status %>"><%= i.status %></span></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <% } else { %>
+    <p class="card-sub">No invoices match the current filters.</p>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

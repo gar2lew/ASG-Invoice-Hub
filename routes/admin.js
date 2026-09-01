@@ -140,4 +140,161 @@ router.post('/users/:id/delete', requireAdmin, async (req, res, next) => {
   }
 });
 
+// ---------- Admin dashboard ----------
+
+router.get('/admin', requireAdmin, async (req, res, next) => {
+  try {
+    const reps = await db.getReps();
+    const allInvoices = await db.listInvoicesForAdmin({});
+    const summary = await db.getAdminInvoiceSummary({});
+    const flashMsg = req.session.flash || null;
+    req.session.flash = null;
+    res.render('admin-dashboard', {
+      title: 'Admin dashboard',
+      flash: flashMsg,
+      reps,
+      summary: {
+        ...summary,
+        totalText: fmtMoney(summary.total),
+        draftValueText: fmtMoney(summary.draft_value),
+        outstandingValueText: fmtMoney(summary.outstanding_value),
+        paidValueText: fmtMoney(summary.paid_value),
+      },
+      admin: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------- Admin reports ----------
+
+router.get('/admin/reports', requireAdmin, async (req, res, next) => {
+  try {
+    const reps = await db.getReps();
+    const filters = {
+      repId: req.query.rep || '',
+      status: req.query.status || '',
+      dateFrom: req.query.date_from || '',
+      dateTo: req.query.date_to || '',
+    };
+    const invoices = await db.listInvoicesForAdmin(filters);
+    const summary = await db.getAdminInvoiceSummary(filters);
+    const flashMsg = req.session.flash || null;
+    req.session.flash = null;
+    res.render('admin-reports', {
+      title: 'Invoice reports',
+      flash: flashMsg,
+      reps,
+      filters,
+      csvQuery: Object.entries(filters).filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&'),
+      invoices: invoices.map((i) => ({
+        ...i,
+        totalText: fmtMoney(i.total),
+        createdText: fmtDate(i.created_at),
+        downloadedText: i.downloaded_at ? fmtDate(i.downloaded_at) : '—',
+      })),
+      summary: {
+        ...summary,
+        totalText: fmtMoney(summary.total),
+        draftValueText: fmtMoney(summary.draft_value),
+        outstandingValueText: fmtMoney(summary.outstanding_value),
+        paidValueText: fmtMoney(summary.paid_value),
+      },
+      admin: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/admin/reports/csv', requireAdmin, async (req, res, next) => {
+  try {
+    const filters = {
+      repId: req.query.rep || '',
+      status: req.query.status || '',
+      dateFrom: req.query.date_from || '',
+      dateTo: req.query.date_to || '',
+    };
+    const invoices = await db.listInvoicesForAdmin(filters);
+    const header = ['Invoice number', 'Date created', 'Date downloaded', 'Rep name', 'Customer', 'Amount', 'Status'];
+    const rows = invoices.map((i) => [
+      i.invoice_number,
+      fmtDate(i.created_at),
+      i.downloaded_at ? fmtDate(i.downloaded_at) : '',
+      i.rep_name,
+      i.customer_name,
+      fmtMoney(i.total),
+      i.status,
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="invoice-report-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------- Admin user creation ----------
+
+router.post('/admin/users/create-admin', requireAdmin, async (req, res, next) => {
+  try {
+    const { username, password, name, email } = req.body || {};
+    if (!username || !password || !name) {
+      flash(req, res, 'Username, password, and name are required.', 'error');
+      return res.redirect('/users');
+    }
+    const existing = await db.getUserByUsername(String(username).trim());
+    if (existing) {
+      flash(req, res, 'A user with that username already exists.', 'error');
+      return res.redirect('/users');
+    }
+    await db.createAdminUser({
+      username: String(username).trim(),
+      password: String(password),
+      name: String(name).trim(),
+      email: String(email || '').trim(),
+      role: 'admin',
+    });
+    flash(req, res, `Admin account created for ${name}.`);
+    res.redirect('/users');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/admin/users/create-rep', requireAdmin, async (req, res, next) => {
+  try {
+    const { name, email, abn, pin } = req.body || {};
+    if (!name || !pin) {
+      flash(req, res, 'Name and PIN are required.', 'error');
+      return res.redirect('/users');
+    }
+    const cleanPin = String(pin).trim();
+    if (!/^\d{4}$/.test(cleanPin)) {
+      flash(req, res, 'PIN must be exactly 4 digits.', 'error');
+      return res.redirect('/users');
+    }
+    const username = String(name).trim().toLowerCase().replace(/\s+/g, '.');
+    const existing = await db.getUserByUsername(username);
+    if (existing) {
+      flash(req, res, 'A user with that name already exists.', 'error');
+      return res.redirect('/users');
+    }
+    await db.createRepUser({
+      name: String(name).trim(),
+      email: String(email || '').trim(),
+      abn: String(abn || '').trim(),
+      pin: cleanPin,
+    });
+    flash(req, res, `Rep account created for ${name}.`);
+    res.redirect('/users');
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

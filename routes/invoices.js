@@ -129,6 +129,12 @@ router.get('/invoices/:id/download', requireAuth, async (req, res, next) => {
     const invoice = await loadInvoiceForUser(req);
     if (!invoice) return res.status(404).send('Not found');
     const pdf = await pdfForInvoice(invoice);
+    // Record download tracking (non-blocking — don't fail the download if tracking fails)
+    try {
+      await db.recordInvoiceDownload(invoice.id);
+    } catch (e) {
+      console.warn('Download tracking failed:', e.message);
+    }
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${invoice.invoice_number}.pdf"`);
     res.send(pdf);
