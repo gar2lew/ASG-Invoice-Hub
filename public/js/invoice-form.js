@@ -15,7 +15,7 @@ var wageDays = document.getElementById('wage-days');
 var weekRangeEl = document.getElementById('calc-week-range');
 var templateInput = form ? form.querySelector('input[name=\"template\"]') : null;
 var tplButtons = form ? Array.prototype.slice.call(form.querySelectorAll('.tpl')) : [];
-var submitSend = document.getElementById('submit-send');
+var submitSend = document.getElementById('submit-send-email');
 
 var tplMeta = {
   asg: {
@@ -567,7 +567,7 @@ previewFields.forEach(function (id) {
 var actionField = document.getElementById('action-field');
 
 var submitDraft = document.getElementById('submit-draft');
-var submitSendBtn = document.getElementById('submit-send');
+var submitSendBtn = document.getElementById('submit-send-email');
 var submitDownload = document.getElementById('submit-download');
 
 if (submitDraft) submitDraft.addEventListener('click', function () {
