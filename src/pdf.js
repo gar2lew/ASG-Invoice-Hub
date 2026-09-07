@@ -58,17 +58,18 @@ function drawItemsTable(doc, items, y0, compact) {
     let cx = x0;
     
     // Build description with wage details if present
-    let fullDescription = item.description;
-    if (item.details && item.details.length > 0) {
-      fullDescription += '\n' + item.details.join('\n');
-    }
-    
-    const descLines = doc.heightOfString(fullDescription, { width: cols[1] - 12 });
+    const detailText = item.details && item.details.length > 0 ? item.details.join('\n') : '';
+    const fullDescription = detailText ? item.description + '\n' + detailText : item.description;
+    const descLines = doc.heightOfString(item.description, { width: cols[1] - 12 })
+      + (detailText ? doc.heightOfString(detailText, { width: cols[1] - 12, fontSize: compact ? 7 : 7 }) : 0);
     const rowH = Math.max(rh, descLines + 10);
     doc.rect(x0, y, W, rowH).fill(fill);
     doc.text(String(idx + 1), cx + 6, y + 6, { width: cols[0] - 12 });
     cx += cols[0];
-    doc.font('Helvetica').text(fullDescription, cx + 6, y + 6, { width: cols[1] - 12, lineGap: 2 });
+    doc.font('Helvetica').fontSize(compact ? 9 : 10).text(item.description, cx + 6, y + 6, { width: cols[1] - 12 });
+    if (detailText) {
+      doc.font('Helvetica').fontSize(7).fillColor(GRAY).text(detailText, cx + 6, y + 6 + doc.heightOfString(item.description, { width: cols[1] - 12 }) + 2, { width: cols[1] - 12, lineGap: 1 });
+    }
     cx += cols[1];
     doc.font('Helvetica').text(String(item.quantity), cx + 6, y + 6, { width: cols[2] - 12, align: 'right' });
     cx += cols[2];
@@ -97,6 +98,12 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   doc.moveTo(M, 108).lineTo(RIGHT, 108).lineWidth(2).strokeColor(INK).stroke();
 
   let y = 128;
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('FROM', M, y);
+  y += 14;
+  doc.font('Helvetica-Bold').fontSize(11).fillColor(INK).text(repName, M, y); y += 14;
+  doc.font('Helvetica').fontSize(8).fillColor(GRAY);
+  [repAbn && `ABN: ${repAbn}`, invoice.rep_email && `Email: ${invoice.rep_email}`, (invoice.rep_bank_name || settings.bank_name) && `Bank: ${invoice.rep_bank_name || settings.bank_name}`, (invoice.rep_bank_bsb || settings.bank_bsb) && `BSB: ${invoice.rep_bank_bsb || settings.bank_bsb}`, (invoice.rep_bank_account || settings.bank_account) && `Account: ${invoice.rep_bank_account || settings.bank_account}`].filter(Boolean).forEach((line) => { doc.text(line, M, y); y += 11; });
+  y += 8;
   doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('BILL TO', M, y);
   y += 16;
   // Company (ASG/SJS) details from template config
@@ -182,6 +189,11 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
   doc.fillColor(GRAY).font('Helvetica').fontSize(8).text(invoice.issue_date, RIGHT, 78, { align: 'right', width: 0 });
 
   let y = 132;
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(GRAY).text('FROM', M, y); y += 12;
+  doc.font('Helvetica-Bold').fontSize(10).fillColor(INK).text(repName, M, y); y += 13;
+  doc.font('Helvetica').fontSize(7).fillColor(GRAY);
+  [repAbn && `ABN: ${repAbn}`, invoice.rep_email && `Email: ${invoice.rep_email}`, (invoice.rep_bank_name || settings.bank_name) && `Bank: ${invoice.rep_bank_name || settings.bank_name}`, (invoice.rep_bank_bsb || settings.bank_bsb) && `BSB: ${invoice.rep_bank_bsb || settings.bank_bsb}`, (invoice.rep_bank_account || settings.bank_account) && `Account: ${invoice.rep_bank_account || settings.bank_account}`].filter(Boolean).forEach((line) => { doc.text(line, M, y); y += 9; });
+  y += 7;
   doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('BILL TO', M, y);
   y += 15;
   // Company (ASG/SJS) details from template config

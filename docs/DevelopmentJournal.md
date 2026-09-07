@@ -87,3 +87,22 @@ Validation:
 Problems Found: None in targeted checks.
 Problems Remaining: Existing reps with blank bank fields need updating or recreating through the admin workflow if they should use rep-specific details.
 Next Recommended Sprint: Add an edit profile action for existing reps if required.
+
+## Sprint - 2026-09-07
+
+Sprint: PDF Download and Rep Invoice Layout
+Objective: Fix invoice form download fallback and improve generated invoice readability and rep information.
+Files Changed:
+- views/new-invoice.ejs
+- routes/invoices.js
+- src/pdf.js
+Root Cause/Reason: The invoice form relied on JavaScript to submit POST requests, allowing a failed script load to fall back to an invalid GET request; PDF output also lacked rep contact/payment details and gave daily breakdown text too much visual weight.
+Implementation Summary: Added an explicit POST method, passed rep email and bank details into rendering, added a From block above Bill To in both templates, enlarged primary line descriptions, and reduced daily detail typography.
+Validation:
+- npm test — passed.
+- node --check src/pdf.js — passed.
+- node --check routes/invoices.js — passed.
+- git diff --check — passed.
+Problems Found: None in targeted checks.
+Problems Remaining: Browser-level production verification and visual PDF review remain.
+Next Recommended Sprint: Deploy and inspect both generated PDF templates with a real rep account.

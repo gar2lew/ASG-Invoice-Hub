@@ -41,6 +41,7 @@ async function pdfForInvoice(invoice) {
   if (rep) {
     invoice.rep_name = rep.name;
     invoice.rep_abn = rep.abn;
+    invoice.rep_email = rep.email;
     invoice.rep_bank_name = rep.bank_name;
     invoice.rep_bank_bsb = rep.bank_bsb;
     invoice.rep_bank_account = rep.bank_account;
@@ -85,6 +86,7 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
     const invoice = await db.getInvoice(created.id);
     invoice.rep_name = req.user.name;
     invoice.rep_abn = req.user.abn;
+    invoice.rep_email = req.user.email;
     invoice.rep_bank_name = req.user.bank_name;
     invoice.rep_bank_bsb = req.user.bank_bsb;
     invoice.rep_bank_account = req.user.bank_account;

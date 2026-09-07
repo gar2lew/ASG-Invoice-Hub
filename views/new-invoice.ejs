@@ -7,7 +7,7 @@
   </div>
 </header>
 
-<form id="invoice-form" class="invoice-form" action="/api/invoices" data-next-number="<%= settings.invoice_prefix %>">
+<form id="invoice-form" class="invoice-form" method="post" action="/api/invoices" data-next-number="<%= settings.invoice_prefix %>">
   <section class="card">
     <div class="card-head">
       <h2 class="card-title">Company template</h2>
