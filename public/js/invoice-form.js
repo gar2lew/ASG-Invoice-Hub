@@ -110,14 +110,14 @@ var weekState = {
   company: 'asg',
   weekStarting: '',
   workedDays: [],
-  perDayRate: 181.82,
+  perDayRate: 200,
   notes: '',
 };
 var isEditing = typeof window.existingItems !== 'undefined' && Array.isArray(window.existingItems);
 
 var companyConfigs = {
   asg: {
-    perDayRate: 181.82,
+    perDayRate: 200,
     gstTreatment: 'inclusive',
     wageLineMode: 'aggregated',
     defaultNotes: '',
@@ -302,6 +302,16 @@ function updatePreview() {
 
   if (pvCompany) pvCompany.textContent = window.__previewData ? window.__previewData.repName : '';
   if (pvCompanySub) pvCompanySub.textContent = window.__previewData && window.__previewData.repAbn ? 'ABN ' + window.__previewData.repAbn : '';
+  var repDetailsEl = document.getElementById('pv-rep-details');
+  if (repDetailsEl && window.invoiceRepDetails) {
+    var rd = window.invoiceRepDetails;
+    repDetailsEl.innerHTML = '<strong>FROM</strong><br>' + escHtml(rd.name || '') + '<br>' +
+      (rd.abn ? 'ABN: ' + escHtml(rd.abn) + '<br>' : '') +
+      (rd.email ? escHtml(rd.email) + '<br>' : '') +
+      (rd.bankName ? 'Bank: ' + escHtml(rd.bankName) + '<br>' : '') +
+      (rd.bankBsb ? 'BSB: ' + escHtml(rd.bankBsb) + '<br>' : '') +
+      (rd.bankAccount ? 'Account: ' + escHtml(rd.bankAccount) : '');
+  }
 
   var invNum = document.getElementById('invoice_number');
   if (pvInvNum) pvInvNum.textContent = invNum ? invNum.value : '';
@@ -802,6 +812,17 @@ if (calcDays) {
   });
 }
 
+var selectAllDays = document.querySelector('[data-select-all-days]');
+if (selectAllDays) selectAllDays.addEventListener('change', function () {
+  calcDays.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = selectAllDays.checked; });
+  onWeekStateChanged('calc-days');
+});
+var selectAllDates = document.querySelector('[data-select-all-dates]');
+if (selectAllDates) selectAllDates.addEventListener('change', function () {
+  document.querySelectorAll('#wage-days input[data-day]').forEach(function (box) { box.checked = selectAllDates.checked; });
+  onWeekStateChanged('wage-days');
+});
+
 if (weekStart) {
   weekStart.addEventListener('change', function() {
     onWeekStateChanged('week-start');
@@ -820,6 +841,13 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
   updateWeekState();
   var selected = weekState.workedDays;
   if (!selected.length) return;
+  itemRows().filter(function (row) {
+    return !row.querySelector('input[name="item_description"]').value.trim();
+  }).forEach(function (row) {
+    var details = row.nextElementSibling;
+    row.remove();
+    if (details && details.classList.contains('wage-details')) details.remove();
+  });
   var cfg = companyConfigs[weekState.company] || companyConfigs.asg;
   var mode = cfg.wageLineMode || 'aggregated';
 

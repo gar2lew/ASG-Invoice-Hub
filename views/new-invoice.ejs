@@ -87,12 +87,13 @@
           </div>
           <div id="calc-breakdown" class="calc-breakdown"></div>
           <div class="calc-days" id="calc-days">
+            <label class="calc-day calc-day-select-all"><input type="checkbox" data-select-all-days><span>All</span></label>
             <label class="calc-day"><input type="checkbox" data-day="Mon" checked><span>Mon</span></label>
             <label class="calc-day"><input type="checkbox" data-day="Tue" checked><span>Tue</span></label>
             <label class="calc-day"><input type="checkbox" data-day="Wed" checked><span>Wed</span></label>
             <label class="calc-day"><input type="checkbox" data-day="Thu" checked><span>Thu</span></label>
             <label class="calc-day"><input type="checkbox" data-day="Fri" checked><span>Fri</span></label>
-            <label class="calc-day calc-day-half"><input type="checkbox" data-day="Sat" value="0.5" checked><span>Sat <em>&frac12;</em></span></label>
+            <label class="calc-day calc-day-half"><input type="checkbox" data-day="Sat" value="0.5"><span>Sat <em>&frac12;</em></span></label>
           </div>
         </div>
         <div class="calc-result">
@@ -102,6 +103,7 @@
 
         <!-- Dates grid integrated below calculator -->
         <div class="wage-dates" id="wage-dates" style="margin-top: 16px; border-top: 1px solid var(--line-strong); padding-top: 16px;">
+          <label class="checkline"><input type="checkbox" data-select-all-dates><span>Select all dates</span></label>
           <div class="wage-days" id="wage-days">
             <label class="wage-day"><input type="checkbox" name="wage_day" data-day="Mon"><span>Mon <input class="input input-sm wage-date" type="date" name="date_Mon"></span></label>
             <label class="wage-day"><input type="checkbox" name="wage_day" data-day="Tue"><span>Tue <input class="input input-sm wage-date" type="date" name="date_Tue"></span></label>
@@ -186,6 +188,7 @@
             <div class="preview-invoice-num" id="pv-inv-num"><%= nextNumber %></div>
           </div>
           <div class="preview-divider"></div>
+          <div class="preview-rep-details" id="pv-rep-details"></div>
           <div class="preview-body">
             <div class="preview-billto">
               <div class="preview-label">BILL TO</div>
@@ -248,5 +251,5 @@
   window.existingItems = <%- JSON.stringify(existingItems) %>;
 </script>
 <% } %>
-<script>window.invoiceRepName = <%- JSON.stringify(repName) %>;</script>
+<script>window.invoiceRepName = <%- JSON.stringify(repName) %>; window.invoiceRepDetails = <%- JSON.stringify({ name: repName, abn: repAbn, email: currentUser && currentUser.email, bankName: currentUser && currentUser.bank_name, bankBsb: currentUser && currentUser.bank_bsb, bankAccount: currentUser && currentUser.bank_account }) %>;</script>
 <%- include('partials/footer', { pageScript: '/js/invoice-form.js' }) %>
