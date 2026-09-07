@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../src/db');
 const { renderInvoice } = require('../src/pdf');
-const { sendInvoicePdf } = require('../src/mail');
+const { sendInvoicePdf, getInvoiceRecipients } = require('../src/mail');
 const { requireAuth, flash } = require('../src/middleware');
 const { round2, todayISO, addDaysISO } = require('../src/helpers');
 
@@ -28,13 +28,6 @@ function validateItems(items) {
   return { items: clean };
 }
 
-function buildRecipients(settings, user) {
-  const list = [];
-  if (settings.accounts_email) list.push(...String(settings.accounts_email).split(/[,;]/));
-  if (user.email) list.push(user.email);
-  return [...new Set(list.map((e) => e.trim()).filter(Boolean))];
-}
-
 async function loadInvoiceForUser(req) {
   const invoice = await db.getInvoice(req.params.id);
   if (!invoice) return null;
@@ -48,6 +41,9 @@ async function pdfForInvoice(invoice) {
   if (rep) {
     invoice.rep_name = rep.name;
     invoice.rep_abn = rep.abn;
+    invoice.rep_bank_name = rep.bank_name;
+    invoice.rep_bank_bsb = rep.bank_bsb;
+    invoice.rep_bank_account = rep.bank_account;
   }
   const settings = await db.getSettings();
   return renderInvoice(invoice, items, settings);
@@ -89,6 +85,9 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
     const invoice = await db.getInvoice(created.id);
     invoice.rep_name = req.user.name;
     invoice.rep_abn = req.user.abn;
+    invoice.rep_bank_name = req.user.bank_name;
+    invoice.rep_bank_bsb = req.user.bank_bsb;
+    invoice.rep_bank_account = req.user.bank_account;
     const settings = await db.getSettings();
     const pdf = await renderInvoice(invoice, await db.getItems(created.id), settings);
 
@@ -100,7 +99,7 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
 
     if (b.send_now) {
       try {
-        const recipients = buildRecipients(settings, req.user);
+        const recipients = getInvoiceRecipients();
         await sendInvoicePdf(settings, invoice, pdf, recipients);
         await db.setInvoiceStatus(created.id, 'sent');
         return res.json({ id: created.id, invoice_number: created.invoice_number, sent: true });
@@ -159,10 +158,10 @@ router.post('/invoices/:id/send', requireAuth, async (req, res, next) => {
     const items = await db.getItems(invoice.id);
     try {
       const pdf = await renderInvoice(invoice, items, settings);
-      const recipients = buildRecipients(settings, rep);
+      const recipients = getInvoiceRecipients();
       await sendInvoicePdf(settings, invoice, pdf, recipients);
       await db.setInvoiceStatus(invoice.id, 'sent');
-      flash(req, res, `Invoice ${invoice.invoice_number} sent to ${recipients.join(', ')}.`);
+      flash(req, res, `Invoice ${invoice.invoice_number} sent to ${recipients}.`);
     } catch (err) {
       flash(req, res, `Email failed: ${err.message}`, 'error');
     }

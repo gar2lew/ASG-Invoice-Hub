@@ -51,6 +51,7 @@
   <section class="card">
     <div class="card-head">
       <h2 class="card-title">Outstanding invoices</h2>
+      <% if (admin) { %><button class="btn btn-ghost btn-small" type="submit" form="bulk-delete-outstanding">Delete selected</button><% } %>
       <label class="filter">
         <span class="sr-only">Filter by status</span>
         <select class="input input-sm" data-filter-status>
@@ -62,10 +63,11 @@
       </label>
     </div>
     <div class="table-wrap">
+      <% if (admin) { %><form id="bulk-delete-outstanding" method="post" action="/admin/invoices/delete" onsubmit="return confirm('Permanently delete the selected invoices?');"><% } %>
       <table class="table">
         <thead>
           <tr>
-            <th>Invoice</th>
+            <% if (admin) { %><th><input type="checkbox" data-select-all aria-label="Select all outstanding invoices"></th><% } %><th>Invoice</th>
             <th>Customer</th>
             <th>Issued</th>
             <% if (admin) { %><th>Rep</th><% } %>
@@ -79,6 +81,7 @@
           <% var outstandingList = outstanding || invoices || []; %>
           <% outstandingList.forEach(function(i) { %>
           <tr data-status="<%= i.status %>">
+            <% if (admin) { %><td><input type="checkbox" name="delete_ids" value="<%= i.id %>" aria-label="Select <%= i.invoice_number %>"></td><% } %>
             <td class="mono"><a href="/invoices/<%= i.id %>"><%= i.invoice_number %></a></td>
             <td>
               <span class="cell-main"><%= i.customer_name %></span>
@@ -102,6 +105,7 @@
           <% }) %>
         </tbody>
       </table>
+      <% if (admin) { %></form><% } %>
     </div>
   </section>
 
@@ -109,12 +113,14 @@
   <section class="card">
     <div class="card-head">
       <h2 class="card-title">Paid / completed invoices</h2>
+      <% if (admin) { %><button class="btn btn-ghost btn-small" type="submit" form="bulk-delete-paid">Delete selected</button><% } %>
     </div>
     <div class="table-wrap">
+      <% if (admin) { %><form id="bulk-delete-paid" method="post" action="/admin/invoices/delete" onsubmit="return confirm('Permanently delete the selected invoices?');"><% } %>
       <table class="table">
         <thead>
           <tr>
-            <th>Invoice</th>
+            <% if (admin) { %><th><input type="checkbox" data-select-all aria-label="Select all paid invoices"></th><% } %><th>Invoice</th>
             <th>Customer</th>
             <th>Issued</th>
             <% if (admin) { %><th>Rep</th><% } %>
@@ -146,6 +152,7 @@
           <% }) %>
         </tbody>
       </table>
+      <% if (admin) { %></form><% } %>
     </div>
   </section>
   <% } %>

@@ -159,7 +159,7 @@
       <section class="card card-actions">
         <label class="checkline">
           <input type="checkbox" name="send_now" id="send_now" checked>
-          <span>Email this invoice to accounts as soon as it&rsquo;s created</span>
+          <span>Open an email to Natalie after saving (you&rsquo;ll attach the downloaded PDF)</span>
         </label>
         <div class="actions-row">
           <input type="hidden" name="action" id="action-field" value="draft">
@@ -248,4 +248,5 @@
   window.existingItems = <%- JSON.stringify(existingItems) %>;
 </script>
 <% } %>
+<script>window.invoiceRepName = <%- JSON.stringify(repName) %>;</script>
 <%- include('partials/footer', { pageScript: '/js/invoice-form.js' }) %>

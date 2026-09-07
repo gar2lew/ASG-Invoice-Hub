@@ -149,16 +149,17 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
     ty += doc.heightOfString(invoice.notes, { width: W }) + 16;
   }
 
-  if (settings.bank_name || settings.bank_bsb || settings.bank_account || settings.payment_terms) {
+  const bank = { name: invoice.rep_bank_name || settings.bank_name, bsb: invoice.rep_bank_bsb || settings.bank_bsb, account: invoice.rep_bank_account || settings.bank_account };
+  if (bank.name || bank.bsb || bank.account || settings.payment_terms) {
     ty += 10;
     doc.rect(M, ty, W, 1).fill(LIGHT);
     ty += 16;
     doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('PAYMENT DETAILS', M, ty);
     ty += 14;
     doc.font('Helvetica').fontSize(9).fillColor(INK);
-    if (settings.bank_name) { doc.text(`Bank: ${settings.bank_name}`, M, ty); ty += 13; }
-    if (settings.bank_bsb) { doc.text(`BSB: ${settings.bank_bsb}`, M, ty); ty += 13; }
-    if (settings.bank_account) { doc.text(`Account: ${settings.bank_account}`, M, ty); ty += 13; }
+    if (bank.name) { doc.text(`Bank: ${bank.name}`, M, ty); ty += 13; }
+    if (bank.bsb) { doc.text(`BSB: ${bank.bsb}`, M, ty); ty += 13; }
+    if (bank.account) { doc.text(`Account: ${bank.account}`, M, ty); ty += 13; }
     if (settings.payment_terms) { doc.text(`Terms: ${settings.payment_terms}`, M, ty); ty += 13; }
   }
 
@@ -234,10 +235,11 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
 
   const pageH = 595.28;
   doc.moveTo(M, pageH - 56).lineTo(RIGHT, pageH - 56).lineWidth(0.5).strokeColor(LIGHT).stroke();
+  const bank = { name: invoice.rep_bank_name || settings.bank_name, bsb: invoice.rep_bank_bsb || settings.bank_bsb, account: invoice.rep_bank_account || settings.bank_account };
   const foot = [
-    settings.bank_name && `Bank: ${settings.bank_name}`,
-    settings.bank_bsb && `BSB: ${settings.bank_bsb}`,
-    settings.bank_account && `Account: ${settings.bank_account}`,
+    bank.name && `Bank: ${bank.name}`,
+    bank.bsb && `BSB: ${bank.bsb}`,
+    bank.account && `Account: ${bank.account}`,
   ].filter(Boolean).join('    ');
   doc.font('Helvetica').fontSize(8).fillColor(GRAY)
     .text([settings.footer_note, foot].filter(Boolean).join('\n'), M, pageH - 46, { width: W, align: 'center', lineGap: 2 });

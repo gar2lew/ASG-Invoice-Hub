@@ -23,3 +23,67 @@ Problems Found: None.
 Problems Remaining: 
 - Playwright authentication state inheritance causing admin test timeouts (recorded in TECH_DEBT.md as Investigate Later).
 Next Recommended Sprint: Finish deterministic Playwright authentication and full-suite verification.
+
+## Sprint - 2026-09-07
+
+Sprint: Production Email and Theme Defaults
+Objective: Make invoice delivery seamless by routing every invoice to Natalie at SJS Solutions and make light theme the default.
+Files Changed:
+- src/mail.js
+- routes/invoices.js
+- public/js/theme.js
+- views/new-invoice.ejs
+- views/settings.ejs
+- test/run-smoke.js
+Root Cause/Reason: Invoice recipients previously came from configurable accounts and rep email addresses, while the theme fallback could select dark mode from system preference.
+Implementation Summary: Centralised the fixed invoice recipient, applied it to both send paths, updated the UI copy, and changed the theme fallback to light while preserving localStorage preferences.
+Validation:
+- npm test — passed.
+- node --check src/mail.js — passed.
+- node --check routes/invoices.js — passed.
+- git diff reviewed for all intended files.
+Problems Found: None in the targeted checks.
+Problems Remaining: Rep accounts still need to be created through the admin Sales reps page using the actual rep names and temporary PINs.
+Next Recommended Sprint: Create and validate the production rep accounts and SMTP delivery using the production environment.
+
+## Sprint - 2026-09-07
+
+Sprint: Admin Bulk Invoice Deletion
+Objective: Allow administrators to delete selected invoices directly from the dashboard.
+Files Changed:
+- src/db.js
+- routes/admin.js
+- views/dashboard.ejs
+- public/js/dashboard.js
+Root Cause/Reason: Administrators could delete individual invoices from detail views but had no dashboard bulk-management action.
+Implementation Summary: Added an admin-only bulk deletion endpoint, per-row checkboxes, select-all controls per invoice table, confirmation prompts, and a parameterised multi-ID database deletion helper.
+Validation:
+- npm test — passed.
+- node --check routes/admin.js — passed.
+- node --check src/db.js — passed.
+- node --check public/js/dashboard.js — passed.
+- git diff --check — passed.
+Problems Found: None in the targeted checks.
+Problems Remaining: The deletion flow still requires browser-level verification against the deployed production UI.
+Next Recommended Sprint: Deploy and manually verify selection, confirmation, deletion, and non-admin access denial.
+
+## Sprint - 2026-09-07
+
+Sprint: Rep Payment Details
+Objective: Allow rep-specific bank details to appear on their invoices.
+Files Changed:
+- src/db.js
+- routes/admin.js
+- views/users.ejs
+- routes/invoices.js
+- src/pdf.js
+- test/run-smoke.js
+Root Cause/Reason: Bank details were only available as company-wide settings, so reps could not show their own payment details.
+Implementation Summary: Added migration-safe rep bank fields, captured them during rep creation, passed them into invoice rendering, and used them in both PDF templates with company-level fallback.
+Validation:
+- npm test — passed, including rep bank persistence.
+- JavaScript syntax checks — passed.
+- git diff --check — passed.
+Problems Found: None in targeted checks.
+Problems Remaining: Existing reps with blank bank fields need updating or recreating through the admin workflow if they should use rep-specific details.
+Next Recommended Sprint: Add an edit profile action for existing reps if required.

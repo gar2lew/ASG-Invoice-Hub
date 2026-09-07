@@ -679,7 +679,7 @@ if (form) form.addEventListener('submit', function (e) {
     return;
   }
   e.preventDefault();
-  document.getElementById('send_now').checked = action === 'send';
+  document.getElementById('send_now').checked = false;
   var payload = buildPayload();
 
   if (!payload.items.length) {
@@ -712,6 +712,20 @@ if (form) form.addEventListener('submit', function (e) {
           submitSendBtn.disabled = false;
           submitSendBtn.textContent = 'Save & email';
         }
+        return;
+      }
+      if (action === 'send') {
+        var repName = window.invoiceRepName || '';
+        var issueDate = document.getElementById('issue_date').value;
+        var body = 'Please see my invoice attached for "' + repName + '" - "' + issueDate + '"';
+        var mailto = 'mailto:natalie@sjssolutionscorp.com.au?subject=' + encodeURIComponent('Invoice ' + res.body.invoice_number) + '&body=' + encodeURIComponent(body);
+        var download = document.createElement('a');
+        download.href = '/invoices/' + res.body.id + '/download';
+        download.download = res.body.invoice_number + '.pdf';
+        document.body.appendChild(download);
+        download.click();
+        document.body.removeChild(download);
+        window.location.href = mailto;
         return;
       }
       window.location.href = '/invoices/' + res.body.id;

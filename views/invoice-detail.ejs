@@ -10,14 +10,10 @@
     <span class="badge badge-<%= invoice.status %>"><%= invoice.status %></span>
     <a class="btn btn-accent" href="/invoices/<%= invoice.id %>/download">Download PDF</a>
     <% if (invoice.status === 'draft' || invoice.status === 'paid') { %>
-      <form method="post" action="/invoices/<%= invoice.id %>/send">
-        <button class="btn btn-ink" type="submit">Email invoice</button>
-      </form>
+      <a class="btn btn-ink" href="mailto:natalie@sjssolutionscorp.com.au?subject=<%= encodeURIComponent('Invoice ' + invoice.invoice_number) %>&amp;body=<%= encodeURIComponent('Please see my invoice attached for &quot;' + invoice.repName + '&quot; - &quot;' + invoice.issue_date + '&quot;') %>">Open email</a>
     <% } %>
     <% if (invoice.status === 'sent') { %>
-      <form method="post" action="/invoices/<%= invoice.id %>/send">
-        <button class="btn btn-ink" type="submit">Re-send</button>
-      </form>
+      <a class="btn btn-ink" href="mailto:natalie@sjssolutionscorp.com.au?subject=<%= encodeURIComponent('Invoice ' + invoice.invoice_number) %>&amp;body=<%= encodeURIComponent('Please see my invoice attached for &quot;' + invoice.repName + '&quot; - &quot;' + invoice.issue_date + '&quot;') %>">Open email again</a>
     <% } %>
     <% if (invoice.status !== 'paid') { %>
       <form method="post" action="/invoices/<%= invoice.id %>/paid">
@@ -30,9 +26,7 @@
   </div>
 </header>
 
-<% if (!mailEnabled) { %>
-  <div class="flash flash-warn" role="status">Email is not configured yet — set SMTP settings in <code>.env</code> before invoices can be emailed.</div>
-<% } %>
+<div class="flash flash-warn" role="status">Download the PDF, then attach it to the email window before sending.</div>
 
 <div class="detail-grid">
   <section class="card">

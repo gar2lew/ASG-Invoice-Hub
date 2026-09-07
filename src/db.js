@@ -12,6 +12,9 @@ const SCHEMA = `
     name TEXT NOT NULL,
     email TEXT DEFAULT '',
     abn TEXT DEFAULT '',
+    bank_name TEXT DEFAULT '',
+    bank_bsb TEXT DEFAULT '',
+    bank_account TEXT DEFAULT '',
     role TEXT NOT NULL DEFAULT 'rep',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
@@ -99,6 +102,13 @@ async function initDb() {
     await p.query("INSERT INTO settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING");
     // Idempotent migration: production tables that were created before the
     // `details` column existed will 500 on invoice creation otherwise.
+    try {
+      await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_name TEXT DEFAULT ''");
+      await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_bsb TEXT DEFAULT ''");
+      await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account TEXT DEFAULT ''");
+    } catch (e) {
+      console.warn('users bank details migration skipped:', e.message);
+    }
     try {
       await p.query("ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS details JSONB DEFAULT '[]'::jsonb");
     } catch (e) {
@@ -192,7 +202,7 @@ async function updateSettings(patch) {
 
 async function getUsers() {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, name, email, role, created_at FROM users ORDER BY name');
+  const r = await getPool().query('SELECT id, username, name, email, abn, bank_name, bank_bsb, bank_account, role, created_at FROM users ORDER BY name');
   return r.rows;
 }
 
@@ -204,13 +214,13 @@ async function getUserByUsername(username) {
 
 async function getUserById(id) {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, name, email, abn, role, created_at FROM users WHERE id = $1', [id]);
+  const r = await getPool().query('SELECT id, username, name, email, abn, bank_name, bank_bsb, bank_account, role, created_at FROM users WHERE id = $1', [id]);
   return r.rows[0];
 }
 
 async function getUserForAuth(id) {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, password_hash, pin_hash, name, email, abn, role FROM users WHERE id = $1', [id]);
+  const r = await getPool().query('SELECT id, username, password_hash, pin_hash, name, email, abn, bank_name, bank_bsb, bank_account, role FROM users WHERE id = $1', [id]);
   return r.rows[0];
 }
 
@@ -220,12 +230,12 @@ async function getReps() {
   return r.rows;
 }
 
-async function createUser({ username, password, name, email, role, abn, pin }) {
+async function createUser({ username, password, name, email, role, abn, bank_name, bank_bsb, bank_account, pin }) {
   await ensureReady();
   const hash = bcrypt.hashSync(password, 10);
   const pinHash = pin ? bcrypt.hashSync(String(pin), 10) : '';
-  await getPool().query('INSERT INTO users (username, password_hash, pin_hash, name, email, abn, role) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-    [username, hash, pinHash, name, email || '', abn || '', role || 'rep']);
+  await getPool().query('INSERT INTO users (username, password_hash, pin_hash, name, email, abn, bank_name, bank_bsb, bank_account, role) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
+    [username, hash, pinHash, name, email || '', abn || '', bank_name || '', bank_bsb || '', bank_account || '', role || 'rep']);
 }
 
 async function resetPin(id, pin) {
@@ -342,6 +352,14 @@ async function setInvoiceStatus(id, status) {
 async function deleteInvoice(id) {
   await ensureReady();
   await getPool().query('DELETE FROM invoices WHERE id = $1', [id]);
+}
+
+async function deleteInvoices(ids) {
+  await ensureReady();
+  const cleanIds = [...new Set((Array.isArray(ids) ? ids : [ids]).map(Number).filter(Number.isInteger))];
+  if (!cleanIds.length) return 0;
+  const result = await getPool().query('DELETE FROM invoices WHERE id = ANY($1::int[])', [cleanIds]);
+  return result.rowCount || 0;
 }
 
 async function statsForUser(userId) {
@@ -491,13 +509,13 @@ async function createAdminUser({ username, password, name, email, role }) {
   );
 }
 
-async function createRepUser({ name, email, abn, pin }) {
+async function createRepUser({ name, email, abn, bank_name, bank_bsb, bank_account, pin }) {
   await ensureReady();
   const username = String(name).trim().toLowerCase().replace(/\s+/g, '.');
   const pinHash = pin ? bcrypt.hashSync(String(pin), 10) : '';
   await getPool().query(
-    'INSERT INTO users (username, password_hash, pin_hash, name, email, abn, role) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-    [username, '', pinHash, name, email || '', abn || '', 'rep']
+    'INSERT INTO users (username, password_hash, pin_hash, name, email, abn, bank_name, bank_bsb, bank_account, role) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
+    [username, '', pinHash, name, email || '', abn || '', bank_name || '', bank_bsb || '', bank_account || '', 'rep']
   );
 }
 
@@ -522,6 +540,7 @@ module.exports = {
   listInvoices,
   setInvoiceStatus,
   deleteInvoice,
+  deleteInvoices,
   statsForUser,
   statsForUserSince,
   recentInvoices,

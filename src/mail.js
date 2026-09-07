@@ -1,5 +1,10 @@
 let nodemailer = null;
 let transporter = null;
+const INVOICE_RECIPIENT = 'natalie@sjssolutionscorp.com.au';
+
+function getInvoiceRecipients() {
+  return INVOICE_RECIPIENT;
+}
 
 function isMailConfigured() {
   return Boolean(process.env.SMTP_HOST);
@@ -31,7 +36,7 @@ function fromAddress(settings) {
 async function sendInvoicePdf(settings, invoice, pdfBuffer, to) {
   const t = getTransporter();
   if (!t) throw new Error('SMTP is not configured. Set SMTP_HOST in .env');
-  const recipients = to.map((e) => e.trim()).filter(Boolean);
+  const recipients = (Array.isArray(to) ? to : [to]).map((e) => String(e).trim()).filter(Boolean);
   if (!recipients.length) throw new Error('No recipients provided');
   const lines = [
     `Please find attached invoice ${invoice.invoice_number}.`,
@@ -49,4 +54,4 @@ async function sendInvoicePdf(settings, invoice, pdfBuffer, to) {
   });
 }
 
-module.exports = { isMailConfigured, sendInvoicePdf };
+module.exports = { isMailConfigured, sendInvoicePdf, getInvoiceRecipients };

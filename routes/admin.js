@@ -64,7 +64,7 @@ router.get('/users', requireAdmin, async (req, res, next) => {
 
 router.post('/users', requireAdmin, async (req, res, next) => {
   try {
-    const { name, email, abn, pin } = req.body || {};
+    const { name, email, abn, bank_name, bank_bsb, bank_account, pin } = req.body || {};
     if (!name || !pin) {
       flash(req, res, 'Name and PIN are required.', 'error');
       return res.redirect('/users');
@@ -86,6 +86,9 @@ router.post('/users', requireAdmin, async (req, res, next) => {
       name: String(name).trim(),
       email: String(email || '').trim(),
       abn: String(abn || '').trim(),
+      bank_name: String(bank_name || '').trim(),
+      bank_bsb: String(bank_bsb || '').trim(),
+      bank_account: String(bank_account || '').trim(),
       pin: cleanPin,
       role: 'rep',
     });
@@ -238,6 +241,17 @@ router.get('/admin/reports/csv', requireAdmin, async (req, res, next) => {
   }
 });
 
+router.post('/admin/invoices/delete', requireAdmin, async (req, res, next) => {
+  try {
+    const ids = Array.isArray(req.body.delete_ids) ? req.body.delete_ids : [req.body.delete_ids];
+    const deleted = await db.deleteInvoices(ids);
+    flash(req, res, deleted ? `${deleted} invoice${deleted === 1 ? '' : 's'} deleted.` : 'No invoices selected.', deleted ? 'success' : 'error');
+    res.redirect('/');
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ---------- Admin user creation ----------
 
 router.post('/admin/users/create-admin', requireAdmin, async (req, res, next) => {
@@ -268,7 +282,7 @@ router.post('/admin/users/create-admin', requireAdmin, async (req, res, next) =>
 
 router.post('/admin/users/create-rep', requireAdmin, async (req, res, next) => {
   try {
-    const { name, email, abn, pin } = req.body || {};
+    const { name, email, abn, bank_name, bank_bsb, bank_account, pin } = req.body || {};
     if (!name || !pin) {
       flash(req, res, 'Name and PIN are required.', 'error');
       return res.redirect('/users');
@@ -288,6 +302,9 @@ router.post('/admin/users/create-rep', requireAdmin, async (req, res, next) => {
       name: String(name).trim(),
       email: String(email || '').trim(),
       abn: String(abn || '').trim(),
+      bank_name: String(bank_name || '').trim(),
+      bank_bsb: String(bank_bsb || '').trim(),
+      bank_account: String(bank_account || '').trim(),
       pin: cleanPin,
     });
     flash(req, res, `Rep account created for ${name}.`);

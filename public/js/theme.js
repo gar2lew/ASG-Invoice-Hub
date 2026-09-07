@@ -1,4 +1,4 @@
-// Theme toggle: persists to localStorage, respects system preference, applies immediately
+// Theme toggle: persists to localStorage, defaults to light, applies immediately
 (function () {
   'use strict';
 
@@ -12,19 +12,12 @@
     }
   }
 
-  function getSystemTheme() {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
-    }
-    return 'dark';
-  }
-
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
   }
 
   function initTheme() {
-    var theme = getSavedTheme() || getSystemTheme();
+    var theme = getSavedTheme() || 'light';
     applyTheme(theme);
   }
 

@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 process.env.PG_DRIVER = path.join(__dirname, 'pg-mem-driver.js');
 
 const db = require('../src/db');
+const mail = require('../src/mail');
 
 function log(ok, msg) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${msg}`);
@@ -13,6 +14,8 @@ function log(ok, msg) {
 
 async function main() {
   await db.initDb();
+
+  log(mail.getInvoiceRecipients() === 'natalie@sjssolutionscorp.com.au', 'invoice recipient is Natalie');
 
   let settings = await db.getSettings();
   log(settings && settings.invoice_prefix === 'INV', 'settings seeded with default prefix');
@@ -41,11 +44,12 @@ async function main() {
   process.env.ADMIN_USERNAME = '';
   process.env.ADMIN_PASSWORD = '';
 
-  await db.createUser({ username: 'rep1', password: 'secret1', name: 'Rep One', email: 'rep1@co.com', abn: '12 345 678 901', pin: '1234', role: 'rep' });
+  await db.createUser({ username: 'rep1', password: 'secret1', name: 'Rep One', email: 'rep1@co.com', abn: '12 345 678 901', bank_name: 'Test Bank', bank_bsb: '123456', bank_account: '12345678', pin: '1234', role: 'rep' });
   const rep = await db.getUserByUsername('rep1');
   log(Boolean(rep) && rep.name === 'Rep One', 'rep user created');
   log(bcrypt.compareSync('secret1', rep.password_hash), 'rep password verifies');
   log(rep.abn === '12 345 678 901', 'rep ABN stored');
+  log(rep.bank_name === 'Test Bank' && rep.bank_bsb === '123456' && rep.bank_account === '12345678', 'rep bank details stored');
   const repAuth = await db.getUserForAuth(rep.id);
   log(Boolean(repAuth.pin_hash) && bcrypt.compareSync('1234', repAuth.pin_hash), 'rep PIN hashes correctly');
 
