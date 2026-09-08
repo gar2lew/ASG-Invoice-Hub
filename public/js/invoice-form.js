@@ -13,7 +13,7 @@ var tTotalInline = document.getElementById('t-total-inline');
 var gstRowInline = document.getElementById('gst-row-inline');
 var wageDays = document.getElementById('wage-days');
 var weekRangeEl = document.getElementById('calc-week-range');
-var templateInput = form ? form.querySelector('input[name=\"template\"]') : null;
+var templateInput = form ? form.querySelector('input[name="template"]') : null;
 var tplButtons = form ? Array.prototype.slice.call(form.querySelectorAll('.tpl')) : [];
 var submitSend = document.getElementById('submit-send-email');
 
@@ -39,7 +39,7 @@ var tplMeta = {
 };
 
 function fmt(n) {
-  return '$' + Number(n).toFixed(2).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
+  return '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 // Helper function to parse a local date string (YYYY-MM-DD) as a Date object
@@ -58,7 +58,7 @@ function parseLocalDate(dateString) {
   return new Date(year, month, day);
 }
 
-// Format a date range as \"DD–DD Mon YYYY\"
+// Format a date range as "DD–DD Mon YYYY"
 function formatWeekRange(startDate, endDate) {
   const startDay = String(startDate.getDate()).padStart(2, '0');
   const endDay = String(endDate.getDate()).padStart(2, '0');
@@ -191,17 +191,28 @@ function updateWeekState() {
   var weekStart = document.getElementById('week_start');
   var notes = document.getElementById('notes');
   var selectedDays = [];
-  var calcDays = document.getElementById('calc-days');
-  if (calcDays) {
-    Array.prototype.slice.call(calcDays.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
+  
+  // Standard week days (Mon-Fri)
+  var calcDaysStandard = document.getElementById('calc-days-standard');
+  if (calcDaysStandard) {
+    Array.prototype.slice.call(calcDaysStandard.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
       selectedDays.push(cb.dataset.day);
     });
   }
+  
+  // Saturday
+  var calcDaysSat = document.getElementById('calc-days-sat');
+  if (calcDaysSat) {
+    Array.prototype.slice.call(calcDaysSat.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
+      selectedDays.push(cb.dataset.day);
+    });
+  }
+  
   selectedDays = selectedDays.filter(function (day) { return dayOffsets[day] !== undefined; });
   selectedDays.sort(function (a, b) { return dayOffsets[a] - dayOffsets[b]; });
 
   weekState.workedDays = selectedDays;
-  weekState.perDayRate = parseFloat(calcRate && calcRate.value) || 0;
+  weekState.perDayRate = parseFloat(calcRate && calcRate.value) || 200;
   weekState.weekStarting = weekStart ? weekStart.value : '';
   weekState.notes = notes ? notes.value : '';
 }
@@ -212,7 +223,9 @@ function renderWageCalculator() {
 
   var totalEl = document.getElementById('calc-total');
   var addBtn = document.getElementById('calc-add');
+  var satAmountEl = document.getElementById('sat-amount');
   var selected = weekState.workedDays;
+  
   // Calculate total using multipliers (Sat = 0.5)
   var total = 0;
   selected.forEach(function(day) {
@@ -220,11 +233,17 @@ function renderWageCalculator() {
   });
   total = Math.round(total * 100) / 100;
   if (totalEl) totalEl.textContent = fmt(total);
+  
+  // Saturday amount display
+  if (satAmountEl) {
+    var satSelected = selected.indexOf('Sat') !== -1;
+    satAmountEl.textContent = satSelected ? fmt(weekState.perDayRate * 0.5) : fmt(weekState.perDayRate * 0.5);
+  }
 
   var breakdownEl = document.getElementById('calc-breakdown');
   if (breakdownEl) {
     if (!selected.length) {
-      breakdownEl.innerHTML = '<span class=\"muted\">Select days worked to calculate wages.</span>';
+      breakdownEl.innerHTML = '<span class="muted">Select days worked to calculate wages.</span>';
     } else {
       var parts = selected.map(function (day) {
         var mult = dayMultipliers[day] || 1;
@@ -259,8 +278,11 @@ function renderDatesNotes() {
     var d = new Date(normalizedStart);
     d.setDate(normalizedStart.getDate() + idx);
     var iso = formatDateForInput(d);
-    var dateInput = document.querySelector('input[name=\"date_' + dayName + '\"]');
+    var dateInput = document.querySelector('input[name="date_' + dayName + '"]');
     if (dateInput) dateInput.value = iso;
+    // Update visible DD/MM/YYYY display
+    var dateDisplay = document.querySelector('#wage-days .wage-day-tile[data-day="' + dayName + '"] .wage-date-display');
+    if (dateDisplay) dateDisplay.textContent = fmtDate(d);
   });
 }
 
@@ -280,6 +302,57 @@ function syncDayToggles(sourceContainer, targetContainer) {
   }
   sourceBoxes.forEach(function (box, index) {
     targetBoxes[index].checked = box.checked;
+  });
+}
+
+function syncCalcToGrid() {
+  var calcStandard = document.getElementById('calc-days-standard');
+  var calcSat = document.getElementById('calc-days-sat');
+  var grid = document.getElementById('wage-days');
+  
+  if (!grid) return;
+  
+  var gridBoxes = grid.querySelectorAll('input[data-day]');
+  var checked = {};
+  
+  if (calcStandard) {
+    Array.prototype.slice.call(calcStandard.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
+      checked[cb.dataset.day] = true;
+    });
+  }
+  if (calcSat) {
+    Array.prototype.slice.call(calcSat.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
+      checked[cb.dataset.day] = true;
+    });
+  }
+  
+  Array.prototype.slice.call(gridBoxes).forEach(function (cb) {
+    cb.checked = !!checked[cb.dataset.day];
+  });
+}
+
+function syncGridToCalc() {
+  var grid = document.getElementById('wage-days');
+  var calcStandard = document.getElementById('calc-days-standard');
+  var calcSat = document.getElementById('calc-days-sat');
+  
+  if (!grid || !calcStandard || !calcSat) return;
+  
+  var gridBoxes = grid.querySelectorAll('input[data-day]');
+  var checked = {};
+  
+  Array.prototype.slice.call(gridBoxes).forEach(function (cb) {
+    checked[cb.dataset.day] = cb.checked;
+  });
+  
+  var standardBoxes = calcStandard.querySelectorAll('input[data-day]');
+  Array.prototype.slice.call(standardBoxes).forEach(function (cb) {
+    cb.checked = !!checked[cb.dataset.day];
+  });
+  
+  var satBoxes = calcSat.querySelectorAll('input[data-day]');
+  Array.prototype.slice.call(satBoxes).forEach(function (cb) {
+    cb.checked = !!checked[cb.dataset.day];
   });
 }
 
@@ -329,26 +402,26 @@ function updatePreview() {
   if (pvClientAddress) pvClientAddress.textContent = ca ? ca.value : '';
 
   var id = document.getElementById('issue_date');
-  if (pvIssueDate) pvIssueDate.textContent = id ? id.value : '';
+  if (pvIssueDate) pvIssueDate.textContent = id ? fmtDate(parseLocalDate(id.value)) : '';
   var dd = document.getElementById('due_date');
-  if (pvDueDate) pvDueDate.textContent = dd ? dd.value : '';
+  if (pvDueDate) pvDueDate.textContent = dd ? fmtDate(parseLocalDate(dd.value)) : '';
 
   var rows = itemRows();
   if (pvItems) {
     if (rows.length === 0) {
-      pvItems.innerHTML = '<tr class=\"preview-empty\"><td colspan=\"5\">No items yet</td></tr>';
+      pvItems.innerHTML = '<tr class="preview-empty"><td colspan="5">No items yet</td></tr>';
     } else {
       var html = '';
       rows.forEach(function (row, i) {
-        var d = row.querySelector('input[name=\"item_description\"]').value;
-        var q = parseFloat(row.querySelector('input[name=\"item_qty\"]').value) || 0;
-        var r = parseFloat(row.querySelector('input[name=\"item_rate\"]').value) || 0;
+        var d = row.querySelector('input[name="item_description"]').value;
+        var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+        var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
         var a = q * r;
-        html += '<tr><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class=\"num\">' + q + '</td><td class=\"num\">' + fmt(r) + '</td><td class=\"num\">' + fmt(a) + '</td></tr>';
+        html += '<tr><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class="num">' + q + '</td><td class="num">' + fmt(r) + '</td><td class="num">' + fmt(a) + '</td></tr>';
         // If this row has wage details, add them
         var detailsRow = row.nextElementSibling;
         if (detailsRow && detailsRow.classList && detailsRow.classList.contains('wage-details')) {
-          var detailsHtml = '<tr><td colspan=\"5\" style=\"padding-left: 20px; font-size: 12px; color: var(--muted);\">';
+          var detailsHtml = '<tr><td colspan="5" style="padding-left: 20px; font-size: 12px; color: var(--muted);">';
           var detailItems = detailsRow.querySelectorAll('.wage-details-container div');
           detailItems.forEach(function(detailEl) {
             detailsHtml += escHtml(detailEl.textContent) + '<br>';
@@ -363,8 +436,8 @@ function updatePreview() {
 
   var subtotal = 0;
   rows.forEach(function (row) {
-    var q = parseFloat(row.querySelector('input[name=\"item_qty\"]').value) || 0;
-    var r = parseFloat(row.querySelector('input[name=\"item_rate\"]').value) || 0;
+    var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+    var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
     subtotal += q * r;
   });
   var gst = gstInput.checked ? subtotal * 0.1 : 0;
@@ -378,7 +451,7 @@ function updatePreview() {
     if (!notes || !notes.value.trim()) {
       pvNotes.innerHTML = '';
     } else {
-      pvNotes.innerHTML = '<span class=\"kicker\">Notes</span>' + escHtml(notes.value).replace(/\\n/g, '<br>');
+      pvNotes.innerHTML = '<span class="kicker">Notes</span>' + escHtml(notes.value).replace(/\n/g, '<br>');
     }
   }
 }
@@ -497,8 +570,8 @@ function itemRows() {
 function recalc() {
   var subtotal = 0;
   itemRows().forEach(function (row) {
-    var qty = parseFloat(row.querySelector('input[name=\"item_qty\"]').value) || 0;
-    var rate = parseFloat(row.querySelector('input[name=\"item_rate\"]').value) || 0;
+    var qty = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+    var rate = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
     var amount = qty * rate;
     subtotal += amount;
     row.querySelector('.line-amount').textContent = fmt(amount);
@@ -616,7 +689,14 @@ if (submitDownload) submitDownload.addEventListener('click', function (e) {
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
+        // Extract filename from Content-Disposition if available
+        var disp = xhr.getResponseHeader('Content-Disposition');
+        var filename = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
+        if (disp) {
+          var match = disp.match(/filename="?([^"]+)"?/);
+          if (match) filename = match[1];
+        }
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -659,9 +739,9 @@ function clearError() {
 function buildPayload() {
   var data = new FormData(form);
   var items = itemRows().map(function (row) {
-    var description = row.querySelector('input[name=\"item_description\"]').value.trim();
-    var quantity = parseFloat(row.querySelector('input[name=\"item_qty\"]').value) || 0;
-    var rate = parseFloat(row.querySelector('input[name=\"item_rate\"]').value) || 0;
+    var description = row.querySelector('input[name="item_description"]').value.trim();
+    var quantity = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+    var rate = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
 
     // Check if this is a wage line with details
     var details = [];
@@ -766,30 +846,39 @@ if (form) form.addEventListener('submit', function (e) {
 });
 
 /* ---- Wage calculator ---- */
-var calcRate = document.getElementById('calc-rate');
-var calcDays = document.getElementById('calc-days');
+var calcDaysStandard = document.getElementById('calc-days-standard');
+var calcDaysSat = document.getElementById('calc-days-sat');
 var calcAdd = document.getElementById('calc-add');
 var weekStart = document.getElementById('week_start');
 var notesEl = document.getElementById('notes');
+var selectMonFriBtn = document.getElementById('select-mon-fri');
 
 function getSelectedDays() {
   var selected = [];
-  if (calcDays) {
-    Array.prototype.slice.call(calcDays.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
+  
+  if (calcDaysStandard) {
+    Array.prototype.slice.call(calcDaysStandard.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
       selected.push(cb.dataset.day);
     });
   }
+  
+  if (calcDaysSat) {
+    Array.prototype.slice.call(calcDaysSat.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
+      selected.push(cb.dataset.day);
+    });
+  }
+  
   return selected.filter(function (day) { return dayOffsets[day] !== undefined; }).sort(function (a, b) { return dayOffsets[a] - dayOffsets[b]; });
 }
 
 function onWeekStateChanged(source) {
   // When source is wage-days, we need to sync to calc-days BEFORE reading state
   if (source === 'wage-days') {
-    syncDayToggles(document.getElementById('wage-days'), document.getElementById('calc-days'));
+    syncGridToCalc();
   }
   // When source is week-start, we need to sync from wage-days to calc-days to preserve worked days
   else if (source === 'week-start') {
-    syncDayToggles(document.getElementById('wage-days'), document.getElementById('calc-days'));
+    syncGridToCalc();
   }
 
   updateWeekState();
@@ -797,11 +886,10 @@ function onWeekStateChanged(source) {
   renderDatesNotes();
 
   // After updating state, sync the other direction
-  if (source === 'calc-days' || source === 'calc-rate' || source === 'week-start') {
-    syncDayToggles(document.getElementById('calc-days'), document.getElementById('wage-days'));
+  if (source === 'calc-days-standard' || source === 'calc-days-sat' || source === 'calc-rate' || source === 'week-start' || source === 'select-mon-fri') {
+    syncCalcToGrid();
   } else if (source === 'wage-days') {
-    // Already synced above, but do it again to ensure consistency
-    syncDayToggles(document.getElementById('wage-days'), document.getElementById('wage-days'));
+    // Already synced above
   }
 
   updatePreview();
@@ -812,45 +900,56 @@ function onWeekStateChanged(source) {
 function initializeWeekState() {
   // Authoritative initial state - no days worked
   weekState.workedDays = [];
+  
+  // Uncheck all checkboxes to match the empty state
+  var calcDaysStandard = document.getElementById('calc-days-standard');
+  var calcDaysSat = document.getElementById('calc-days-sat');
+  var wageDatesGrid = document.getElementById('wage-days');
+  
+  if (calcDaysStandard) {
+    calcDaysStandard.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = false; });
+  }
+  if (calcDaysSat) {
+    calcDaysSat.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = false; });
+  }
+  if (wageDatesGrid) {
+    wageDatesGrid.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = false; });
+  }
+  
   // Render both widgets from the same state
   renderWageCalculator();
   renderDatesNotes();
 }
 
 // Set up workers without race conditions using a single source of truth
-if (calcRate) calcRate.addEventListener('input', function() {
-  onWeekStateChanged('calc-rate');
+if (calcDaysStandard) calcDaysStandard.addEventListener('change', function(e) {
+  onWeekStateChanged('calc-days-standard');
 });
 
-if (calcDays) {
-  calcDays.addEventListener('change', function(e) {
-    onWeekStateChanged('calc-days');
+if (calcDaysSat) calcDaysSat.addEventListener('change', function(e) {
+  onWeekStateChanged('calc-days-sat');
+});
+
+var wageDatesGrid = document.getElementById('wage-days');
+if (wageDatesGrid) {
+  wageDatesGrid.addEventListener('change', function(e) {
+    onWeekStateChanged('wage-days');
   });
 }
 
-var selectAllDays = document.querySelector('[data-select-all-days]');
-if (selectAllDays) selectAllDays.addEventListener('change', function () {
-  // "All" selects Mon-Fri only (standard full week). Saturday is optional.
-  calcDays.querySelectorAll('input[data-day]').forEach(function (box) {
-    if (box.dataset.day !== 'Sat') box.checked = selectAllDays.checked;
-  });
-  onWeekStateChanged('calc-days');
-});
-var selectAllDates = document.querySelector('[data-select-all-dates]');
-if (selectAllDates) selectAllDates.addEventListener('change', function () {
-  document.querySelectorAll('#wage-days input[data-day]').forEach(function (box) { box.checked = selectAllDates.checked; });
-  onWeekStateChanged('wage-days');
+if (selectMonFriBtn) selectMonFriBtn.addEventListener('click', function () {
+  if (calcDaysStandard) {
+    calcDaysStandard.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = true; });
+  }
+  if (calcDaysSat) {
+    calcDaysSat.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = false; });
+  }
+  onWeekStateChanged('select-mon-fri');
 });
 
 if (weekStart) {
   weekStart.addEventListener('change', function() {
     onWeekStateChanged('week-start');
-  });
-}
-
-if (wageDays) {
-  wageDays.addEventListener('change', function(e) {
-    onWeekStateChanged('wage-days');
   });
 }
 
@@ -905,7 +1004,7 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
 
   if (mode === 'daily') {
     selected.forEach(function (day) {
-      var dateInput = document.querySelector('input[name=\"date_' + day + '\"]');
+      var dateInput = document.querySelector('input[name="date_' + day + '"]');
       var dateText = dateInput && dateInput.value ? ' ' + dateInput.value : '';
       addLine({ description: 'Wages — ' + day + dateText, quantity: 1, rate: rate, amount: rate });
     });

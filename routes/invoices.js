@@ -1,11 +1,26 @@
 const express = require('express');
 const db = require('../src/db');
-const { renderInvoice } = require('../src/pdf');
+const { renderInvoice, fmtDate } = require('../src/pdf');
 const { sendInvoicePdf, getInvoiceRecipients } = require('../src/mail');
 const { requireAuth, flash } = require('../src/middleware');
 const { round2, todayISO, addDaysISO } = require('../src/helpers');
 
 const router = express.Router();
+
+function money(n) {
+  return '$' + Number(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function sanitizeFilename(name) {
+  return String(name).replace(/[^a-zA-Z0-9\s\-_.]/g, '').replace(/\s+/g, ' ');
+}
+
+function buildPdfFilename(invoice, repName) {
+  const issueDate = fmtDate(invoice.issue_date).replace(/\//g, '-');
+  const amount = money(invoice.total);
+  const safeName = sanitizeFilename(repName);
+  return `Contractor Invoice - ${safeName} - ${issueDate} - ${amount}.pdf`;
+}
 
 function validateItems(items) {
   if (!Array.isArray(items) || items.length === 0) return { error: 'Add at least one line item.' };
@@ -95,7 +110,7 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
 
     if (b.action === 'download') {
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${created.invoice_number}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${buildPdfFilename(invoice, invoice.rep_name || invoice.user_name || 'Contractor')}"`);
       return res.send(pdf);
     }
 
@@ -137,7 +152,7 @@ router.get('/invoices/:id/download', requireAuth, async (req, res, next) => {
       console.warn('Download tracking failed:', e.message);
     }
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${invoice.invoice_number}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${buildPdfFilename(invoice, invoice.rep_name || invoice.user_name || 'Contractor')}"`);
     res.send(pdf);
   } catch (err) {
     next(err);

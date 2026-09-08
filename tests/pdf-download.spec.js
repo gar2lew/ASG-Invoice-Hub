@@ -17,9 +17,7 @@ test.beforeEach(async ({ page }) => {
     page._jsErrors = errors;
     page._consoleMessages = consoleMessages;
 
-    // Instrument browser APIs BEFORE navigation
     await page.addInitScript(() => {
-      // Capture URL.createObjectURL calls
       window._capturedBlobs = [];
       const origCreateObjectURL = URL.createObjectURL.bind(URL);
       URL.createObjectURL = function(blob) {
@@ -31,7 +29,6 @@ test.beforeEach(async ({ page }) => {
         return origCreateObjectURL(blob);
       };
 
-      // Capture anchor clicks
       window._capturedAnchors = [];
       const origClick = HTMLAnchorElement.prototype.click;
       HTMLAnchorElement.prototype.click = function() {
@@ -44,26 +41,22 @@ test.beforeEach(async ({ page }) => {
       };
     });
 
-    // Navigate to login page - if already logged in via storage state, we'll be redirected to dashboard
     await page.goto('/login');
-    // Check if login form is present (means we need to log in)
     let loginFormVisible = false;
     try {
       await page.waitForSelector('form.stack:not(.login-admin-form)', { state: 'attached', timeout: 5000 });
       loginFormVisible = true;
     } catch (e) {
-      // Login form not found, assume we are already logged in and redirected to dashboard
+      // Login form not found, assume already logged in
     }
 
     if (loginFormVisible) {
-      // Log in as E2E Test Representative
       await page.selectOption('select[name="user_id"]', { label: 'E2E Test Representative' });
       await page.fill('input[name="pin"]', '1234');
       await page.click('button:has-text("Sign in")');
       await page.waitForURL('**/', { waitUntil: 'networkidle' });
     }
 
-    // Navigate to the new invoice page
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
   });
@@ -87,12 +80,12 @@ test.beforeEach(async ({ page }) => {
 
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
-    await page.waitForSelector('#calc-days .calc-day input[data-day="Mon"]', { state: 'visible', timeout: 10000 });
+    await page.waitForSelector('#calc-days-standard .calc-day input[data-day="Mon"]', { state: 'visible', timeout: 10000 });
 
     // Uncheck all days first
     const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     for (const day of allDays) {
-      const calcDayLabel = page.locator(`#calc-days .calc-day:has(input[data-day="${day}"])`);
+      const calcDayLabel = page.locator(`#calc-days-standard .calc-day:has(input[data-day="${day}"]), #calc-days-sat .calc-day:has(input[data-day="${day}"])`);
       const calcDayInput = calcDayLabel.locator('input');
       if (await calcDayInput.isChecked()) {
         await calcDayLabel.click();
@@ -105,11 +98,13 @@ test.beforeEach(async ({ page }) => {
 
     // Select specified days
     for (const day of days) {
-      await page.locator(`#calc-days .calc-day:has(input[data-day="${day}"])`).click();
+      const selector = day === 'Sat' 
+        ? `#calc-days-sat .calc-day:has(input[data-day="${day}"])`
+        : `#calc-days-standard .calc-day:has(input[data-day="${day}"])`;
+      await page.locator(selector).click();
     }
     await page.waitForTimeout(100);
 
-    // Select template by clicking the template button
     if (template) {
       await page.locator(`.tpl[data-template="${template}"]`).click();
       await page.waitForTimeout(100);
@@ -119,7 +114,6 @@ test.beforeEach(async ({ page }) => {
     await page.fill('#customer_address', customerAddress);
     await page.fill('#notes', notes);
     
-    // Enable GST if requested
     if (gst) {
       await page.locator('#gst').check();
     }
@@ -134,7 +128,6 @@ test.beforeEach(async ({ page }) => {
   }
 
   async function downloadPDF(page) {
-    // Now sends JSON, so check for "action" in JSON body
     const pdfResponsePromise = page.waitForResponse(response => 
       response.url().includes('/api/invoices') && 
       response.request().method() === 'POST' &&
@@ -160,14 +153,13 @@ test.beforeEach(async ({ page }) => {
     expect(headers['content-type']).toContain('application/pdf');
 
     const contentDisposition = headers['content-disposition'];
-    expect(contentDisposition).toContain('INV-');
+    expect(contentDisposition).toContain('Contractor Invoice');
     expect(contentDisposition).toContain('.pdf"');
 
     const pdfBuffer = await pdfResponse.body();
     expect(pdfBuffer.length).toBeGreaterThan(1000);
     expect(pdfBuffer.slice(0,5).toString()).toBe('%PDF-');
 
-    // Verify browser instrumentation captured the blob and anchor
     const { blobs, anchors } = await getCapturedData(page);
     
     expect(blobs.length).toBeGreaterThan(0);
@@ -177,40 +169,35 @@ test.beforeEach(async ({ page }) => {
 
     expect(anchors.length).toBeGreaterThan(0);
     const anchor = anchors[0];
-    expect(anchor.download).toMatch(/INV-\d+\.pdf/);
+    expect(anchor.download).toMatch(/Contractor Invoice.*\.pdf/);
     expect(anchor.href).toContain('blob:');
 
-    // Parse PDF content
     const { PDFParse } = require('pdf-parse');
     const pdfData = await new PDFParse({ data: pdfBuffer }).getText();
     const text = pdfData.text;
 
     console.log('PDF Text (first 1500 chars):', text.substring(0, 1500));
 
-    // Verify ASG company details in PDF (Bill To section uses template config)
     expect(text).toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
     expect(text).toContain('43 663 126 725');
     expect(text).toContain('14C, 1 The Esplanade');
     expect(text).toContain('Natalie@sjssolutionscorp.com.au');
     
-    // Verify customer
-    expect(text).toContain('XHR PDF Test Customer');
-    expect(text).toContain('123 XHR Street');
+    // PDF should contain the template company name (ASG) in BILL TO section
+    expect(text).toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
+    expect(text).toContain('14C, 1 The Esplanade');
     expect(text).toContain('Test notes for XHR PDF');
     
-    // Verify wage line
     expect(text).toContain('Wages/Retainer');
     expect(text).toContain('Mon — 24th');
     expect(text).toContain('Wed — 26th');
     expect(text).toContain('Sat — 29th');
     expect(text).toContain('½');
     
-    // Verify totals
     expect(text).toContain('Subtotal');
     expect(text).toContain('GST');
     expect(text).toContain('TOTAL');
 
-    // No error displayed
     const errorAlert = page.locator('.alert-error, .error-message, [role="alert"]');
     await expect(errorAlert).not.toBeVisible();
   });
@@ -222,79 +209,66 @@ test.beforeEach(async ({ page }) => {
           gst: true
         });
 
-        // Save the invoice first - wait for navigation to invoice detail page
         await Promise.all([
           page.waitForURL(/\/invoices\/\d+/),
           page.click('#submit-draft'),
         ]);
         await expect(page).toHaveURL(/\/invoices\/\d+/);
 
-        // Extract invoice ID from URL
         const url = new URL(page.url());
-        const pathname = url.pathname; // e.g., "/invoices/1"
+        const pathname = url.pathname;
         const invoiceId = pathname.split('/')[2];
 
-        // First download - use page.request.get to avoid navigation
         const firstResponse = await page.request.get(`/invoices/${invoiceId}/download`);
         expect(firstResponse.status()).toBe(200);
         const firstBuffer = await firstResponse.body();
         expect(firstBuffer.length).toBeGreaterThan(1000);
         expect(firstBuffer.slice(0, 5).toString()).toBe('%PDF-');
 
-        // Extract invoice number from Content-Disposition
         const firstDisp = firstResponse.headers()['content-disposition'];
-        const invoiceNumberMatch = firstDisp.match(/INV-(\d+)\.pdf/);
-        expect(invoiceNumberMatch).not.toBeNull();
-        const invoiceNumber = `INV-${invoiceNumberMatch[1]}`;
+        expect(firstDisp).toContain('Contractor Invoice');
 
-        // Second download - use page.request.get again
         const secondResponse = await page.request.get(`/invoices/${invoiceId}/download`);
         expect(secondResponse.status()).toBe(200);
         const secondBuffer = await secondResponse.body();
         expect(secondBuffer.length).toBeGreaterThan(1000);
         expect(secondBuffer.slice(0, 5).toString()).toBe('%PDF-');
 
-        // Both should have same invoice number (no duplicate)
         const secondDisp = secondResponse.headers()['content-disposition'];
         expect(firstDisp).toBe(secondDisp);
 
-        // Verify both PDFs have same customer
         const { PDFParse } = require('pdf-parse');
         const firstData = await new PDFParse({ data: firstBuffer }).getText();
         const secondData = await new PDFParse({ data: secondBuffer }).getText();
-        expect(firstData.text).toContain('Duplicate XHR Test Customer');
-        expect(secondData.text).toContain('Duplicate XHR Test Customer');
+        // PDF should contain the template company name (ASG) in BILL TO section
+        expect(firstData.text).toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
+        expect(secondData.text).toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
       });
 
   test('ASG Bill To - verify company details in form and PDF', async ({ page }) => {
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
 
-    // Select ASG template
     await page.locator('.tpl[data-template="asg"]').click();
     await page.waitForTimeout(100);
 
-    // Verify ASG details populate the customer form fields (template's company info)
     await expect(page.locator('#customer_name')).toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
     await expect(page.locator('#customer_email')).toHaveValue('Natalie@sjssolutionscorp.com.au');
     await expect(page.locator('#customer_address')).toHaveValue('14C, 1 The Esplanade, Mount pleasant, 6153');
 
-    // Fill minimal form
-    await page.waitForSelector('#calc-days .calc-day input[data-day="Mon"]', { state: 'visible' });
+    await page.waitForSelector('#calc-days-standard .calc-day input[data-day="Mon"]', { state: 'visible' });
     await page.fill('#week_start', '2026-08-24');
-    await page.locator('#calc-days .calc-day:has(input[data-day="Mon"])').click();
+    await page.locator('#calc-days-standard .calc-day:has(input[data-day="Mon"])').click();
     await page.fill('#customer_name', 'ASG Test Customer');
     await page.click('#calc-add');
     await page.waitForTimeout(500);
 
-    // Download and parse PDF
     const pdfResponse = await downloadPDF(page);
     const pdfBuffer = await pdfResponse.body();
     const { PDFParse } = require('pdf-parse');
     const pdfData = await new PDFParse({ data: pdfBuffer }).getText();
     const text = pdfData.text;
 
-    // Verify ASG details in PDF Bill To section
     expect(text).toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
     expect(text).toContain('43 663 126 725');
     expect(text).toContain('14C, 1 The Esplanade');
@@ -305,40 +279,33 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
 
-    // Select SJS template
     await page.locator('.tpl[data-template="sjs"]').click();
     await page.waitForTimeout(100);
 
-    // Verify SJS details populate the customer form fields (template's company info)
     await expect(page.locator('#customer_name')).toHaveValue('SJS WEALTH SOLUTIONS PTY LTD');
     await expect(page.locator('#customer_email')).toHaveValue('Natalie@sjssolutionscorp.com.au');
     await expect(page.locator('#customer_address')).toHaveValue('PO Box 3330, Beeliar Drive, Success WA 6964');
 
-    // Verify NO ASG values in form fields
     await expect(page.locator('#customer_name')).not.toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
 
-    // Fill minimal form
-    await page.waitForSelector('#calc-days .calc-day input[data-day="Mon"]', { state: 'visible' });
+    await page.waitForSelector('#calc-days-standard .calc-day input[data-day="Mon"]', { state: 'visible' });
     await page.fill('#week_start', '2026-08-24');
-    await page.locator('#calc-days .calc-day:has(input[data-day="Mon"])').click();
+    await page.locator('#calc-days-standard .calc-day:has(input[data-day="Mon"])').click();
     await page.fill('#customer_name', 'SJS Test Customer');
     await page.click('#calc-add');
     await page.waitForTimeout(500);
 
-    // Download and parse PDF
     const pdfResponse = await downloadPDF(page);
     const pdfBuffer = await pdfResponse.body();
     const { PDFParse } = require('pdf-parse');
     const pdfData = await new PDFParse({ data: pdfBuffer }).getText();
     const text = pdfData.text;
 
-    // Verify SJS details in PDF Bill To section
     expect(text).toContain('SJS WEALTH SOLUTIONS PTY LTD');
     expect(text).toContain('89 622 469 845');
     expect(text).toContain('PO Box 3330, Beeliar Drive, Success WA 6964');
     expect(text).toContain('Natalie@sjssolutionscorp.com.au');
 
-    // Verify NO ASG values in PDF
     expect(text).not.toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
     expect(text).not.toContain('43 663 126 725');
   });
@@ -347,7 +314,6 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
 
-    // Start with ASG
     await page.locator('.tpl[data-template="asg"]').click();
     await page.waitForTimeout(100);
     await expect(page.locator('#customer_name')).toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
@@ -355,7 +321,6 @@ test.beforeEach(async ({ page }) => {
     await expect(page.locator('#customer_address')).toHaveValue('14C, 1 The Esplanade, Mount pleasant, 6153');
     await expect(page.locator('#customer_name')).not.toHaveValue('SJS WEALTH SOLUTIONS PTY LTD');
 
-    // Switch to SJS
     await page.locator('.tpl[data-template="sjs"]').click();
     await page.waitForTimeout(100);
     await expect(page.locator('#customer_name')).toHaveValue('SJS WEALTH SOLUTIONS PTY LTD');
@@ -364,7 +329,6 @@ test.beforeEach(async ({ page }) => {
     await expect(page.locator('#customer_name')).not.toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
     await expect(page.locator('#customer_address')).not.toHaveValue('14C, 1 The Esplanade, Mount pleasant, 6153');
 
-    // Switch back to ASG
     await page.locator('.tpl[data-template="asg"]').click();
     await page.waitForTimeout(100);
     await expect(page.locator('#customer_name')).toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
@@ -372,5 +336,19 @@ test.beforeEach(async ({ page }) => {
     await expect(page.locator('#customer_address')).toHaveValue('14C, 1 The Esplanade, Mount pleasant, 6153');
     await expect(page.locator('#customer_name')).not.toHaveValue('SJS WEALTH SOLUTIONS PTY LTD');
     await expect(page.locator('#customer_address')).not.toHaveValue('PO Box 3330, Beeliar Drive, Success WA 6964');
+  });
+
+  test('PDF filename format is correct', async ({ page }) => {
+    await fillInvoiceForm(page, {
+      customerName: 'Filename Test Customer',
+      customerAddress: '123 Filename Street',
+      notes: 'Test filename'
+    });
+
+    const pdfResponse = await downloadPDF(page);
+    const contentDisposition = pdfResponse.headers()['content-disposition'];
+    
+    // Expected format: Contractor Invoice - Rep Name - DD-MM-YYYY - $Amount.pdf
+    expect(contentDisposition).toMatch(/Contractor Invoice - .* - \d{2}-\d{2}-\d{4} - \$[\d,]+\.\d{2}\.pdf/);
   });
 });

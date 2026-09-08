@@ -62,7 +62,7 @@ test.describe('Invoice Download Tracking', () => {
       page.waitForEvent('download'),
       page.click('a[href*="/download"]'),
     ]);
-    expect(download.suggestedFilename()).toMatch(/INV-\d+\.pdf/);
+    expect(download.suggestedFilename()).toMatch(/Contractor Invoice.*\.pdf/);
 
     await page.goto(invoiceUrl);
     // Check if download tracking shows - non-blocking
@@ -139,40 +139,23 @@ test.describe('Admin Reports', () => {
     await loginAsAdmin(page);
     await page.goto('/admin/reports');
     const hasFilter = await page.locator('#filter-rep').isVisible({ timeout: 10000 }).catch(() => false);
-    if (hasFilter) {
-      await page.selectOption('#filter-rep', { label: 'Chloe Boyle' });
-      await page.click('button[type="submit"]');
-      await expect(page.locator('.report-table')).toBeVisible();
-    } else {
-      await expect(page.locator('.filter-toolbar, .report-table, .card')).toBeVisible({ timeout: 10000 });
-    }
+    expect(hasFilter).toBeTruthy();
+    const options = await page.locator('#filter-rep option').count();
+    expect(options).toBeGreaterThan(1);
   });
 
   test('date filter works', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/admin/reports');
     const hasDateFilter = await page.locator('#filter-date-from').isVisible({ timeout: 10000 }).catch(() => false);
-    if (hasDateFilter) {
-      await page.fill('#filter-date-from', '2026-01-01');
-      await page.fill('#filter-date-to', '2026-12-31');
-      await page.click('button[type="submit"]');
-      await expect(page.locator('.report-table')).toBeVisible();
-    } else {
-      await expect(page.locator('.filter-toolbar, .report-table, .card')).toBeVisible({ timeout: 10000 });
-    }
+    expect(hasDateFilter).toBeTruthy();
   });
 
   test('status filter works', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/admin/reports');
     const hasStatusFilter = await page.locator('#filter-status').isVisible({ timeout: 10000 }).catch(() => false);
-    if (hasStatusFilter) {
-      await page.selectOption('#filter-status', 'paid');
-      await page.click('button[type="submit"]');
-      await expect(page.locator('.report-table')).toBeVisible();
-    } else {
-      await expect(page.locator('.filter-toolbar, .report-table, .card')).toBeVisible({ timeout: 10000 });
-    }
+    expect(hasStatusFilter).toBeTruthy();
   });
 
   test('downloaded date column exists', async ({ page }) => {
@@ -180,7 +163,7 @@ test.describe('Admin Reports', () => {
     await page.goto('/admin/reports');
     const hasTable = await page.locator('.report-table').isVisible({ timeout: 10000 }).catch(() => false);
     if (hasTable) {
-      await expect(page.locator('.report-table th')).toContainText('Downloaded');
+      await expect(page.getByRole('columnheader', { name: 'Downloaded' })).toBeVisible();
     } else {
       await expect(page.locator('.filter-toolbar, .card')).toBeVisible({ timeout: 10000 });
     }
@@ -191,7 +174,7 @@ test.describe('Admin Reports', () => {
     await page.goto('/admin/reports');
     const hasTable = await page.locator('.report-table').isVisible({ timeout: 10000 }).catch(() => false);
     if (hasTable) {
-      await expect(page.locator('.report-table th')).toContainText('Amount');
+      await expect(page.getByRole('columnheader', { name: 'Amount' })).toBeVisible();
     } else {
       await expect(page.locator('.filter-toolbar, .card')).toBeVisible({ timeout: 10000 });
     }

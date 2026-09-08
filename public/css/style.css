@@ -1,23 +1,23 @@
 :root {
   /* Premium light ASG color system */
-  --bg: #FAF9F5;
-  --bg-2: #F5F4F0;
+  --bg: #F7F3EA;
+  --bg-2: #EFEBD8;
   --surface: #FFFFFF;
-  --surface-2: #E8E6DF;
-  --surface-3: #D4D0C8;
-  --ink: #1B2434;
-  --ink-2: #3A4252;
+  --surface-2: #E8E4D8;
+  --surface-3: #D4D0C4;
+  --ink: #142033;
+  --ink-2: #2D3A4F;
   --muted: #6B7280;
   --muted-2: #9CA3AF;
-  --line: #E8E6DF;
-  --line-strong: #D4D0C8;
-  --line-subtle: #B8B4AC;
+  --line: #E8E4D8;
+  --line-strong: #D4D0C4;
+  --line-subtle: #C4C0B8;
 
   /* Accents */
-  --accent: #C8963E;
+  --accent: #C79A4A;
   --accent-deep: #A67C2E;
-  --accent-soft: rgba(200, 150, 62, 0.08);
-  --accent-strong: #1B2434;
+  --accent-soft: rgba(199, 154, 74, 0.08);
+  --accent-strong: #142033;
   --accent-strong-deep: #0F172A;
 
   /* Semantic */
@@ -37,8 +37,8 @@
   --radius: 10px;
   --radius-sm: 8px;
   --radius-lg: 14px;
-  --shadow: 0 1px 3px rgba(27, 36, 52, 0.06), 0 4px 12px rgba(27, 36, 52, 0.04);
-  --shadow-lg: 0 4px 6px rgba(27, 36, 52, 0.06), 0 10px 30px rgba(27, 36, 52, 0.08);
+  --shadow: 0 1px 3px rgba(20, 32, 51, 0.06), 0 4px 12px rgba(20, 32, 51, 0.04);
+  --shadow-lg: 0 4px 6px rgba(20, 32, 51, 0.06), 0 10px 30px rgba(20, 32, 51, 0.08);
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 12px;
@@ -1045,23 +1045,23 @@ textarea.input { resize: vertical; line-height: 1.45; }
 /* ---------- Light theme ---------- */
 
 [data-theme="light"] {
-  --bg: #FAF9F5;
-  --bg-2: #F5F4F0;
+  --bg: #F7F3EA;
+  --bg-2: #EFEBD8;
   --surface: #FFFFFF;
-  --surface-2: #E8E6DF;
-  --surface-3: #D4D0C8;
-  --ink: #1B2434;
-  --ink-2: #3A4252;
+  --surface-2: #E8E4D8;
+  --surface-3: #D4D0C4;
+  --ink: #142033;
+  --ink-2: #2D3A4F;
   --muted: #6B7280;
   --muted-2: #9CA3AF;
-  --line: #E8E6DF;
-  --line-strong: #D4D0C8;
-  --line-subtle: #B8B4AC;
+  --line: #E8E4D8;
+  --line-strong: #D4D0C4;
+  --line-subtle: #C4C0B8;
 
-  --accent: #C8963E;
+  --accent: #C79A4A;
   --accent-deep: #A67C2E;
-  --accent-soft: rgba(200, 150, 62, 0.08);
-  --accent-strong: #1B2434;
+  --accent-soft: rgba(199, 154, 74, 0.08);
+  --accent-strong: #142033;
   --accent-strong-deep: #0F172A;
 
   --ok: #16A34A;
@@ -1071,8 +1071,8 @@ textarea.input { resize: vertical; line-height: 1.45; }
   --danger: #DC2626;
   --danger-soft: rgba(220, 38, 38, 0.1);
 
-  --shadow: 0 1px 3px rgba(27, 36, 52, 0.06), 0 4px 12px rgba(27, 36, 52, 0.04);
-  --shadow-lg: 0 4px 6px rgba(27, 36, 52, 0.06), 0 10px 30px rgba(27, 36, 52, 0.08);
+  --shadow: 0 1px 3px rgba(20, 32, 51, 0.06), 0 4px 12px rgba(20, 32, 51, 0.04);
+  --shadow-lg: 0 4px 6px rgba(20, 32, 51, 0.06), 0 10px 30px rgba(20, 32, 51, 0.08);
 }
 
 /* ---------- Theme toggle ---------- */
@@ -1324,4 +1324,238 @@ textarea.input { resize: vertical; line-height: 1.45; }
   font-size: 12px;
   color: var(--ink-2);
   letter-spacing: 0.02em;
+}
+
+/* ---------- Wage Calculator Redesign ---------- */
+
+.calc-rate-display {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-lg);
+  max-width: 300px;
+}
+
+.rate-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.rate-value {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.calc-section {
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--line);
+}
+
+.calc-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: var(--space-lg);
+  padding-bottom: 0;
+}
+
+.calc-section-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: var(--space-md);
+}
+
+.calc-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.calc-day {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: 999px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  position: relative;
+}
+
+.calc-day:hover { border-color: var(--muted-2); }
+
+.calc-day:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.calc-day em { font-style: normal; font-size: 11px; color: var(--muted); }
+.calc-day:has(input:checked) em { color: var(--accent); }
+
+.calc-day input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.calc-day span { pointer-events: none; }
+
+.calc-section-actions {
+  margin-top: var(--space-md);
+}
+
+.calc-section-sat {
+  background: var(--accent-soft);
+  border: 1px solid rgba(199, 154, 74, 0.2);
+  border-radius: var(--radius);
+  padding: var(--space-lg);
+}
+
+.calc-sat-hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: var(--space-sm);
+}
+
+.calc-sat-hint span {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.calc-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 2px solid var(--line-strong);
+  flex-wrap: wrap;
+}
+
+.calc-total-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.calc-total-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.calc-total { 
+  font-family: var(--font-display); 
+  font-size: 24px; 
+  font-weight: 800; 
+  color: var(--accent); 
+}
+
+.calc-result .btn { flex-shrink: 0; }
+
+/* ---------- Dates Grid ---------- */
+
+.wage-dates-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.wage-day-tile {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.wage-day-tile:hover {
+  border-color: var(--muted-2);
+}
+
+.wage-day-tile:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.wage-day-tile-sat:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.wage-day-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.wage-day-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.wage-day-check input:checked + span {
+  color: var(--accent);
+}
+
+.wage-day-date .wage-date {
+  width: 100%;
+  font-size: 12px;
+}
+
+.wage-day-half {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: -4px;
+}
+
+@media (max-width: 980px) {
+  .wage-dates-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .wage-dates-grid {
+    grid-template-columns: 1fr;
+  }
+  .calc-days {
+    justify-content: center;
+  }
 }
