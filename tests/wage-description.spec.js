@@ -75,13 +75,13 @@ test.describe('Structured Wage Descriptions', () => {
     const wageRow = page.locator('[data-line-item-type="wages"]').first();
     expect(await wageRow.isVisible()).toBeTruthy();
     
-    // Verify primary description format: "Wages/Retainer — Week of 24–28 Aug 2026 — $818.19"
+    // Verify primary description format: "Wages/Retainer — Week of 24–28 Aug 2026 — $900.00"
     const primaryDesc = await wageRow.locator('input[name="item_description"]').inputValue();
-    expect(primaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4} — \$818\.19/);
+    expect(primaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4} — \$900\.00/);
     
     // Verify rate and amount
     const wageLineRate = await wageRow.locator('input[name="item_rate"]').inputValue();
-    expect(wageLineRate).toContain('818.19');
+    expect(wageLineRate).toContain('900');
     
     // Verify day details row exists
     const detailsRow = wageRow.locator('..').locator('.wage-details').first();

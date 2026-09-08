@@ -106,3 +106,27 @@ Validation:
 Problems Found: None in targeted checks.
 Problems Remaining: Browser-level production verification and visual PDF review remain.
 Next Recommended Sprint: Deploy and inspect both generated PDF templates with a real rep account.
+
+## Sprint - 2026-09-08
+
+Sprint: Hermes Takeover from Codex
+Objective: Reconstruct current repository state after Codex development, restore test baseline to green, and correct stale architecture documentation.
+Files Changed:
+- tests/saturday-halfday.spec.js
+- tests/shared-week.spec.js
+- tests/wage-description.spec.js
+- ARCHITECTURE.md
+- docs/DevelopmentJournal.md
+Root Cause/Reason: Codex added rep bank details, admin bulk deletion, PDF FROM block, and changed the ASG per-day wage rate from 181.82 to 200. Seven Playwright tests still asserted the old 181.82 rate, causing failures. ARCHITECTURE.md still referenced SQLite/better-sqlite3.
+Implementation Summary:
+- Confirmed current per-day rate is $200/day in production logic (public/js/invoice-form.js companyConfigs.asg.perDayRate)
+- Updated 7 stale Playwright test assertions to match $200/day rate while preserving all behavioral coverage (Saturday 0.5 multiplier, Shared Week sync, Dates & Notes sync, structured wage descriptions, invoice totals)
+- Rewrote ARCHITECTURE.md to reflect current stack: Node.js, Express, EJS, PostgreSQL, pg, pg-mem, cookie-session, bcrypt, PDFKit, Vercel, api/index.js → src/app.js
+- Documented current schema additions: users.bank_name/bsb/account, invoices.downloaded_at/download_count, invoice_items.details JSONB
+Validation:
+- npm test — 26/26 PASS
+- npx playwright test — 38/38 PASS
+- git diff --check — PASS
+Problems Found: 7 stale test expectations from pre-200 rate; outdated architecture documentation.
+Problems Remaining: None.
+Next Recommended Sprint: Deploy current state to production and verify with real rep account.

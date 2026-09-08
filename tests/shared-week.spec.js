@@ -95,11 +95,11 @@ test.describe('Shared Week State', () => {
     expect(tueChecked).toBe(false);
     
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$181.82');
+        expect(totalText).toBe('$200.00');
     
-    const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Mon: $181.82');
-    expect(breakdown).toContain('→ $181.82');
+        const breakdown = await page.textContent('#calc-breakdown');
+        expect(breakdown).toContain('Mon: $200.00');
+        expect(breakdown).toContain('→ $200.00');
     
     // Verify no page errors
     expect(page._jsErrors).toEqual([]);
@@ -124,11 +124,11 @@ test.describe('Shared Week State', () => {
     expect(await wedChecked.isChecked()).toBe(true);
     
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$181.82');
+        expect(totalText).toBe('$200.00');
     
-    const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Wed: $181.82');
-    expect(breakdown).toContain('→ $181.82');
+        const breakdown = await page.textContent('#calc-breakdown');
+        expect(breakdown).toContain('Wed: $200.00');
+        expect(breakdown).toContain('→ $200.00');
     
     // Verify no page errors
     expect(page._jsErrors).toEqual([]);
@@ -165,13 +165,13 @@ test.describe('Shared Week State', () => {
     expect(await friCheckedCalc.isChecked()).toBe(true);
     
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$363.64'); // 2 days * 181.82
+    expect(totalText).toBe('$400.00'); // 2 days * 200
     
     const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Mon: $181.82');
-    expect(breakdown).toContain('Fri: $181.82');
+    expect(breakdown).toContain('Mon: $200.00');
+    expect(breakdown).toContain('Fri: $200.00');
     expect(breakdown).not.toContain('Wed:');
-    expect(breakdown).toContain('→ $363.64');
+    expect(breakdown).toContain('→ $400.00');
     
     // Verify no page errors
     expect(page._jsErrors).toEqual([]);
@@ -195,26 +195,26 @@ test.describe('Shared Week State', () => {
     await page.waitForTimeout(100);
     
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$545.46');
+    expect(totalText).toBe('$600.00');
     
     const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Mon: $181.82');
-    expect(breakdown).toContain('Wed: $181.82');
-    expect(breakdown).toContain('Fri: $181.82');
-    expect(breakdown).toContain('→ $545.46');
+    expect(breakdown).toContain('Mon: $200.00');
+    expect(breakdown).toContain('Wed: $200.00');
+    expect(breakdown).toContain('Fri: $200.00');
+    expect(breakdown).toContain('→ $600.00');
     
     // Untoggle Wed using Dates & Notes
     await page.uncheck('[data-day="Wed"]');
     await page.waitForTimeout(100);
     
     const totalAfterUntoggle = await page.textContent('#calc-total');
-    expect(totalAfterUntoggle).toBe('$363.64');
+    expect(totalAfterUntoggle).toBe('$400.00');
     
     const breakdownAfter = await page.textContent('#calc-breakdown');
-    expect(breakdownAfter).toContain('Mon: $181.82');
-    expect(breakdownAfter).toContain('Fri: $181.82');
+    expect(breakdownAfter).toContain('Mon: $200.00');
+    expect(breakdownAfter).toContain('Fri: $200.00');
     expect(breakdownAfter).not.toContain('Wed:');
-    expect(breakdownAfter).toContain('→ $363.64');
+    expect(breakdownAfter).toContain('→ $400.00');
     
     // Verify no page errors
     expect(page._jsErrors).toEqual([]);
@@ -265,10 +265,10 @@ test.describe('Shared Week State', () => {
         expect(quantity).toBe('1');
 
         const rate = await wageRow.locator('input[name="item_rate"]').inputValue();
-        expect(rate).toBe('545.46');
+        expect(rate).toBe('600');
 
         const amount = await wageRow.locator('.line-amount').textContent();
-        expect(amount).toBe('$545.46');
+        expect(amount).toBe('$600.00');
     
     // Verify no page errors
     expect(page._jsErrors).toEqual([]);

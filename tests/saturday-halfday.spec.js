@@ -69,9 +69,9 @@ test.describe('Saturday Half-Day', () => {
     expect(await page.locator('#wage-days input[name=\"wage_day\"][data-day=\"Wed\"]').isChecked()).toBeTruthy();
     expect(await page.locator('#wage-days input[name=\"wage_day\"][data-day=\"Thu\"]').isChecked()).toBeTruthy();
 
-    // Verify total is $727.28 (4 * 181.82)
+    // Verify total is $800.00 (4 * 200)
     const calcTotal = await page.locator('#calc-total').textContent();
-    expect(calcTotal).toContain('727.28');
+    expect(calcTotal).toContain('800.00');
 
     // 2. Select Sat in Wage Calculator
     await page.locator('#calc-days .calc-day:has(input[data-day=\"Sat\"])').click();
@@ -84,14 +84,14 @@ test.describe('Saturday Half-Day', () => {
     const satDateInput = await page.locator('input[name=\"date_Sat\"]').inputValue();
     expect(satDateInput).toBe('2026-08-29');
 
-    // 5. Confirm breakdown includes \"Sat ½: $90.91\"
+    // 5. Confirm breakdown includes "Sat ½: $100.00"
     const calcBreakdown = await page.locator('#calc-breakdown').textContent();
     expect(calcBreakdown).toContain('Sat ½');
-    expect(calcBreakdown).toContain('90.91');
+    expect(calcBreakdown).toContain('100.00');
 
-    // 6. Confirm total is $818.19 (727.28 + 90.91)
+    // 6. Confirm total is $900.00 (800.00 + 100.00)
     const calcTotal2 = await page.locator('#calc-total').textContent();
-    expect(calcTotal2).toContain('818.19');
+    expect(calcTotal2).toContain('900.00');
 
     // 7. Untoggle Sat from Dates & Notes
     await page.locator('#wage-days input[name=\"wage_day\"][data-day=\"Sat\"]').click();
@@ -101,9 +101,9 @@ test.describe('Saturday Half-Day', () => {
     expect(await page.locator('#calc-days input[data-day=\"Sat\"]').isChecked()).toBeFalsy();
     expect(await page.locator('#wage-days input[name=\"wage_day\"][data-day=\"Sat\"]').isChecked()).toBeFalsy();
 
-    // 9. Confirm total returns to $727.28
+    // 9. Confirm total returns to $800.00
     const calcTotal3 = await page.locator('#calc-total').textContent();
-    expect(calcTotal3).toContain('727.28');
+    expect(calcTotal3).toContain('800.00');
 
     // 10. Repeat selection in opposite direction (Dates & Notes first)
     await page.locator('#wage-days input[name=\"wage_day\"][data-day=\"Sat\"]').click();
@@ -113,8 +113,8 @@ test.describe('Saturday Half-Day', () => {
     expect(await page.locator('#calc-days input[data-day=\"Sat\"]').isChecked()).toBeTruthy();
     expect(await page.locator('#wage-days input[name=\"wage_day\"][data-day=\"Sat\"]').isChecked()).toBeTruthy();
 
-    // Confirm total is $818.19 again
+    // Confirm total is $900.00 again
     const calcTotal4 = await page.locator('#calc-total').textContent();
-    expect(calcTotal4).toContain('818.19');
+    expect(calcTotal4).toContain('900.00');
   });
 });
