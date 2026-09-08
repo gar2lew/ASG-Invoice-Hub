@@ -81,11 +81,11 @@ test.describe('Wage Detail Persistence', () => {
     const detailsRow = page.locator('.wage-details').first();
     await expect(detailsRow).toBeVisible({ timeout: 5000 });
     
-    // Verify day details content
+    // Verify day details content (format: "Mon — 24th 24/08/2026")
     const detailsText = await detailsRow.textContent();
-    expect(detailsText).toContain('Mon — 24th');
-    expect(detailsText).toContain('Wed — 26th');
-    expect(detailsText).toContain('Sat — 29th (½ day)');
+    expect(detailsText).toContain('Mon — 24th 24/08/2026');
+    expect(detailsText).toContain('Wed — 26th 26/08/2026');
+    expect(detailsText).toContain('Sat — 29th 29/08/2026 (½ day)');
     
     // Verify only selected days are shown (no Tue, Thu, Fri)
     expect(detailsText).not.toContain('Tue');
@@ -136,11 +136,11 @@ test.describe('Wage Detail Persistence', () => {
     const restoredDetailsRow = page.locator('.wage-details').first();
     await expect(restoredDetailsRow).toBeVisible({ timeout: 5000 });
     
-    // Verify day details content
+    // Verify day details content (format: "Mon — 24th 24/08/2026")
     const restoredDetailsText = await restoredDetailsRow.textContent();
-    expect(restoredDetailsText).toContain('Mon — 24th');
-    expect(restoredDetailsText).toContain('Wed — 26th');
-    expect(restoredDetailsText).toContain('Sat — 29th (½ day)');
+    expect(restoredDetailsText).toContain('Mon — 24th 24/08/2026');
+    expect(restoredDetailsText).toContain('Wed — 26th 26/08/2026');
+    expect(restoredDetailsText).toContain('Sat — 29th 29/08/2026 (½ day)');
     
     // Verify only selected days are shown
     expect(restoredDetailsText).not.toContain('Tue');

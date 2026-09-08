@@ -87,13 +87,13 @@ test.describe('Structured Wage Descriptions', () => {
     const detailsRow = wageRow.locator('..').locator('.wage-details').first();
     expect(await detailsRow.isVisible()).toBeTruthy();
     
-    // Verify day details content
+    // Verify day details content (format: "Mon — 24th 24/08/2026")
     const detailsText = await detailsRow.textContent();
-    expect(detailsText).toContain('Mon — 24th');
-    expect(detailsText).toContain('Tue — 25th');
-    expect(detailsText).toContain('Wed — 26th');
-    expect(detailsText).toContain('Thu — 27th');
-    expect(detailsText).toContain('Sat — 29th (½ day)');
+    expect(detailsText).toContain('Mon — 24th 24/08/2026');
+    expect(detailsText).toContain('Tue — 25th 25/08/2026');
+    expect(detailsText).toContain('Wed — 26th 26/08/2026');
+    expect(detailsText).toContain('Thu — 27th 27/08/2026');
+    expect(detailsText).toContain('Sat — 29th 29/08/2026 (½ day)');
     
     // Verify only selected days are shown (no Fri)
     expect(detailsText).not.toContain('Fri');
@@ -102,8 +102,8 @@ test.describe('Structured Wage Descriptions', () => {
     const previewItems = page.locator('#pv-items');
     const previewHtml = await previewItems.innerHTML();
     expect(previewHtml).toContain('Wages/Retainer — Week of');
-    expect(previewHtml).toContain('Mon — 24th');
-    expect(previewHtml).toContain('Sat — 29th (½ day)');
+    expect(previewHtml).toContain('Mon — 24th 24/08/2026');
+    expect(previewHtml).toContain('Sat — 29th 29/08/2026 (½ day)');
   });
   
   test('ordinary line items remain compatible', async ({ page }) => {

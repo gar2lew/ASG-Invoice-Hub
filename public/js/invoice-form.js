@@ -89,7 +89,10 @@ function fmtWeekRange(weekStarting) {
 }
 
 function fmtDate(d) {
-  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return day + '/' + month + '/' + year;
 }
 
 // Format date as YYYY-MM-DD in local time (for date inputs)
@@ -590,10 +593,50 @@ if (submitDownload) submitDownload.addEventListener('click', function (e) {
   e.preventDefault();
   actionField.value = 'download';
   if (form) {
-    // Manually trigger the submit handler logic instead of form.submit()
-    // which bypasses the submit event
-    var submitEvent = new Event('submit', { cancelable: true, bubbles: true });
-    form.dispatchEvent(submitEvent);
+    var payload = buildPayload();
+    if (!payload.items.length) {
+      showError('Add at least one line item with a description.');
+      return;
+    }
+    if (!payload.customer_name) {
+      showError('Customer name is required.');
+      return;
+    }
+    clearError();
+    payload.action = 'download';
+    document.getElementById('send_now').checked = false;
+    var xhr = new XMLHttpRequest();
+    var actionUrl = form.getAttribute('action') || '/api/invoices';
+    xhr.open('POST', actionUrl, true);
+    xhr.responseType = 'blob';
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function () {
+      if (xhr.status === 200) {
+        var blob = xhr.response;
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        // Try to parse JSON error from server
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            var err = JSON.parse(reader.result);
+            showError(err.error || 'Download failed.');
+          } catch (parseErr) {
+            showError('Download failed.');
+          }
+        };
+        reader.readAsText(xhr.response);
+      }
+    };
+    xhr.onerror = function () { showError('Network error.'); };
+    xhr.send(JSON.stringify(payload));
   }
 });
 
@@ -660,34 +703,7 @@ function buildPayload() {
 
 if (form) form.addEventListener('submit', function (e) {
   var action = actionField.value || 'draft';
-  if (action === 'download') {
-    document.getElementById('send_now').checked = false;
-    var payload = buildPayload();
-    payload.action = 'download';
-    var xhr = new XMLHttpRequest();
-    var actionUrl = form.getAttribute('action') || '/api/invoices';
-    xhr.open('POST', actionUrl, true);
-    xhr.responseType = 'blob';
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onload = function () {
-      if (xhr.status === 200) {
-        var blob = xhr.response;
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } else {
-        showError('Download failed.');
-      }
-    };
-    xhr.onerror = function () { showError('Network error.'); };
-    xhr.send(JSON.stringify(payload));
-    return;
-  }
+  // Download is handled by the submit-download button directly
   e.preventDefault();
   document.getElementById('send_now').checked = false;
   var payload = buildPayload();
@@ -814,7 +830,10 @@ if (calcDays) {
 
 var selectAllDays = document.querySelector('[data-select-all-days]');
 if (selectAllDays) selectAllDays.addEventListener('change', function () {
-  calcDays.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = selectAllDays.checked; });
+  // "All" selects Mon-Fri only (standard full week). Saturday is optional.
+  calcDays.querySelectorAll('input[data-day]').forEach(function (box) {
+    if (box.dataset.day !== 'Sat') box.checked = selectAllDays.checked;
+  });
   onWeekStateChanged('calc-days');
 });
 var selectAllDates = document.querySelector('[data-select-all-dates]');
@@ -876,7 +895,7 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
       dayDate.setDate(monday.getDate() + offset);
       var dayNum = dayDate.getDate();
       var suffix = getOrdinalSuffix(dayNum);
-      var detail = dayName + ' — ' + dayNum + suffix;
+      var detail = dayName + ' — ' + dayNum + suffix + ' ' + fmtDate(dayDate);
       if (dayMultipliers[dayName] === 0.5) {
         detail += ' (½ day)';
       }

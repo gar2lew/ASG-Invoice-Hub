@@ -16,7 +16,10 @@ function fmtDate(d) {
   if (!d) return '';
   const dt = parseDate(d);
   if (!dt || Number.isNaN(dt.getTime())) return String(d);
-  return dt.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+  const day = String(dt.getDate()).padStart(2, '0');
+  const month = String(dt.getMonth() + 1).padStart(2, '0');
+  const year = dt.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 function fmtDateLong(d) {
