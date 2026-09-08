@@ -43,7 +43,16 @@
           <% items.forEach(function(it, idx) { %>
           <tr>
             <td class="muted mono"><%= idx + 1 %></td>
-            <td><%= it.description %></td>
+            <td>
+              <%= it.description %>
+              <% if (it.details && it.details.length > 0) { %>
+                <div class="wage-details-container" style="margin-top: 4px; padding-left: 0;">
+                  <% it.details.forEach(function(detail) { %>
+                    <div><%= detail %></div>
+                  <% }) %>
+                </div>
+              <% } %>
+            </td>
             <td class="num mono"><%= it.quantity %></td>
             <td class="num mono"><%= it.rateText %></td>
             <td class="num mono strong"><%= it.amountText %></td>

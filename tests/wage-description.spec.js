@@ -62,7 +62,8 @@ test.describe('Structured Wage Descriptions', () => {
     expect(await wageRow.isVisible()).toBeTruthy();
     
     const primaryDesc = await wageRow.locator('input[name="item_description"]').inputValue();
-    expect(primaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4} — \$900\.00/);
+    expect(primaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4}/);
+    expect(primaryDesc).not.toContain('$900.00');
     
     const wageLineRate = await wageRow.locator('input[name="item_rate"]').inputValue();
     expect(wageLineRate).toContain('900');

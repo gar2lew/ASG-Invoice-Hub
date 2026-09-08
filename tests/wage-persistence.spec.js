@@ -60,7 +60,8 @@ test.describe('Wage Detail Persistence', () => {
     await expect(wageRow).toBeVisible({ timeout: 5000 });
     
     const primaryDesc = await wageRow.locator('input[name="item_description"]').inputValue();
-    expect(primaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4} — \$/);
+    expect(primaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4}/);
+    expect(primaryDesc).not.toContain('$');
     
     const detailsRow = page.locator('.wage-details').first();
     await expect(detailsRow).toBeVisible({ timeout: 5000 });
@@ -105,7 +106,8 @@ test.describe('Wage Detail Persistence', () => {
     await expect(restoredWageRow).toBeVisible({ timeout: 5000 });
     
     const restoredPrimaryDesc = await restoredWageRow.locator('input[name="item_description"]').inputValue();
-    expect(restoredPrimaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4} — \$/);
+    expect(restoredPrimaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4}/);
+    expect(restoredPrimaryDesc).not.toContain('$');
     
     const restoredDetailsRow = page.locator('.wage-details').first();
     await expect(restoredDetailsRow).toBeVisible({ timeout: 5000 });

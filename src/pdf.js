@@ -58,9 +58,7 @@ function drawItemsTable(doc, items, y0, compact) {
     doc.rect(x0, y, W, rh).fill(fill);
     doc.lineWidth(0.5).strokeColor(LIGHT)
       .moveTo(x0, y + rh).lineTo(RIGHT, y + rh).stroke();
-    doc.fillColor(INK).font('Helvetica').fontSize(9);
-    let cx = x0;
-    
+
     // Build description with wage details if present
     const detailText = item.details && item.details.length > 0 ? item.details.join('\n') : '';
     const fullDescription = detailText ? item.description + '\n' + detailText : item.description;
@@ -68,18 +66,27 @@ function drawItemsTable(doc, items, y0, compact) {
       + (detailText ? doc.heightOfString(detailText, { width: cols[1] - 12, fontSize: compact ? 7 : 7 }) : 0);
     const rowH = Math.max(rh, descLines + 10);
     doc.rect(x0, y, W, rowH).fill(fill);
+
+    let cx = x0;
+    doc.fillColor(INK).font('Helvetica').fontSize(9);
     doc.text(String(idx + 1), cx + 6, y + 6, { width: cols[0] - 12 });
     cx += cols[0];
-    doc.font('Helvetica').fontSize(compact ? 9 : 10).text(item.description, cx + 6, y + 6, { width: cols[1] - 12 });
+
+    doc.font('Helvetica-Bold').fontSize(compact ? 9 : 11).fillColor(INK);
+    doc.text(item.description, cx + 6, y + 6, { width: cols[1] - 12 });
+
     if (detailText) {
-      doc.font('Helvetica').fontSize(7).fillColor(GRAY).text(detailText, cx + 6, y + 6 + doc.heightOfString(item.description, { width: cols[1] - 12 }) + 2, { width: cols[1] - 12, lineGap: 1 });
+      doc.font('Helvetica').fontSize(7).fillColor(GRAY);
+      doc.text(detailText, cx + 6, y + 6 + doc.heightOfString(item.description, { width: cols[1] - 12 }) + 4, { width: cols[1] - 12, lineGap: 0 });
     }
     cx += cols[1];
-    doc.font('Helvetica').text(String(item.quantity), cx + 6, y + 6, { width: cols[2] - 12, align: 'right' });
+
+    doc.fillColor(INK).font('Helvetica').text(String(item.quantity), cx + 6, y + 6, { width: cols[2] - 12, align: 'right' });
     cx += cols[2];
     doc.font('Helvetica').text(money(item.rate), cx + 6, y + 6, { width: cols[3] - 12, align: 'right' });
     cx += cols[3];
-    doc.font('Helvetica-Bold').text(money(item.amount), cx + 6, y + 6, { width: cols[4] - 12, align: 'right' });
+    doc.font('Helvetica-Bold').fontSize(compact ? 9 : 10).text(money(item.amount), cx + 6, y + 6, { width: cols[4] - 12, align: 'right' });
+
     doc.lineWidth(0.5).strokeColor(LIGHT)
       .moveTo(x0, y + rowH).lineTo(RIGHT, y + rowH).stroke();
     y += rowH;
@@ -175,7 +182,7 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
 
   const bank = { name: invoice.rep_bank_name || settings.bank_name, bsb: invoice.rep_bank_bsb || settings.bank_bsb, account: invoice.rep_bank_account || settings.bank_account };
   if (bank.name || bank.bsb || bank.account || settings.payment_terms) {
-    ty += 10;
+    ty += 12;
     doc.rect(M, ty, W, 1).fill(LIGHT);
     ty += 16;
     doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('PAYMENT DETAILS', M, ty);

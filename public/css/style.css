@@ -928,65 +928,7 @@ textarea.input { resize: vertical; line-height: 1.45; }
 .preview-card { background: var(--surface); }
 .preview-card .card-head { padding-bottom: 0; }
 
-.preview-page {
-  background: #FFFFFF;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  padding: var(--space-2xl);
-  font-size: 11px;
-  color: #1B2434;
-  line-height: 1.5;
-  max-height: 75vh;
-  overflow-y: auto;
-}
-
-.preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-sm); }
-.preview-company-name { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: #1B2434; }
-.preview-company-sub { font-size: 9px; color: #5F6874; margin-top: 1px; }
-.preview-invoice-label { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: #D9481C; }
-.preview-invoice-num { font-size: 9px; color: #5F6874; text-align: right; margin-top: 1px; }
-
-.preview-divider { height: 1px; background: #E0D8C6; margin: var(--space-sm) 0; }
-
-.preview-body { display: flex; justify-content: space-between; gap: var(--space-md); margin-bottom: 2px; }
-.preview-label { font-size: 8px; font-weight: 700; color: #5F6874; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
-.preview-client-name { font-weight: 700; font-size: 11px; color: #1B2434; }
-.preview-client-contact,
-.preview-client-email,
-.preview-client-address { font-size: 9px; color: #5F6874; margin-top: 1px; }
-
-.preview-meta { text-align: right; flex-shrink: 0; }
-.preview-meta-row { margin-bottom: 2px; }
-.preview-meta-row span { font-size: 9px; color: #1B2434; }
-
-.preview-items { width: 100%; border-collapse: collapse; margin: var(--space-sm) 0; }
-.preview-items th {
-  text-align: left;
-  font-size: 8px;
-  font-weight: 700;
-  color: #5F6874;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 3px 0;
-  border-bottom: 1px solid #E0D8C6;
-}
-.preview-items th.num, .preview-items td.num { text-align: right; }
-.preview-items td { padding: 3px 0; font-size: 9px; border-bottom: 1px solid #E0D8C6; }
-.preview-items tr:last-child td { border-bottom: none; }
-.preview-empty td { color: #5F6874; font-style: italic; text-align: center; padding: var(--space-sm) 0; }
-
-.preview-totals { margin-left: auto; width: 55%; }
-.preview-total-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 9px; }
-.preview-total-grand {
-  font-weight: 700;
-  font-size: 11px;
-  color: #D9481C;
-  border-top: 2px solid #D9481C;
-  padding-top: 4px;
-  margin-top: 2px;
-}
-
-.preview-footer { margin-top: var(--space-sm); font-size: 9px; color: #5F6874; }
+/* Legacy preview styles removed - see premium preview styles below */
 
 /* ---------- Responsive ---------- */
 
@@ -1261,6 +1203,16 @@ textarea.input { resize: vertical; line-height: 1.45; }
   .report-table { min-width: 700px; }
 }
 
+
+
+/* Date display in DD/MM/YYYY */
+.date-display {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+}
+
 /* ---------- Premium invoice form spacing ---------- */
 
 .invoice-form .card {
@@ -1287,15 +1239,57 @@ textarea.input { resize: vertical; line-height: 1.45; }
   color: var(--ink);
 }
 
+/* Wage line row - make it the hero */
+.line-row[data-line-item-type="wages"] {
+  grid-template-columns: minmax(0,2fr) 70px 100px 100px 36px;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--space-sm);
+}
+
+.line-row[data-line-item-type="wages"] input {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.line-row[data-line-item-type="wages"] input[name="item_qty"],
+.line-row[data-line-item-type="wages"] input[name="item_rate"] {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.line-row[data-line-item-type="wages"] .line-amount {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
 /* Wage details - clearly secondary */
 .wage-details-container {
   font-size: 12px !important;
   color: var(--muted) !important;
   line-height: 1.6 !important;
+  padding-left: 0 !important;
 }
 
 .wage-details-container div {
   padding: 1px 0;
+}
+
+/* Wage details row - subtle */
+.line-row.wage-details {
+  margin-top: -4px !important;
+  padding-left: 0 !important;
+  border-left: none !important;
+  margin-bottom: var(--space-md) !important;
 }
 
 /* Preview hierarchy */
@@ -1318,12 +1312,191 @@ textarea.input { resize: vertical; line-height: 1.45; }
   font-weight: 700 !important;
 }
 
-/* Date display in DD/MM/YYYY */
-.date-display {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--ink-2);
+/* Preview card - premium document feel */
+.preview-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.preview-page {
+  background: #FFFFFF;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2xl);
+  font-size: 11px;
+  color: #1B2434;
+  line-height: 1.5;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 2px solid var(--ink);
+}
+
+.preview-company-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: #1B2434;
+  letter-spacing: -0.01em;
+}
+
+.preview-company-sub {
+  font-size: 9px;
+  color: #5F6874;
+  margin-top: 2px;
+}
+
+.preview-invoice-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--accent);
   letter-spacing: 0.02em;
+}
+
+.preview-invoice-num {
+  font-size: 9px;
+  color: #5F6874;
+  text-align: right;
+  margin-top: 2px;
+}
+
+.preview-divider {
+  height: 1px;
+  background: #E0D8C6;
+  margin: var(--space-md) 0;
+}
+
+.preview-body {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-sm);
+}
+
+.preview-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: #5F6874;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 3px;
+}
+
+.preview-client-name {
+  font-weight: 700;
+  font-size: 12px;
+  color: #1B2434;
+}
+
+.preview-client-contact,
+.preview-client-email,
+.preview-client-address {
+  font-size: 9px;
+  color: #5F6874;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.preview-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.preview-meta-row {
+  margin-bottom: 3px;
+}
+
+.preview-meta-row span {
+  font-size: 9px;
+  color: #1B2434;
+}
+
+.preview-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--space-md) 0;
+}
+
+.preview-items th {
+  text-align: left;
+  font-size: 8px;
+  font-weight: 700;
+  color: #5F6874;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 0;
+  border-bottom: 1px solid #E0D8C6;
+}
+
+.preview-items th.num, .preview-items td.num { text-align: right; }
+
+.preview-items td {
+  padding: 4px 0;
+  font-size: 9px;
+  border-bottom: 1px solid #E0D8C6;
+}
+
+.preview-items tr.wage-line-primary td {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  padding: 6px 0 2px 0;
+  border-bottom: none;
+}
+
+.preview-items tr.wage-line-primary td.num {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.preview-items tr:last-child td { border-bottom: none; }
+
+.preview-items .wage-detail-row td {
+  font-size: 8px;
+  color: #5F6874;
+  border-bottom: none;
+  padding: 1px 0 1px 12px;
+}
+
+.preview-empty td { color: #5F6874; font-style: italic; text-align: center; padding: var(--space-md) 0; }
+
+.preview-totals { margin-left: auto; width: 55%; }
+
+.preview-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 9px;
+  color: #5F6874;
+}
+
+.preview-total-grand {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink) !important;
+  border-top: 2px solid var(--accent) !important;
+  padding-top: 6px !important;
+  margin-top: 4px !important;
+}
+
+.preview-footer {
+  margin-top: var(--space-md);
+  font-size: 9px;
+  color: #5F6874;
+  padding-top: var(--space-sm);
+  border-top: 1px solid #E0D8C6;
 }
 
 /* ---------- Wage Calculator Redesign ---------- */

@@ -417,11 +417,12 @@ function updatePreview() {
         var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
         var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
         var a = q * r;
-        html += '<tr><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class="num">' + q + '</td><td class="num">' + fmt(r) + '</td><td class="num">' + fmt(a) + '</td></tr>';
+        var isWageLine = row.getAttribute('data-line-item-type') === 'wages';
+        html += '<tr' + (isWageLine ? ' class="wage-line-primary"' : '') + '><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class="num">' + q + '</td><td class="num">' + fmt(r) + '</td><td class="num">' + fmt(a) + '</td></tr>';
         // If this row has wage details, add them
         var detailsRow = row.nextElementSibling;
         if (detailsRow && detailsRow.classList && detailsRow.classList.contains('wage-details')) {
-          var detailsHtml = '<tr><td colspan="5" style="padding-left: 20px; font-size: 12px; color: var(--muted);">';
+          var detailsHtml = '<tr class="wage-detail-row"><td colspan="5">';
           var detailItems = detailsRow.querySelectorAll('.wage-details-container div');
           detailItems.forEach(function(detailEl) {
             detailsHtml += escHtml(detailEl.textContent) + '<br>';
@@ -1010,7 +1011,7 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
     });
   } else {
     var range = weekState.weekStarting ? 'Week of ' + fmtWeekRange(weekState.weekStarting) : '';
-    var primaryDesc = 'Wages/Retainer — ' + range + ' — ' + fmt(amount);
+    var primaryDesc = 'Wages/Retainer — ' + range;
     addLine({
       description: primaryDesc,
       quantity: 1,
