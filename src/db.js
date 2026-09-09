@@ -12,6 +12,7 @@ const SCHEMA = `
     name TEXT NOT NULL,
     email TEXT DEFAULT '',
     abn TEXT DEFAULT '',
+    phone TEXT DEFAULT '',
     bank_name TEXT DEFAULT '',
     bank_bsb TEXT DEFAULT '',
     bank_account TEXT DEFAULT '',
@@ -106,6 +107,7 @@ async function initDb() {
       await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_name TEXT DEFAULT ''");
       await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_bsb TEXT DEFAULT ''");
       await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account TEXT DEFAULT ''");
+      await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT DEFAULT ''");
     } catch (e) {
       console.warn('users bank details migration skipped:', e.message);
     }
@@ -509,13 +511,13 @@ async function createAdminUser({ username, password, name, email, role }) {
   );
 }
 
-async function createRepUser({ name, email, abn, bank_name, bank_bsb, bank_account, pin }) {
+async function createRepUser({ name, email, abn, bank_name, bank_bsb, bank_account, phone, pin }) {
   await ensureReady();
   const username = String(name).trim().toLowerCase().replace(/\s+/g, '.');
   const pinHash = pin ? bcrypt.hashSync(String(pin), 10) : '';
   await getPool().query(
-    'INSERT INTO users (username, password_hash, pin_hash, name, email, abn, bank_name, bank_bsb, bank_account, role) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
-    [username, '', pinHash, name, email || '', abn || '', bank_name || '', bank_bsb || '', bank_account || '', 'rep']
+    'INSERT INTO users (username, password_hash, pin_hash, name, email, abn, phone, bank_name, bank_bsb, bank_account, role) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',
+    [username, '', pinHash, name, email || '', abn || '', phone || '', bank_name || '', bank_bsb || '', bank_account || '', 'rep']
   );
 }
 

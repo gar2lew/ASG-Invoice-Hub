@@ -64,7 +64,7 @@ router.get('/users', requireAdmin, async (req, res, next) => {
 
 router.post('/users', requireAdmin, async (req, res, next) => {
   try {
-    const { name, email, abn, bank_name, bank_bsb, bank_account, pin } = req.body || {};
+    const { name, email, abn, bank_name, bank_bsb, bank_account, phone, pin } = req.body || {};
     if (!name || !pin) {
       flash(req, res, 'Name and PIN are required.', 'error');
       return res.redirect('/users');
@@ -86,6 +86,7 @@ router.post('/users', requireAdmin, async (req, res, next) => {
       name: String(name).trim(),
       email: String(email || '').trim(),
       abn: String(abn || '').trim(),
+      phone: String(phone || '').trim(),
       bank_name: String(bank_name || '').trim(),
       bank_bsb: String(bank_bsb || '').trim(),
       bank_account: String(bank_account || '').trim(),
@@ -305,6 +306,7 @@ router.post('/admin/users/create-rep', requireAdmin, async (req, res, next) => {
       bank_name: String(bank_name || '').trim(),
       bank_bsb: String(bank_bsb || '').trim(),
       bank_account: String(bank_account || '').trim(),
+      phone: String(phone || '').trim(),
       pin: cleanPin,
     });
     flash(req, res, `Rep account created for ${name}.`);

@@ -73,29 +73,30 @@
     <% } %>
   </section>
 
-  <aside class="detail-side">
-    <section class="card">
-      <h2 class="card-title">Customer</h2>
-      <dl class="dl">
-        <div><dt>Name</dt><dd><%= invoice.customer_name %></dd></div>
-        <% if (invoice.customer_company) { %><div><dt>Company</dt><dd><%= invoice.customer_company %></dd></div><% } %>
-        <% if (invoice.customer_email) { %><div><dt>Email</dt><dd><%= invoice.customer_email %></dd></div><% } %>
-        <% if (invoice.customer_address) { %><div><dt>Address</dt><dd><%= invoice.customer_address %></dd></div><% } %>
-      </dl>
-    </section>
-    <section class="card">
-      <h2 class="card-title">Details</h2>
-      <dl class="dl">
-        <div><dt>Prepared by</dt><dd><%= invoice.repName %></dd></div>
-        <% if (invoice.repAbn) { %><div><dt>Contractor ABN</dt><dd><%= invoice.repAbn %></dd></div><% } %>
-        <div><dt>Issued</dt><dd><%= invoice.issueDateText %></dd></div>
-        <% if (invoice.dueDateText) { %><div><dt>Due</dt><dd><%= invoice.dueDateText %></dd></div><% } %>
-        <% if (invoice.sent_at) { %><div><dt>Last emailed</dt><dd><%= fmtDate(invoice.sent_at.slice(0,10)) %></dd></div><% } %>
-        <% if (invoice.downloaded_at) { %><div><dt>Downloaded</dt><dd><%= fmtDate(invoice.downloaded_at) %><% if (invoice.download_count > 1) { %> (<%= invoice.download_count %>×)<% } %></dd></div><% } %>
-        <% if (invoice.paid_at) { %><div><dt>Paid</dt><dd><%= fmtDate(invoice.paid_at.slice(0,10)) %></dd></div><% } %>
-      </dl>
-    </section>
-  </aside>
+  <div class="detail-side">
+      <section class="card">
+        <h2 class="card-title">Customer</h2>
+        <dl class="dl">
+          <div><dt>Name</dt><dd><%= invoice.customer_name %></dd></div>
+          <% if (invoice.customer_company) { %><div><dt>Company</dt><dd><%= invoice.customer_company %></dd></div><% } %>
+          <% if (invoice.customer_email) { %><div><dt>Email</dt><dd><%= invoice.customer_email %></dd></div><% } %>
+          <% if (invoice.customer_address) { %><div><dt>Address</dt><dd><%= invoice.customer_address %></dd></div><% } %>
+        </dl>
+      </section>
+      <section class="card">
+        <h2 class="card-title">Details</h2>
+        <dl class="dl">
+          <div><dt>Prepared by</dt><dd><%= invoice.repName %></dd></div>
+          <% if (invoice.repAbn) { %><div><dt>Contractor ABN</dt><dd><%= invoice.repAbn %></dd></div><% } %>
+          <% if (invoice.repEmail) { %><div><dt>Email</dt><dd><%= invoice.repEmail %></dd></div><% } %>
+          <% if (invoice.repPhone) { %><div><dt>Phone</dt><dd><%= invoice.repPhone %></dd></div><% } %>
+          <div><dt>Issued</dt><dd><%= invoice.issueDateText %></dd></div>
+          <% if (invoice.sent_at) { %><div><dt>Last emailed</dt><dd><%= fmtDate(invoice.sent_at.slice(0,10)) %></dd></div><% } %>
+          <% if (invoice.downloaded_at) { %><div><dt>Downloaded</dt><dd><%= fmtDate(invoice.downloaded_at) %><% if (invoice.download_count > 1) { %> (<%= invoice.download_count %>×)<% } %></dd></div><% } %>
+          <% if (invoice.paid_at) { %><div><dt>Paid</dt><dd><%= fmtDate(invoice.paid_at.slice(0,10)) %></dd></div><% } %>
+        </dl>
+      </section>
+    </div>
 </div>
 
 <%- include('partials/footer') %>

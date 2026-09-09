@@ -105,24 +105,22 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   const repSub = [repAbn && 'ABN ' + repAbn].filter(Boolean).join('   ·   ');
   if (repSub) doc.font('Helvetica').fontSize(8).fillColor(GRAY).text(repSub, M, 78, { width: 320 });
 
+  // Rep email and phone
+  const repContact = [invoice.rep_email && invoice.rep_email, invoice.rep_phone && invoice.rep_phone].filter(Boolean).join('   ·   ');
+  if (repContact) doc.font('Helvetica').fontSize(8).fillColor(GRAY).text(repContact, M, 90, { width: 320 });
+
   // RIGHT HEADER - Invoice label and number
   doc.fillColor(ACCENT).font('Helvetica-Bold').fontSize(30).text('INVOICE', RIGHT, 44, { align: 'right', width: 0 });
   doc.fillColor(INK).font('Helvetica-Bold').fontSize(11).text(invoice.invoice_number, RIGHT, 80, { align: 'right', width: 0 });
 
   doc.moveTo(M, 108).lineTo(RIGHT, 108).lineWidth(2).strokeColor(INK).stroke();
 
-  // Metadata row - Issue Date / Due Date (horizontal, not vertical)
+  // Metadata row - Issue Date only (horizontal)
   let my = 124;
   const issueDateFormatted = fmtDate(invoice.issue_date);
-  const dueDateFormatted = invoice.due_date ? fmtDate(invoice.due_date) : '';
   
   doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('ISSUE DATE', M, my);
   doc.font('Helvetica').fontSize(10).fillColor(INK).text(issueDateFormatted, M + 80, my);
-  
-  if (dueDateFormatted) {
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('DUE DATE', M + 200, my);
-    doc.font('Helvetica').fontSize(10).fillColor(INK).text(dueDateFormatted, M + 280, my);
-  }
 
   let y = 152;
 
@@ -134,9 +132,7 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   const fromLines = [
     repAbn && `ABN: ${repAbn}`,
     invoice.rep_email && `Email: ${invoice.rep_email}`,
-    (invoice.rep_bank_name || settings.bank_name) && `Bank: ${invoice.rep_bank_name || settings.bank_name}`,
-    (invoice.rep_bank_bsb || settings.bank_bsb) && `BSB: ${invoice.rep_bank_bsb || settings.bank_bsb}`,
-    (invoice.rep_bank_account || settings.bank_account) && `Account: ${invoice.rep_bank_account || settings.bank_account}`
+    invoice.rep_phone && `Phone: ${invoice.rep_phone}`
   ].filter(Boolean);
   fromLines.forEach((line) => { doc.text(line, M, y); y += 12; });
   y += 8;
@@ -218,7 +214,7 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
   doc.font('Helvetica-Bold').fontSize(8).fillColor(GRAY).text('FROM', M, y); y += 12;
   doc.font('Helvetica-Bold').fontSize(10).fillColor(INK).text(repName, M, y); y += 13;
   doc.font('Helvetica').fontSize(7).fillColor(GRAY);
-  [repAbn && `ABN: ${repAbn}`, invoice.rep_email && `Email: ${invoice.rep_email}`, (invoice.rep_bank_name || settings.bank_name) && `Bank: ${invoice.rep_bank_name || settings.bank_name}`, (invoice.rep_bank_bsb || settings.bank_bsb) && `BSB: ${invoice.rep_bank_bsb || settings.bank_bsb}`, (invoice.rep_bank_account || settings.bank_account) && `Account: ${invoice.rep_bank_account || settings.bank_account}`].filter(Boolean).forEach((line) => { doc.text(line, M, y); y += 9; });
+  [repAbn && `ABN: ${repAbn}`, invoice.rep_email && `Email: ${invoice.rep_email}`, invoice.rep_phone && `Phone: ${invoice.rep_phone}`].filter(Boolean).forEach((line) => { doc.text(line, M, y); y += 9; });
   y += 7;
   doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('BILL TO', M, y);
   y += 15;

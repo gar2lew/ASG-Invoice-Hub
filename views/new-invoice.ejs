@@ -84,28 +84,29 @@
                                                         <input type="hidden" id="calc-rate" name="calc_rate" value="180">
 
               <!-- Standard Week -->
-              <div class="calc-section">
-                <h3 class="calc-section-title">Standard Week (Mon–Fri)</h3>
-                <div class="calc-days" id="calc-days-standard">
-                  <label class="calc-day"><input type="checkbox" data-day="Mon"><span>Mon</span></label>
-                  <label class="calc-day"><input type="checkbox" data-day="Tue"><span>Tue</span></label>
-                  <label class="calc-day"><input type="checkbox" data-day="Wed"><span>Wed</span></label>
-                  <label class="calc-day"><input type="checkbox" data-day="Thu"><span>Thu</span></label>
-                  <label class="calc-day"><input type="checkbox" data-day="Fri"><span>Fri</span></label>
-                </div>
-                <div class="calc-section-actions">
-                  <button type="button" class="btn btn-ghost btn-small" id="select-mon-fri">Select Mon–Fri</button>
-                </div>
-              </div>
+                            <div class="calc-section">
+                              <h3 class="calc-section-title">Standard Week (Mon–Fri)</h3>
+                              <div class="calc-days" id="calc-days-standard">
+                                <label class="calc-day"><input type="checkbox" data-day="Mon"><span>Mon</span><span class="day-amount">$180</span></label>
+                                <label class="calc-day"><input type="checkbox" data-day="Tue"><span>Tue</span><span class="day-amount">$180</span></label>
+                                <label class="calc-day"><input type="checkbox" data-day="Wed"><span>Wed</span><span class="day-amount">$180</span></label>
+                                <label class="calc-day"><input type="checkbox" data-day="Thu"><span>Thu</span><span class="day-amount">$180</span></label>
+                                <label class="calc-day"><input type="checkbox" data-day="Fri"><span>Fri</span><span class="day-amount">$180</span></label>
+                              </div>
+                              <div class="calc-section-actions">
+                                <button type="button" class="btn btn-ghost btn-small" id="select-mon-fri">Select Mon–Fri</button>
+                                <button type="button" class="btn btn-ghost btn-small" id="select-mon-sat">Select Mon–Sat</button>
+                              </div>
+                            </div>
 
               <!-- Saturday Extra -->
-              <div class="calc-section calc-section-sat">
-                <h3 class="calc-section-title">Saturday Extra</h3>
-                <div class="calc-days" id="calc-days-sat">
-                  <label class="calc-day calc-day-half"><input type="checkbox" data-day="Sat" value="0.5"><span>Saturday <em>&frac12;</em> day</span></label>
-                </div>
-                <div class="calc-sat-hint">Adds <span id="sat-amount">$100.00</span> to weekly total</div>
-              </div>
+                            <div class="calc-section calc-section-sat">
+                              <h3 class="calc-section-title">Saturday Extra</h3>
+                              <div class="calc-days" id="calc-days-sat">
+                                <label class="calc-day calc-day-half"><input type="checkbox" data-day="Sat" value="0.5"><span>Sat ½</span><span class="day-amount">$100</span></label>
+                              </div>
+                              <div class="calc-sat-hint">Adds <span id="sat-amount">$100.00</span> to weekly total</div>
+                            </div>
 
               <div class="calc-result">
                               <div class="calc-total-row">
@@ -117,10 +118,13 @@
                             </div>
 
               <!-- Week start date - visible for date selection -->
-              <div class="field week-start-field">
-                <label for="week_start">Week starting</label>
-                <input type="date" name="week_start" id="week_start" value="<%= issueDate %>">
-              </div>
+                            <div class="field week-start-field">
+                              <label for="week_start">Week starting</label>
+                              <div class="date-input-wrapper">
+                                <input type="date" name="week_start" id="week_start" value="<%= issueDate %>">
+                                <svg class="date-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 3h10v10H3z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 6h10M7 3v4" stroke="currentColor" stroke-width="1.5"/></svg>
+                              </div>
+                            </div>
             </section>
 
             <!-- Dates & Notes (Compact Grid) -->
@@ -130,38 +134,38 @@
                             <p class="card-sub">Verify dates for selected days.</p>
                           </div>
                           <div class="wage-dates-grid" id="wage-days">
-                                          <div class="wage-day-tile" data-day="Mon">
-                                            <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Mon"><span>Mon</span></label>
-                                            <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Mon" hidden></div>
-                                          </div>
-                                          <div class="wage-day-tile" data-day="Tue">
-                                            <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Tue"><span>Tue</span></label>
-                                            <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Tue" hidden></div>
-                                          </div>
-                                          <div class="wage-day-tile" data-day="Wed">
-                                            <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Wed"><span>Wed</span></label>
-                                            <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Wed" hidden></div>
-                                          </div>
-                                          <div class="wage-day-tile" data-day="Thu">
-                                            <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Thu"><span>Thu</span></label>
-                                            <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Thu" hidden></div>
-                                          </div>
-                                          <div class="wage-day-tile" data-day="Fri">
-                                            <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Fri"><span>Fri</span></label>
-                                            <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Fri" hidden></div>
-                                          </div>
-                                          <div class="wage-day-tile wage-day-tile-sat" data-day="Sat">
-                                            <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Sat"><span>Sat</span></label>
-                                            <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Sat" hidden></div>
-                                            <div class="wage-day-half">½ day</div>
-                                          </div>
-                                        </div>
+                            <div class="wage-day-tile" data-day="Mon">
+                              <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Mon"><span>Mon</span><span class="day-amount">$180</span></label>
+                              <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Mon" hidden></div>
+                            </div>
+                            <div class="wage-day-tile" data-day="Tue">
+                              <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Tue"><span>Tue</span><span class="day-amount">$180</span></label>
+                              <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Tue" hidden></div>
+                            </div>
+                            <div class="wage-day-tile" data-day="Wed">
+                              <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Wed"><span>Wed</span><span class="day-amount">$180</span></label>
+                              <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Wed" hidden></div>
+                            </div>
+                            <div class="wage-day-tile" data-day="Thu">
+                              <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Thu"><span>Thu</span><span class="day-amount">$180</span></label>
+                              <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Thu" hidden></div>
+                            </div>
+                            <div class="wage-day-tile" data-day="Fri">
+                              <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Fri"><span>Fri</span><span class="day-amount">$180</span></label>
+                              <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Fri" hidden></div>
+                            </div>
+                            <div class="wage-day-tile wage-day-tile-sat" data-day="Sat">
+                              <label class="wage-day-check"><input type="checkbox" name="wage_day" data-day="Sat"><span>Sat</span><span class="day-amount">$100</span></label>
+                              <div class="wage-day-date"><span class="wage-date-display">—</span><input class="input input-sm wage-date" type="date" name="date_Sat" hidden></div>
+                              <div class="wage-day-half">½ day</div>
+                            </div>
+                          </div>
 
-              <label class="field" style="margin-top: 16px;">
-                <span class="field-label">Notes</span>
-                <textarea class="input" name="notes" id="notes" rows="2" placeholder="Optional message shown on the invoice"></textarea>
-              </label>
-            </section>
+                          <label class="field" style="margin-top: 16px;">
+                            <span class="field-label">Notes</span>
+                            <textarea class="input" name="notes" id="notes" rows="2" placeholder="Optional message shown on the invoice"></textarea>
+                          </label>
+                        </section>
     </div>
 
     <!-- RIGHT COLUMN ~40% -->
@@ -232,24 +236,20 @@
           </div>
           <div class="preview-divider"></div>
           <div class="preview-rep-details" id="pv-rep-details"></div>
-          <div class="preview-body">
-            <div class="preview-billto">
-              <div class="preview-label">BILL TO</div>
-              <div class="preview-client-name" id="pv-client-name"></div>
-              <div class="preview-client-contact" id="pv-client-contact"></div>
-              <div class="preview-client-email" id="pv-client-email"></div>
-              <div class="preview-client-address" id="pv-client-address"></div>
-            </div>
-            <div class="preview-meta">
-              <div class="preview-meta-row">
-                <span class="preview-label">ISSUE DATE</span>
-                <span id="pv-issue-date"><%= issueDate %></span>
-              </div>
-              <div class="preview-meta-row">
-                <span class="preview-label">DUE DATE</span>
-                <span id="pv-due-date"><%= dueDate %></span>
-              </div>
-            </div>
+                    <div class="preview-body">
+                      <div class="preview-billto">
+                        <div class="preview-label">BILL TO</div>
+                        <div class="preview-client-name" id="pv-client-name"></div>
+                        <div class="preview-client-contact" id="pv-client-contact"></div>
+                        <div class="preview-client-email" id="pv-client-email"></div>
+                        <div class="preview-client-address" id="pv-client-address"></div>
+                      </div>
+                      <div class="preview-meta">
+                        <div class="preview-meta-row">
+                          <span class="preview-label">ISSUE DATE</span>
+                          <span id="pv-issue-date"><%= issueDate %></span>
+                        </div>
+                      </div>
           </div>
           <div class="preview-divider"></div>
           <table class="preview-items">

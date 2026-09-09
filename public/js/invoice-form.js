@@ -862,6 +862,7 @@ var calcAdd = document.getElementById('calc-add');
 var weekStart = document.getElementById('week_start');
 var notesEl = document.getElementById('notes');
 var selectMonFriBtn = document.getElementById('select-mon-fri');
+var selectMonSatBtn = document.getElementById('select-mon-sat');
 
 function getSelectedDays() {
   var selected = [];
@@ -946,6 +947,16 @@ if (wageDatesGrid) {
     onWeekStateChanged('wage-days');
   });
 }
+
+if (selectMonSatBtn) selectMonSatBtn.addEventListener('click', function () {
+  if (calcDaysStandard) {
+    calcDaysStandard.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = true; });
+  }
+  if (calcDaysSat) {
+    calcDaysSat.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = true; });
+  }
+  onWeekStateChanged('select-mon-sat');
+});
 
 if (selectMonFriBtn) selectMonFriBtn.addEventListener('click', function () {
   if (calcDaysStandard) {

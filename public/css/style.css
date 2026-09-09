@@ -1595,8 +1595,18 @@ textarea.input { resize: vertical; line-height: 1.45; }
 
 .calc-day span { pointer-events: none; }
 
+.day-amount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-left: var(--space-xs);
+}
+
 .calc-section-actions {
   margin-top: var(--space-md);
+  display: flex;
+  gap: var(--space-sm);
 }
 
 .calc-section-sat {
@@ -1651,6 +1661,46 @@ textarea.input { resize: vertical; line-height: 1.45; }
 }
 
 .calc-result .btn { flex-shrink: 0; }
+
+/* Date input wrapper */
+.date-input-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.date-input-wrapper input[type="date"] {
+  padding-right: 40px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.date-input-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 12px;
+  opacity: 0;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+}
+
+.date-icon {
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.date-input-wrapper:focus-within .date-icon {
+  color: var(--accent);
+}
+
+.date-input-wrapper input[type="date"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
 
 /* ---------- Dates Grid ---------- */
 
