@@ -216,7 +216,7 @@ async function getUserByUsername(username) {
 
 async function getUserById(id) {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, name, email, abn, bank_name, bank_bsb, bank_account, role, created_at FROM users WHERE id = $1', [id]);
+  const r = await getPool().query('SELECT id, username, name, email, phone, abn, bank_name, bank_bsb, bank_account, role, created_at FROM users WHERE id = $1', [id]);
   return r.rows[0];
 }
 
@@ -244,6 +244,20 @@ async function resetPin(id, pin) {
   await ensureReady();
   const hash = bcrypt.hashSync(String(pin), 10);
   await getPool().query('UPDATE users SET pin_hash = $1 WHERE id = $2', [hash, id]);
+}
+
+async function updateUser(id, updates) {
+  await ensureReady();
+  const allowed = ['name', 'email', 'phone', 'abn', 'bank_name', 'bank_bsb', 'bank_account'];
+  const cols = [];
+  const values = [];
+  for (const k of allowed) {
+    if (!(k in updates)) continue;
+    cols.push(`${k} = $${cols.length + 2}`);
+    values.push(String(updates[k] ?? ''));
+  }
+  if (!cols.length) return;
+  await getPool().query(`UPDATE users SET ${cols.join(', ')} WHERE id = $1`, [id, ...values]);
 }
 
 async function resetPassword(id, password) {
@@ -534,6 +548,7 @@ module.exports = {
   createUser,
   resetPassword,
   resetPin,
+  updateUser,
   deleteUser,
   createInvoice,
   getInvoice,

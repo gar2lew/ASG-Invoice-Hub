@@ -1163,6 +1163,7 @@ textarea.input { resize: vertical; line-height: 1.45; }
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  table-layout: fixed;
 }
 
 .user-table th,
@@ -1170,6 +1171,9 @@ textarea.input { resize: vertical; line-height: 1.45; }
   padding: var(--space-sm) var(--space-md);
   text-align: left;
   border-bottom: 1px solid var(--line);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-table th {
@@ -1182,12 +1186,55 @@ textarea.input { resize: vertical; line-height: 1.45; }
   font-weight: 600;
 }
 
+.user-table th:nth-child(1) { width: 18%; }
+.user-table th:nth-child(2) { width: 22%; }
+.user-table th:nth-child(3) { width: 14%; }
+.user-table th:nth-child(4) { width: 12%; }
+.user-table th:nth-child(5) { width: 12%; }
+.user-table th:nth-child(6) { width: 22%; }
+
 .user-table td {
   color: var(--ink-2);
 }
 
 .user-table tr:hover td {
   background: var(--surface-2);
+}
+
+.user-table .cell-main {
+  display: block;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.user-table .cell-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.user-table .actions {
+  white-space: nowrap;
+  font-size: 0;
+}
+
+.user-table .actions .btn,
+.user-table .actions .inline-form {
+  display: inline-block;
+  margin-right: var(--space-xs);
+  font-size: 12px;
+}
+
+.user-table .actions .inline-form {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.user-table .actions .inline-form .input-sm {
+  width: 60px;
+  padding: 4px 6px;
+  font-size: 11px;
 }
 
 .create-account-grid {

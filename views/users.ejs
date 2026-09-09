@@ -17,29 +17,41 @@
       <div class="table-wrap">
         <table class="user-table">
           <thead>
-            <tr><th>Name</th><th>Role</th><th>Email</th><th>ABN</th><th>Created</th><th class="actions"><span class="sr-only">Actions</span></th></tr>
+            <tr><th>Rep</th><th>Contact</th><th>ABN</th><th>Bank details</th><th>Created</th><th class="actions"><span class="sr-only">Actions</span></th></tr>
           </thead>
           <tbody>
             <% users.forEach(function(u) { %>
             <tr>
               <td>
                 <span class="cell-main"><%= u.name %></span>
+                <span class="cell-sub"><%= u.role %></span>
               </td>
-              <td><span class="status-pill status-<%= u.role === 'admin' ? 'sent' : 'draft' %>"><%= u.role %></span></td>
-              <td class="muted"><%= u.email || '—' %></td>
+              <td>
+                <% if (u.email) { %><span class="cell-main"><%= u.email %></span><% } %>
+                <% if (u.phone) { %><span class="cell-sub"><%= u.phone %></span><% } %>
+                <% if (!u.email && !u.phone) { %><span class="muted">—</span><% } %>
+              </td>
               <td class="mono muted"><%= u.abn || '—' %></td>
+              <td>
+                <% if (u.bank_name && u.bank_bsb && u.bank_account) { %>
+                  <span class="badge badge-paid">Complete</span>
+                <% } else { %>
+                  <span class="badge badge-draft">Missing</span>
+                <% } %>
+              </td>
               <td class="muted"><%= u.createdText %></td>
               <td class="actions">
                 <% if (u.role !== 'admin') { %>
-                <form method="post" action="/users/<%= u.id %>/reset-pin" class="inline-form">
-                  <input class="input input-sm" type="text" name="pin" placeholder="New PIN" pattern="\d{4}" maxlength="4" minlength="4" required>
-                  <button class="btn btn-ghost btn-tiny" type="submit">Reset PIN</button>
-                </form>
+                  <a class="btn btn-ghost btn-tiny" href="/users/<%= u.id %>/edit">Edit</a>
+                  <form method="post" action="/users/<%= u.id %>/reset-pin" class="inline-form">
+                    <input class="input input-sm" type="text" name="pin" placeholder="New PIN" pattern="\d{4}" maxlength="4" minlength="4" required>
+                    <button class="btn btn-ghost btn-tiny" type="submit">Reset PIN</button>
+                  </form>
                 <% } %>
                 <% if (u.id !== currentUser.id) { %>
-                <form method="post" action="/users/<%= u.id %>/delete" class="inline-form" onsubmit="return confirm('Remove <%= u.name %>?');">
-                  <button class="btn btn-danger btn-tiny" type="submit">Remove</button>
-                </form>
+                  <form method="post" action="/users/<%= u.id %>/delete" class="inline-form" onsubmit="return confirm('Remove <%= u.name %>?');">
+                    <button class="btn btn-danger btn-tiny" type="submit">Remove</button>
+                  </form>
                 <% } %>
               </td>
             </tr>

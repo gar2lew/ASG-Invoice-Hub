@@ -1,0 +1,82 @@
+<%- include('partials/head', { title, flash }) %>
+
+<header class="page-head">
+  <div>
+    <p class="kicker">Administration</p>
+    <h1 class="page-title"><%= title %></h1>
+  </div>
+</header>
+
+<form method="post" action="/users/<%= user.id %>/edit">
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Personal details</h2>
+      <p class="card-sub">Shown on invoices as the contractor identity.</p>
+    </div>
+    <div class="grid2">
+      <label class="field">
+        <span class="field-label">Full name <em>*</em></span>
+        <input class="input" type="text" name="name" value="<%= user.name %>" required>
+      </label>
+      <label class="field">
+        <span class="field-label">Email</span>
+        <input class="input" type="email" name="email" value="<%= user.email || '' %>">
+      </label>
+    </div>
+    <div class="grid2">
+      <label class="field">
+        <span class="field-label">Phone</span>
+        <input class="input" type="text" name="phone" value="<%= user.phone || '' %>">
+      </label>
+      <label class="field">
+        <span class="field-label">ABN</span>
+        <input class="input" type="text" name="abn" value="<%= user.abn || '' %>">
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Payment details</h2>
+      <p class="card-sub">Bank details printed under PAYMENT DETAILS on invoices.</p>
+    </div>
+    <div class="grid2">
+      <label class="field">
+        <span class="field-label">Bank name</span>
+        <input class="input" type="text" name="bank_name" value="<%= user.bank_name || '' %>">
+      </label>
+      <label class="field">
+        <span class="field-label">BSB</span>
+        <input class="input" type="text" name="bank_bsb" value="<%= user.bank_bsb || '' %>" inputmode="numeric">
+      </label>
+    </div>
+    <label class="field">
+      <span class="field-label">Account number</span>
+      <input class="input" type="text" name="bank_account" value="<%= user.bank_account || '' %>" inputmode="numeric">
+    </label>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">Security</h2>
+      <p class="card-sub">Leave blank to keep the current PIN.</p>
+    </div>
+    <div class="grid2">
+      <label class="field">
+        <span class="field-label">New PIN</span>
+        <input class="input" type="text" name="pin" placeholder="4 digits">
+      </label>
+      <label class="field">
+        <span class="field-label">Confirm new PIN</span>
+        <input class="input" type="text" name="pin_confirm" placeholder="Re-enter">
+      </label>
+    </div>
+  </section>
+
+  <div class="actions-row">
+    <button class="btn btn-accent" type="submit">Save changes</button>
+    <a class="btn btn-ghost" href="/users">Cancel</a>
+  </div>
+</form>
+
+<%- include('partials/footer') %>

@@ -195,3 +195,157 @@ test.describe('Admin Reports', () => {
     }
   });
 });
+
+test.describe('Rep Profile Management', () => {
+  test('admin can open Edit Rep page', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await expect(page.locator('.page-title')).toContainText('Edit');
+    await expect(page.locator('input[name="name"]')).toBeVisible();
+    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await expect(page.locator('input[name="phone"]')).toBeVisible();
+    await expect(page.locator('input[name="abn"]')).toBeVisible();
+    await expect(page.locator('input[name="bank_name"]')).toBeVisible();
+    await expect(page.locator('input[name="bank_bsb"]')).toBeVisible();
+    await expect(page.locator('input[name="bank_account"]')).toBeVisible();
+  });
+
+  test('rep cannot access Edit Rep page', async ({ page }) => {
+    await page.goto('/users/1/edit');
+    await expect(page).toHaveURL('/');
+  });
+
+  test('existing values pre-populate in Edit Rep form', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await expect(page.locator('input[name="name"]')).not.toHaveValue('');
+    await expect(page.locator('input[name="abn"]')).not.toHaveValue('');
+  });
+
+  test('admin can update rep name', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="name"]', 'Updated Rep Name');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    await expect(page.locator('.user-table')).toContainText('Updated Rep Name');
+  });
+
+  test('admin can update rep email', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="email"]', 'updated@example.com');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await expect(page.locator('input[name="email"]')).toHaveValue('updated@example.com');
+  });
+
+  test('admin can update rep phone', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    // Use the first rep row with Edit button
+    const repRow = page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first();
+    await repRow.locator('a:has-text("Edit")').click();
+    await page.fill('input[name="phone"]', '0435 123 456');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    // Reopen and verify
+    const repRow2 = page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first();
+    await repRow2.locator('a:has-text("Edit")').click();
+    await expect(page.locator('input[name="phone"]')).toHaveValue('0435 123 456');
+  });
+
+  test('admin can update rep ABN', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="abn"]', '79 957 890 132');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await expect(page.locator('input[name="abn"]')).toHaveValue('79 957 890 132');
+  });
+
+  test('admin can update rep bank details', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="bank_name"]', 'Commonwealth Bank');
+    await page.fill('input[name="bank_bsb"]', '062-000');
+    await page.fill('input[name="bank_account"]', '12345678');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await expect(page.locator('input[name="bank_name"]')).toHaveValue('Commonwealth Bank');
+    await expect(page.locator('input[name="bank_bsb"]')).toHaveValue('062-000');
+    await expect(page.locator('input[name="bank_account"]')).toHaveValue('12345678');
+  });
+
+  test('account number preserves string values with leading zeros', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="bank_account"]', '00123456');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await expect(page.locator('input[name="bank_account"]')).toHaveValue('00123456');
+  });
+
+  test('profile edit without PIN does not alter PIN', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="name"]', 'PIN Unchanged Rep');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    await expect(page.locator('.user-table')).toContainText('PIN Unchanged Rep');
+  });
+
+  test('new 4-digit PIN updates successfully', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="pin"]', '5678');
+    await page.fill('input[name="pin_confirm"]', '5678');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    await expect(page.locator('.flash')).toContainText('Saved changes');
+  });
+
+  test('invalid PIN rejected', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="pin"]', '123');
+    await page.fill('input[name="pin_confirm"]', '123');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL(/\/users\/\d+\/edit/);
+    await expect(page.locator('.flash')).toContainText('PIN must be exactly 4 digits');
+  });
+
+  test('bank details status changes Missing to Complete', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="bank_name"]', 'Test Bank');
+    await page.fill('input[name="bank_bsb"]', '123456');
+    await page.fill('input[name="bank_account"]', '87654321');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    await expect(page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first()).toContainText('Complete');
+  });
+
+  test('Users page no longer requires horizontal scrolling', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    const tableWrap = page.locator('.table-wrap');
+    const hasHorizontalScroll = await tableWrap.evaluate(el => el.scrollWidth > el.clientWidth);
+    expect(hasHorizontalScroll).toBeFalsy();
+  });
+});

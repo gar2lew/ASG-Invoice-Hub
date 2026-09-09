@@ -144,6 +144,87 @@ router.post('/users/:id/delete', requireAdmin, async (req, res, next) => {
   }
 });
 
+// ---------- Edit Rep ----------
+
+router.get('/users/:id/edit', requireAdmin, async (req, res, next) => {
+  try {
+    const user = await db.getUserById(req.params.id);
+    if (!user) {
+      flash(req, res, 'User not found.', 'error');
+      return res.redirect('/users');
+    }
+    if (user.role === 'admin') {
+      flash(req, res, 'Admin accounts are edited separately.', 'error');
+      return res.redirect('/users');
+    }
+    const hasBankDetails = user.bank_name || user.bank_bsb || user.bank_account;
+    const flashMsg = req.session.flash || null;
+    req.session.flash = null;
+    res.render('user-edit', {
+      title: `Edit ${user.name}`,
+      flash: flashMsg,
+      user,
+      hasBankDetails,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/users/:id/edit', requireAdmin, async (req, res, next) => {
+  try {
+    const user = await db.getUserById(req.params.id);
+    if (!user) {
+      flash(req, res, 'User not found.', 'error');
+      return res.redirect('/users');
+    }
+    if (user.role === 'admin') {
+      flash(req, res, 'Admin accounts are edited separately.', 'error');
+      return res.redirect('/users');
+    }
+    const { name, email, phone, abn, bank_name, bank_bsb, bank_account, pin, pin_confirm } = req.body || {};
+    if (!name || !String(name).trim()) {
+      flash(req, res, 'Name is required.', 'error');
+      return res.redirect(`/users/${user.id}/edit`);
+    }
+    if (email && String(email).trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+      flash(req, res, 'Invalid email format.', 'error');
+      return res.redirect(`/users/${user.id}/edit`);
+    }
+    if (pin && (!pin_confirm || pin !== pin_confirm)) {
+      flash(req, res, 'PIN confirmation does not match.', 'error');
+      return res.redirect(`/users/${user.id}/edit`);
+    }
+    if (pin && !/^\d{4}$/.test(String(pin).trim())) {
+      const hasBankDetails = user.bank_name || user.bank_bsb || user.bank_account;
+      return res.render('user-edit', {
+        title: `Edit ${user.name}`,
+        flash: { type: 'error', text: 'PIN must be exactly 4 digits.' },
+        user,
+        hasBankDetails,
+      });
+    }
+    const cleanPin = pin ? String(pin).trim() : null;
+    const updates = {
+      name: String(name).trim(),
+      email: String(email || '').trim(),
+      phone: String(phone || '').trim(),
+      abn: String(abn || '').trim(),
+      bank_name: String(bank_name || '').trim(),
+      bank_bsb: String(bank_bsb || '').trim(),
+      bank_account: String(bank_account || '').trim(),
+    };
+    await db.updateUser(user.id, updates);
+    if (cleanPin) {
+      await db.resetPin(user.id, cleanPin);
+    }
+    flash(req, res, `Saved changes for ${updates.name}.`);
+    res.redirect('/users');
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ---------- Admin dashboard ----------
 
 router.get('/admin', requireAdmin, async (req, res, next) => {
