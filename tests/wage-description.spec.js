@@ -66,7 +66,7 @@ test.describe('Structured Wage Descriptions', () => {
     expect(primaryDesc).not.toContain('$900.00');
     
     const wageLineRate = await wageRow.locator('input[name="item_rate"]').inputValue();
-    expect(wageLineRate).toContain('900');
+    expect(wageLineRate).toContain('820');
     
     const detailsRow = wageRow.locator('..').locator('.wage-details').first();
     expect(await detailsRow.isVisible()).toBeTruthy();

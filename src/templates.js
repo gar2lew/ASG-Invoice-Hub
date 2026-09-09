@@ -24,9 +24,11 @@ const TEMPLATES = {
 const WEEKLY_WAGE = {
   fullDays: 5,
   halfDays: 1,
-  defaultTotal: 1000,
+  defaultTotal: 900,
+  weekdayRate: 180,
+  saturdayRate: 100,
   get perDay() {
-    return Math.round((WEEKLY_WAGE.defaultTotal / (WEEKLY_WAGE.fullDays + WEEKLY_WAGE.halfDays * 0.5)) * 100) / 100;
+    return WEEKLY_WAGE.weekdayRate;
   },
   dayLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
 };

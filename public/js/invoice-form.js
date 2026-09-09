@@ -113,20 +113,23 @@ var weekState = {
   company: 'asg',
   weekStarting: '',
   workedDays: [],
-  perDayRate: 200,
+  perDayRate: 180,
+  saturdayRate: 100,
   notes: '',
 };
 var isEditing = typeof window.existingItems !== 'undefined' && Array.isArray(window.existingItems);
 
 var companyConfigs = {
   asg: {
-    perDayRate: 200,
+    perDayRate: 180,
+    saturdayRate: 100,
     gstTreatment: 'inclusive',
     wageLineMode: 'aggregated',
     defaultNotes: '',
   },
   sjs: {
-    perDayRate: 0,
+    perDayRate: 180,
+    saturdayRate: 100,
     gstTreatment: 'inclusive',
     wageLineMode: 'aggregated',
     defaultNotes: '',
@@ -135,7 +138,13 @@ var companyConfigs = {
 
 var dayOffsets = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
 
-var dayMultipliers = { Mon: 1, Tue: 1, Wed: 1, Thu: 1, Fri: 1, Sat: 0.5 };
+// Saturday uses fixed rate, not multiplier
+var dayMultipliers = { Mon: 1, Tue: 1, Wed: 1, Thu: 1, Fri: 1, Sat: 1 };
+
+function getDayRate(day) {
+  if (day === 'Sat') return weekState.saturdayRate;
+  return weekState.perDayRate;
+}
 
 function loadPersistedSettings() {
   try {
@@ -226,18 +235,18 @@ function renderWageCalculator() {
   var satAmountEl = document.getElementById('sat-amount');
   var selected = weekState.workedDays;
   
-  // Calculate total using multipliers (Sat = 0.5)
+  // Calculate total using new rate model
   var total = 0;
   selected.forEach(function(day) {
-    total += weekState.perDayRate * (dayMultipliers[day] || 1);
+    total += getDayRate(day);
   });
   total = Math.round(total * 100) / 100;
   if (totalEl) totalEl.textContent = fmt(total);
-  
+
   // Saturday amount display
   if (satAmountEl) {
     var satSelected = selected.indexOf('Sat') !== -1;
-    satAmountEl.textContent = satSelected ? fmt(weekState.perDayRate * 0.5) : fmt(weekState.perDayRate * 0.5);
+    satAmountEl.textContent = satSelected ? fmt(weekState.saturdayRate) : fmt(weekState.saturdayRate);
   }
 
   var breakdownEl = document.getElementById('calc-breakdown');
@@ -246,10 +255,10 @@ function renderWageCalculator() {
       breakdownEl.innerHTML = '<span class="muted">Select days worked to calculate wages.</span>';
     } else {
       var parts = selected.map(function (day) {
-        var mult = dayMultipliers[day] || 1;
+        var rate = getDayRate(day);
         var label = day;
-        if (mult === 0.5) label += ' ½';
-        return label + ': ' + fmt(weekState.perDayRate * mult);
+        if (day === 'Sat') label += ' ½';
+        return label + ': ' + fmt(rate);
       });
       breakdownEl.innerHTML = parts.join(' | ') + ' → ' + fmt(total);
     }
@@ -970,10 +979,10 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
   var cfg = companyConfigs[weekState.company] || companyConfigs.asg;
   var mode = cfg.wageLineMode || 'aggregated';
 
-  // Calculate amount using multipliers
+  // Calculate amount using new rate model
   var amount = 0;
   selected.forEach(function(day) {
-    amount += weekState.perDayRate * (dayMultipliers[day] || 1);
+    amount += getDayRate(day);
   });
   amount = Math.round(amount * 100) / 100;
   var rate = weekState.perDayRate;
@@ -996,7 +1005,7 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
       var dayNum = dayDate.getDate();
       var suffix = getOrdinalSuffix(dayNum);
       var detail = dayName + ' — ' + dayNum + suffix + ' ' + fmtDate(dayDate);
-      if (dayMultipliers[dayName] === 0.5) {
+      if (dayName === 'Sat') {
         detail += ' (½ day)';
       }
       dayDetails.push(detail);

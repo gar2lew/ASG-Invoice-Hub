@@ -79,11 +79,11 @@ test.describe('Shared Week State', () => {
     expect(tueChecked).toBe(false);
     
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$200.00');
+        expect(totalText).toBe('$180.00');
     
-    const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Mon: $200.00');
-    expect(breakdown).toContain('→ $200.00');
+        const breakdown = await page.textContent('#calc-breakdown');
+        expect(breakdown).toContain('Mon: $180.00');
+        expect(breakdown).toContain('→ $180.00');
     
     expect(page._jsErrors).toEqual([]);
   });
@@ -107,11 +107,11 @@ test.describe('Shared Week State', () => {
     expect(await wedChecked.isChecked()).toBe(true);
     
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$200.00');
+        expect(totalText).toBe('$180.00');
     
-    const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Wed: $200.00');
-    expect(breakdown).toContain('→ $200.00');
+        const breakdown = await page.textContent('#calc-breakdown');
+        expect(breakdown).toContain('Wed: $180.00');
+        expect(breakdown).toContain('→ $180.00');
     
     expect(page._jsErrors).toEqual([]);
   });
@@ -147,13 +147,13 @@ test.describe('Shared Week State', () => {
     expect(await friCheckedCalc.isChecked()).toBe(true);
     
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$400.00');
+        expect(totalText).toBe('$360.00');
     
-    const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Mon: $200.00');
-    expect(breakdown).toContain('Fri: $200.00');
-    expect(breakdown).not.toContain('Wed:');
-    expect(breakdown).toContain('→ $400.00');
+        const breakdown = await page.textContent('#calc-breakdown');
+        expect(breakdown).toContain('Mon: $180.00');
+        expect(breakdown).toContain('Fri: $180.00');
+        expect(breakdown).not.toContain('Wed:');
+        expect(breakdown).toContain('→ $360.00');
     
     expect(page._jsErrors).toEqual([]);
   });
@@ -176,26 +176,26 @@ test.describe('Shared Week State', () => {
     await page.waitForTimeout(100);
     
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$600.00');
+        expect(totalText).toBe('$540.00');
     
-    const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Mon: $200.00');
-    expect(breakdown).toContain('Wed: $200.00');
-    expect(breakdown).toContain('Fri: $200.00');
-    expect(breakdown).toContain('→ $600.00');
+        const breakdown = await page.textContent('#calc-breakdown');
+        expect(breakdown).toContain('Mon: $180.00');
+        expect(breakdown).toContain('Wed: $180.00');
+        expect(breakdown).toContain('Fri: $180.00');
+        expect(breakdown).toContain('→ $540.00');
     
-    // Untoggle Wed using Dates & Notes
-    await page.uncheck('#wage-days input[name="wage_day"][data-day="Wed"]');
-    await page.waitForTimeout(100);
+        // Untoggle Wed using Dates & Notes
+        await page.uncheck('#wage-days input[name="wage_day"][data-day="Wed"]');
+        await page.waitForTimeout(100);
     
-    const totalAfterUntoggle = await page.textContent('#calc-total');
-    expect(totalAfterUntoggle).toBe('$400.00');
+        const totalAfterUntoggle = await page.textContent('#calc-total');
+        expect(totalAfterUntoggle).toBe('$360.00');
     
-    const breakdownAfter = await page.textContent('#calc-breakdown');
-    expect(breakdownAfter).toContain('Mon: $200.00');
-    expect(breakdownAfter).toContain('Fri: $200.00');
-    expect(breakdownAfter).not.toContain('Wed:');
-    expect(breakdownAfter).toContain('→ $400.00');
+        const breakdownAfter = await page.textContent('#calc-breakdown');
+        expect(breakdownAfter).toContain('Mon: $180.00');
+        expect(breakdownAfter).toContain('Fri: $180.00');
+        expect(breakdownAfter).not.toContain('Wed:');
+        expect(breakdownAfter).toContain('→ $360.00');
     
     expect(page._jsErrors).toEqual([]);
   });
@@ -239,10 +239,10 @@ test.describe('Shared Week State', () => {
         expect(quantity).toBe('1');
 
         const rate = await wageRow.locator('input[name="item_rate"]').inputValue();
-        expect(rate).toBe('600');
+                expect(rate).toBe('540');
 
-        const amount = await wageRow.locator('.line-amount').textContent();
-        expect(amount).toBe('$600.00');
+                const amount = await wageRow.locator('.line-amount').textContent();
+                expect(amount).toBe('$540.00');
     
     expect(page._jsErrors).toEqual([]);
   });
