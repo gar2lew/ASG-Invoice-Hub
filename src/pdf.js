@@ -134,11 +134,11 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   doc.moveTo(LM, dividerY).lineTo(RIGHT, dividerY).lineWidth(2).strokeColor(INK).stroke();
 
   // ===== METADATA (Issue Date only) =====
-  let y = dividerY + 14;
+  let y = dividerY + 12;
   const issueDateFormatted = fmtDate(invoice.issue_date);
   doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('ISSUE DATE', LM, y);
   doc.font('Helvetica').fontSize(10).fillColor(INK).text(issueDateFormatted, LM + 80, y);
-  y += 22;
+  y += 20;
 
   // ===== FROM / BILL TO (two-column) =====
   const labelFont = { font: 'Helvetica-Bold', size: 9, color: GRAY };
@@ -164,7 +164,7 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   fromLines.forEach(line => { doc.text(line, col1X, y); y += 13; });
 
   // BILL TO values - reset y for column 2
-  let y2 = dividerY + 14 + 22 + 16; // same starting y
+  let y2 = dividerY + 12 + 20 + 16; // same starting y
   doc.font(valueFont.font).fontSize(valueFont.size).fillColor(valueFont.color).text(tplConfig.company || '', col2X, y2);
   y2 += 18;
   doc.font(detailFont.font).fontSize(detailFont.size).fillColor(detailFont.color);
@@ -180,12 +180,14 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   const tableBottom = drawItemsTable(doc, items, y);
 
   // ===== TOTALS BLOCK =====
-  let ty = tableBottom + 18;
+  let ty = tableBottom + 16;
 
-  // Totals right-aligned within right portion of content width
-  const totalsLabelX = LM + CW * 0.55;
+  // Totals block: right-aligned, 45% of content width, strictly inside RIGHT
+  const totalsBlockW = CW * 0.45; // ~225pt
+  const totalsLabelX = RIGHT - totalsBlockW;
   const totalsValueX = RIGHT;
-  const totalsLabelW = CW * 0.4;
+  const totalsLabelW = totalsBlockW * 0.6;
+  const totalsValueW = totalsBlockW * 0.4;
 
   const totals = [
     ['Subtotal', money(invoice.subtotal)],
@@ -193,14 +195,14 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   ];
   totals.forEach(([label, value]) => {
     doc.font('Helvetica').fontSize(10).fillColor(GRAY).text(label, totalsLabelX, ty, { width: totalsLabelW, align: 'right' });
-    doc.font('Helvetica').fontSize(10).fillColor(INK).text(value, totalsValueX, ty, { align: 'right', width: 0 });
+    doc.font('Helvetica').fontSize(10).fillColor(INK).text(value, totalsLabelX + totalsLabelW, ty, { width: totalsValueW, align: 'right' });
     ty += 18;
   });
 
-  // Total line
+  // Total line - gold divider across totals block width
   doc.moveTo(totalsLabelX, ty + 2).lineTo(RIGHT, ty + 2).lineWidth(2).strokeColor(ACCENT).stroke();
   doc.font('Helvetica-Bold').fontSize(14).fillColor(INK).text('TOTAL', totalsLabelX, ty + 10, { width: totalsLabelW, align: 'right' });
-  doc.font('Helvetica-Bold').fontSize(14).fillColor(ACCENT).text(money(invoice.total), totalsValueX, ty + 10, { align: 'right', width: 0 });
+  doc.font('Helvetica-Bold').fontSize(14).fillColor(ACCENT).text(money(invoice.total), totalsLabelX + totalsLabelW, ty + 10, { width: totalsValueW, align: 'right' });
   ty += 34;
 
   // ===== NOTES =====
@@ -222,7 +224,7 @@ function renderStandard(doc, invoice, items, settings, tplConfig) {
   const hasRepBank = repBank.name || repBank.bsb || repBank.account;
 
   if (hasRepBank) {
-    ty += 18;
+    ty += 24;
     doc.moveTo(LM, ty).lineTo(RIGHT, ty).lineWidth(1).strokeColor(LIGHT).stroke();
     ty += 16;
     doc.font('Helvetica-Bold').fontSize(9).fillColor(GRAY).text('PAYMENT DETAILS', LM, ty);
@@ -296,18 +298,20 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
     ['Subtotal', money(invoice.subtotal)],
     ...(invoice.tax_rate > 0 ? [[`GST (${Math.round(invoice.tax_rate * 100)}%)`, money(invoice.tax_amount)]] : []),
   ];
-  const totalsLabelX = LM2 + CWc * 0.55;
-  const totalsValueX = RIGHT2;
-  const totalsLabelW = CWc * 0.4;
+  const totalsBlockWc = CWc * 0.45;
+  const totalsLabelXc = RIGHT2 - totalsBlockWc;
+  const totalsValueXc = RIGHT2;
+  const totalsLabelWc = totalsBlockWc * 0.6;
+  const totalsValueWc = totalsBlockWc * 0.4;
 
   totals.forEach(([label, value]) => {
-    doc.font('Helvetica').fontSize(9).fillColor(GRAY).text(label, totalsLabelX, ty, { width: totalsLabelW, align: 'right' });
-    doc.font('Helvetica').fontSize(9).fillColor(INK).text(value, totalsValueX, ty, { align: 'right', width: 0 });
+    doc.font('Helvetica').fontSize(9).fillColor(GRAY).text(label, totalsLabelXc, ty, { width: totalsLabelWc, align: 'right' });
+    doc.font('Helvetica').fontSize(9).fillColor(INK).text(value, totalsLabelXc + totalsLabelWc, ty, { width: totalsValueWc, align: 'right' });
     ty += 16;
   });
-  doc.moveTo(totalsLabelX, ty + 1).lineTo(RIGHT2, ty + 1).lineWidth(2).strokeColor(ACCENT).stroke();
-  doc.font('Helvetica-Bold').fontSize(12).fillColor(INK).text('TOTAL', totalsLabelX, ty + 10, { width: totalsLabelW, align: 'right' });
-  doc.font('Helvetica-Bold').fontSize(12).fillColor(ACCENT).text(money(invoice.total), totalsValueX, ty + 10, { align: 'right', width: 0 });
+  doc.moveTo(totalsLabelXc, ty + 1).lineTo(RIGHT2, ty + 1).lineWidth(2).strokeColor(ACCENT).stroke();
+  doc.font('Helvetica-Bold').fontSize(12).fillColor(INK).text('TOTAL', totalsLabelXc, ty + 10, { width: totalsLabelWc, align: 'right' });
+  doc.font('Helvetica-Bold').fontSize(12).fillColor(ACCENT).text(money(invoice.total), totalsLabelXc + totalsLabelWc, ty + 10, { width: totalsValueWc, align: 'right' });
   ty += 30;
 
   if (invoice.notes) {
@@ -327,7 +331,7 @@ function renderCompact(doc, invoice, items, settings, tplConfig) {
   const hasRepBank = repBank.name || repBank.bsb || repBank.account;
 
   if (hasRepBank) {
-    ty += 14;
+    ty += 18;
     doc.moveTo(LM2, ty).lineTo(RIGHT2, ty).lineWidth(1).strokeColor(LIGHT).stroke();
     ty += 12;
     doc.font('Helvetica-Bold').fontSize(8).fillColor(GRAY).text('PAYMENT DETAILS', LM2, ty);
