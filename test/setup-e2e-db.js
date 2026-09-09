@@ -40,9 +40,9 @@ async function setupE2EDatabase() {
   const pinHash = bcrypt.hashSync(repPin, 10);
   
   await db.getPool().query(`
-    INSERT INTO users (username, password_hash, pin_hash, name, email, abn, role)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-  `, [repUser, repHash, pinHash, 'E2E Test Representative', 'e2e-rep@test.local', '12 345 678 901', 'rep']);
+    INSERT INTO users (username, password_hash, pin_hash, name, email, abn, bank_name, bank_bsb, bank_account, role)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+  `, [repUser, repHash, pinHash, 'E2E Test Representative', 'e2e-rep@test.local', '12 345 678 901', 'Test Bank', '123456', '12345678', 'rep']);
   
   console.log(`Seeded E2E rep user: ${repUser} (PIN: ${repPin})`);
   
