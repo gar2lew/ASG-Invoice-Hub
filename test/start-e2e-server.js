@@ -57,9 +57,9 @@ async function initializeE2E() {
   const pinHash = bcrypt.hashSync(repPin, 10);
   
   await db.getPool().query(`
-    INSERT INTO users (username, password_hash, pin_hash, name, email, abn, bank_name, bank_bsb, bank_account, role)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-  `, [repUser, repHash, pinHash, 'E2E Test Representative', 'e2e-rep@test.local', '12 345 678 901', 'Test Bank', '123456', '12345678', 'rep']);
+    INSERT INTO users (username, password_hash, pin_hash, name, email, abn, bank_name, bank_bsb, bank_account, role, is_active)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+  `, [repUser, repHash, pinHash, 'E2E Test Representative', 'e2e-rep@test.local', '12 345 678 901', 'Test Bank', '123456', '12345678', 'rep', true]);
   
   console.log(`Seeded E2E rep user: ${repUser} (PIN: ${repPin})`);
   
@@ -92,22 +92,28 @@ initializeE2E().then(() => {
     console.log(`PID: ${process.pid}`);
   });
 
-  // Graceful shutdown
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down E2E server...');
-    server.close(() => {
-      console.log('E2E server closed');
-      process.exit(0);
-    });
+  // Track all sockets so we can force-close them on shutdown
+  const sockets = new Set();
+  server.on('connection', (socket) => {
+    sockets.add(socket);
+    socket.on('close', () => sockets.delete(socket));
   });
 
-  process.on('SIGINT', () => {
-    console.log('SIGINT received, shutting down E2E server...');
+  function shutdown(signal) {
+    console.log(`${signal} received, shutting down E2E server...`);
+    // Force-close all keep-alive connections so server.close() completes
+    for (const socket of sockets) {
+      socket.destroy();
+    }
     server.close(() => {
       console.log('E2E server closed');
       process.exit(0);
     });
-  });
+  }
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }).catch(err => {
   console.error('E2E initialization failed:', err);
   process.exit(1);

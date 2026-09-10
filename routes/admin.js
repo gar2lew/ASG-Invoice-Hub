@@ -56,6 +56,7 @@ router.get('/users', requireAdmin, async (req, res, next) => {
         sentDates: sentDatesMap[u.id] || [],
       })),
       error: null,
+      currentUser: req.user,
     });
   } catch (err) {
     next(err);
@@ -217,8 +218,91 @@ router.post('/users/:id/edit', requireAdmin, async (req, res, next) => {
     await db.updateUser(user.id, updates);
     if (cleanPin) {
       await db.resetPin(user.id, cleanPin);
+      await db.logUserAudit({
+        targetUserId: user.id,
+        actorUserId: req.user.id,
+        action: 'PIN_CHANGED',
+        fieldName: 'pin',
+        oldValue: null,
+        newValue: null,
+      });
+    }
+    // Audit profile field changes
+    const auditFields = ['name', 'email', 'phone', 'abn', 'bank_name', 'bank_bsb', 'bank_account'];
+    for (const field of auditFields) {
+      const oldVal = user[field] || '';
+      const newVal = updates[field] || '';
+      if (oldVal !== newVal) {
+        await db.logUserAudit({
+          targetUserId: user.id,
+          actorUserId: req.user.id,
+          action: 'FIELD_CHANGED',
+          fieldName: field,
+          oldValue: field === 'bank_account' ? maskAccount(oldVal) : oldVal,
+          newValue: field === 'bank_account' ? maskAccount(newVal) : newVal,
+        });
+      }
     }
     flash(req, res, `Saved changes for ${updates.name}.`);
+    res.redirect('/users');
+  } catch (err) {
+    next(err);
+  }
+});
+
+function maskAccount(val) {
+  if (!val) return '';
+  const s = String(val).replace(/\s/g, '');
+  if (s.length <= 4) return '****';
+  return '****' + s.slice(-4);
+}
+
+// ---------- Deactivate / Reactivate Rep ----------
+
+router.post('/users/:id/deactivate', requireAdmin, async (req, res, next) => {
+  try {
+    const user = await db.getUserById(req.params.id);
+    if (!user || user.role === 'admin') {
+      flash(req, res, 'Invalid user.', 'error');
+      return res.redirect('/users');
+    }
+    if (user.id === req.user.id) {
+      flash(req, res, 'You cannot deactivate your own account.', 'error');
+      return res.redirect('/users');
+    }
+    await db.setUserActive(user.id, false);
+    await db.logUserAudit({
+      targetUserId: user.id,
+      actorUserId: req.user.id,
+      action: 'DEACTIVATED',
+      fieldName: 'is_active',
+      oldValue: 'true',
+      newValue: 'false',
+    });
+    flash(req, res, `Deactivated ${user.name}.`);
+    res.redirect('/users');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/users/:id/reactivate', requireAdmin, async (req, res, next) => {
+  try {
+    const user = await db.getUserById(req.params.id);
+    if (!user || user.role === 'admin') {
+      flash(req, res, 'Invalid user.', 'error');
+      return res.redirect('/users');
+    }
+    await db.setUserActive(user.id, true);
+    await db.logUserAudit({
+      targetUserId: user.id,
+      actorUserId: req.user.id,
+      action: 'REACTIVATED',
+      fieldName: 'is_active',
+      oldValue: 'false',
+      newValue: 'true',
+    });
+    flash(req, res, `Reactivated ${user.name}.`);
     res.redirect('/users');
   } catch (err) {
     next(err);
@@ -364,7 +448,7 @@ router.post('/admin/users/create-admin', requireAdmin, async (req, res, next) =>
 
 router.post('/admin/users/create-rep', requireAdmin, async (req, res, next) => {
   try {
-    const { name, email, abn, bank_name, bank_bsb, bank_account, pin } = req.body || {};
+    const { name, email, abn, bank_name, bank_bsb, bank_account, phone, pin } = req.body || {};
     if (!name || !pin) {
       flash(req, res, 'Name and PIN are required.', 'error');
       return res.redirect('/users');

@@ -115,6 +115,13 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
     }
 
     if (b.send_now) {
+      // Block send if rep bank details are incomplete
+      const rep = await db.getUserById(req.user.id);
+      if (!rep.bank_name || !rep.bank_bsb || !rep.bank_account) {
+        return res.status(400).json({
+          error: 'Payment details missing. Please ask an administrator to complete your representative profile before sending this invoice.',
+        });
+      }
       try {
         const recipients = getInvoiceRecipients();
         await sendInvoicePdf(settings, invoice, pdf, recipients);
@@ -166,8 +173,13 @@ router.post('/invoices/:id/send', requireAuth, async (req, res, next) => {
       flash(req, res, 'Invoice not found.', 'error');
       return res.redirect('/');
     }
+    // Block send if rep bank details are incomplete
+    const rep = await db.getUserById(req.user.id);
+    if (!rep.bank_name || !rep.bank_bsb || !rep.bank_account) {
+      flash(req, res, 'Payment details missing. Please ask an administrator to complete your representative profile before sending this invoice.', 'error');
+      return res.redirect(`/invoices/${invoice.id}`);
+    }
     const settings = await db.getSettings();
-    const rep = await db.getUserById(invoice.user_id);
     if (rep) {
       invoice.rep_name = rep.name;
       invoice.rep_abn = rep.abn;

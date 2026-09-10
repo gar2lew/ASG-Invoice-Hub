@@ -10,11 +10,22 @@ app.disable('x-powered-by');
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '..', 'views'));
 
+// Fail fast in production if required secrets are missing
+const requiredProdEnv = ['SESSION_SECRET'];
+if (process.env.NODE_ENV === 'production') {
+  for (const key of requiredProdEnv) {
+    if (!process.env[key]) {
+      console.error(`FATAL: Required environment variable ${key} is not set`);
+      process.exit(1);
+    }
+  }
+}
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieSession({
   name: 'session',
-  secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
+  secret: process.env.SESSION_SECRET,
   maxAge: 7 * 24 * 60 * 60 * 1000,
   httpOnly: true,
   sameSite: 'lax',
@@ -42,9 +53,19 @@ app.use((req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error(`[${req.method} ${req.originalUrl}]`, err);
+  const ts = new Date().toISOString();
+  const safeMessage = err && err.message ? err.message : 'Unknown error';
+  const logEntry = {
+    ts,
+    method: req.method,
+    url: req.originalUrl,
+    userId: req.session && req.session.userId ? req.session.userId : null,
+    error: safeMessage,
+    stack: process.env.NODE_ENV === 'production' ? undefined : (err && err.stack ? err.stack : undefined),
+  };
+  console.error('[ERROR]', JSON.stringify(logEntry));
   if (res.headersSent) return next(err);
-  res.status(500).send(`Something went wrong: ${err.message}`);
+  res.status(500).send(`Something went wrong: ${safeMessage}`);
 });
 
 module.exports = app;

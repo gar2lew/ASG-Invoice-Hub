@@ -45,6 +45,12 @@ router.post('/login', async (req, res, next) => {
           title: 'Sign in', flash: null, error: 'Incorrect PIN.', reps,
         });
       }
+      if (user.is_active === false) {
+        const reps = await db.getReps();
+        return res.status(401).render('login', {
+          title: 'Sign in', flash: null, error: 'This account has been deactivated. Please contact an administrator.', reps,
+        });
+      }
       req.session.userId = user.id;
       return res.redirect('/');
     }

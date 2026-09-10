@@ -17,7 +17,7 @@
       <div class="table-wrap">
         <table class="user-table">
           <thead>
-            <tr><th>Rep</th><th>Contact</th><th>ABN</th><th>Bank details</th><th>Created</th><th class="actions"><span class="sr-only">Actions</span></th></tr>
+            <tr><th>Rep</th><th>Contact</th><th>ABN</th><th>Bank details</th><th>Status</th><th>Created</th><th class="actions"><span class="sr-only">Actions</span></th></tr>
           </thead>
           <tbody>
             <% users.forEach(function(u) { %>
@@ -39,17 +39,33 @@
                   <span class="badge badge-draft">Missing</span>
                 <% } %>
               </td>
+              <td>
+                <% if (u.is_active === false) { %>
+                  <span class="badge badge-danger">Inactive</span>
+                <% } else { %>
+                  <span class="badge badge-success">Active</span>
+                <% } %>
+              </td>
               <td class="muted"><%= u.createdText %></td>
               <td class="actions">
                 <% if (u.role !== 'admin') { %>
                   <a class="btn btn-ghost btn-tiny" href="/users/<%= u.id %>/edit">Edit</a>
+                  <% if (u.is_active !== false) { %>
+                    <form method="post" action="/users/<%= u.id %>/deactivate" class="inline-form" onsubmit="return confirm('Deactivate <%= u.name %>? They will no longer be able to log in.');">
+                      <button class="btn btn-warning btn-tiny" type="submit">Deactivate</button>
+                    </form>
+                  <% } else { %>
+                    <form method="post" action="/users/<%= u.id %>/reactivate" class="inline-form">
+                      <button class="btn btn-success btn-tiny" type="submit">Reactivate</button>
+                    </form>
+                  <% } %>
                   <form method="post" action="/users/<%= u.id %>/reset-pin" class="inline-form">
                     <input class="input input-sm" type="text" name="pin" placeholder="New PIN" pattern="\d{4}" maxlength="4" minlength="4" required>
                     <button class="btn btn-ghost btn-tiny" type="submit">Reset PIN</button>
                   </form>
                 <% } %>
                 <% if (u.id !== currentUser.id) { %>
-                  <form method="post" action="/users/<%= u.id %>/delete" class="inline-form" onsubmit="return confirm('Remove <%= u.name %>?');">
+                  <form method="post" action="/users/<%= u.id %>/delete" class="inline-form" onsubmit="return confirm('Remove <%= u.name %>? This cannot be undone.');">
                     <button class="btn btn-danger btn-tiny" type="submit">Remove</button>
                   </form>
                 <% } %>

@@ -17,6 +17,7 @@ const SCHEMA = `
     bank_bsb TEXT DEFAULT '',
     bank_account TEXT DEFAULT '',
     role TEXT NOT NULL DEFAULT 'rep',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE TABLE IF NOT EXISTS settings (
@@ -64,6 +65,16 @@ const SCHEMA = `
     rate DOUBLE PRECISION NOT NULL DEFAULT 0,
     amount DOUBLE PRECISION NOT NULL DEFAULT 0,
     details JSONB DEFAULT '[]'::jsonb
+  );
+  CREATE TABLE IF NOT EXISTS user_audit (
+    id SERIAL PRIMARY KEY,
+    target_user_id INTEGER NOT NULL REFERENCES users(id),
+    actor_user_id INTEGER REFERENCES users(id),
+    action TEXT NOT NULL,
+    field_name TEXT,
+    old_value TEXT,
+    new_value TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 `;
 
@@ -123,6 +134,12 @@ async function initDb() {
     } catch (e) {
       console.warn('invoices download tracking migration skipped:', e.message);
     }
+    // Idempotent migration: user active/inactive state
+    try {
+      await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE");
+    } catch (e) {
+      console.warn('users is_active migration skipped:', e.message);
+    }
     await ensureAdmin();
   })().catch((err) => {
     readyPromise = null;
@@ -139,6 +156,12 @@ async function ensureAdmin() {
 
   const adminExists = await p.query("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'");
   if (Number(adminExists.rows[0].c) === 0) {
+    if (process.env.NODE_ENV === 'production') {
+      if (!envUser || !envPass) {
+        console.error('FATAL: ADMIN_USERNAME and ADMIN_PASSWORD must be set in production');
+        process.exit(1);
+      }
+    }
     const username = envUser || 'admin';
     const password = envPass || 'changeme';
     const hash = bcrypt.hashSync(password, 10);
@@ -204,7 +227,7 @@ async function updateSettings(patch) {
 
 async function getUsers() {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, name, email, abn, bank_name, bank_bsb, bank_account, role, created_at FROM users ORDER BY name');
+  const r = await getPool().query('SELECT id, username, name, email, phone, abn, bank_name, bank_bsb, bank_account, role, is_active, created_at FROM users ORDER BY name');
   return r.rows;
 }
 
@@ -216,19 +239,25 @@ async function getUserByUsername(username) {
 
 async function getUserById(id) {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, name, email, phone, abn, bank_name, bank_bsb, bank_account, role, created_at FROM users WHERE id = $1', [id]);
+  const r = await getPool().query('SELECT id, username, name, email, phone, abn, bank_name, bank_bsb, bank_account, role, is_active, created_at FROM users WHERE id = $1', [id]);
   return r.rows[0];
 }
 
 async function getUserForAuth(id) {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, password_hash, pin_hash, name, email, abn, bank_name, bank_bsb, bank_account, role FROM users WHERE id = $1', [id]);
+  const r = await getPool().query('SELECT id, username, password_hash, pin_hash, name, email, abn, bank_name, bank_bsb, bank_account, role, is_active FROM users WHERE id = $1', [id]);
   return r.rows[0];
 }
 
 async function getReps() {
   await ensureReady();
-  const r = await getPool().query("SELECT id, name FROM users WHERE role = 'rep' ORDER BY name");
+  const r = await getPool().query("SELECT id, name FROM users WHERE role = 'rep' AND is_active = TRUE ORDER BY name");
+  return r.rows;
+}
+
+async function getRepsAdmin() {
+  await ensureReady();
+  const r = await getPool().query("SELECT id, name, is_active FROM users WHERE role = 'rep' ORDER BY name");
   return r.rows;
 }
 
@@ -535,6 +564,32 @@ async function createRepUser({ name, email, abn, bank_name, bank_bsb, bank_accou
   );
 }
 
+// ---------- Audit logging ----------
+
+async function logUserAudit({ targetUserId, actorUserId, action, fieldName, oldValue, newValue }) {
+  await ensureReady();
+  await getPool().query(
+    'INSERT INTO user_audit (target_user_id, actor_user_id, action, field_name, old_value, new_value) VALUES ($1,$2,$3,$4,$5,$6)',
+    [targetUserId, actorUserId || null, action, fieldName || null, oldValue || null, newValue || null]
+  );
+}
+
+async function getUserAudit(targetUserId) {
+  await ensureReady();
+  const r = await getPool().query(
+    'SELECT * FROM user_audit WHERE target_user_id = $1 ORDER BY created_at DESC, id DESC',
+    [targetUserId]
+  );
+  return r.rows;
+}
+
+// ---------- User lifecycle ----------
+
+async function setUserActive(userId, isActive) {
+  await ensureReady();
+  await getPool().query('UPDATE users SET is_active = $1 WHERE id = $2', [isActive, userId]);
+}
+
 module.exports = {
   initDb,
   ensureAdmin,
@@ -568,5 +623,9 @@ module.exports = {
   getAdminInvoiceSummary,
   createAdminUser,
   createRepUser,
+  logUserAudit,
+  getUserAudit,
+  setUserActive,
+  getRepsAdmin,
   getPool,
 };

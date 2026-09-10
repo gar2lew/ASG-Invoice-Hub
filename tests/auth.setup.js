@@ -10,8 +10,10 @@ test.describe('E2E Authentication Setup', () => {
 
     await page.goto('/login');
     await page.waitForSelector('form.stack:not(.login-admin-form)', { state: 'attached' });
+    // Wait for rep options to populate (getReps filters is_active = TRUE)
+    await page.waitForSelector('select[name="user_id"] option:nth-child(2)', { state: 'attached', timeout: 10000 });
 
-    await page.selectOption('select[name=\"user_id\"]', { label: 'E2E Test Representative' });
+    await page.selectOption('select[name="user_id"]', { label: 'E2E Test Representative' });
     await page.fill('input[name=\"pin\"]', '1234');
     await page.click('button:has-text(\"Sign in\")');
 

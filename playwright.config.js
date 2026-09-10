@@ -7,10 +7,6 @@ const config = {
   testIgnore: ['diagnostics/**'],
   timeout: 60 * 1000,
   expect: {
-    /**
-     * Maximum time expect() should wait for the condition to be met.
-     * For example in `await expect(locator).toHaveText();`
-     */
     timeout: 10000
   },
   // Run tests in files in parallel
@@ -23,6 +19,10 @@ const config = {
   workers: 1,
   // Reporter to use. See https://playwright.dev/docs/test-reporters
   reporter: 'html',
+  // Global setup: clean orphaned E2E server and start fresh one
+  globalSetup: './test/global-setup.js',
+  // Global teardown: kill the E2E server
+  globalTeardown: './test/global-teardown.js',
   // Shared settings for all the projects below.
   // See https://playwright.dev/docs/api/class-testoptions
   use: {
@@ -53,14 +53,10 @@ const config = {
   // Folder for test artifacts such as screenshots, videos, traces, etc.
   //   outputDir: 'test-results',
 
-  // Start your local web server before running the tests.
-  // https://playwright.dev/docs/test-advanced#local-web-server
-  webServer: {
-    command: 'node test/start-e2e-server.js',
-    url: 'http://localhost:3110',
-    reuseExistingServer: true,
-    timeout: 180 * 1000,
-  },
+  // Server lifecycle is managed by test/global-setup.js and test/global-teardown.js
+  // because on Windows, SIGTERM is not delivered to child processes, so the
+  // built-in webServer cannot reliably self-terminate. globalSetup starts the
+  // server as a child process and globalTeardown kills it.
 };
 
 module.exports = config;
