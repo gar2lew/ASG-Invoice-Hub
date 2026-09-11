@@ -82,7 +82,9 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
     const created = await db.createInvoice({
       user_id: req.user.id,
       template: b.template === 'sjs' ? 'sjs' : 'asg',
-      invoice_number: String(b.invoice_number || '').trim() || undefined,
+      // invoice_number is intentionally NOT passed — it is always
+      // allocated atomically from the settings counter to prevent
+      // duplicate-key violations on resubmission.
       customer_name,
       customer_company: String(b.customer_company || '').trim(),
       customer_email: String(b.customer_email || '').trim(),

@@ -138,6 +138,44 @@ async function main() {
   log(inv3.invoice_number === 'INV-0050', 'numbering continues from setting value');
   await db.deleteInvoice(inv3.id);
 
+  // Regression: invoice_number from form must NOT be trusted — always allocate
+  // from the counter. This prevents duplicate-key violations on resubmission.
+  const inv4 = await db.createInvoice({
+    user_id: rep.id,
+    template: 'standard',
+    invoice_number: 'INV-0099', // attempt to force a specific number
+    customer_name: 'Trusted Number Co',
+    issue_date: '2026-08-16',
+    tax_rate: 0,
+    subtotal: 100,
+    tax_amount: 0,
+    total: 100,
+    status: 'draft',
+    items: [{ description: 'Test', quantity: 1, rate: 100, amount: 100 }],
+  });
+  log(inv4.invoice_number !== 'INV-0099', 'form-supplied invoice_number is ignored');
+  log(inv4.invoice_number === 'INV-0051', `allocated from counter, got ${inv4.invoice_number}`);
+
+  // Regression: two rapid creates never collide even if form sends same number
+  const inv5 = await db.createInvoice({
+    user_id: rep.id,
+    template: 'standard',
+    invoice_number: 'INV-0099',
+    customer_name: 'Second Co',
+    issue_date: '2026-08-16',
+    tax_rate: 0,
+    subtotal: 200,
+    tax_amount: 0,
+    total: 200,
+    status: 'draft',
+    items: [{ description: 'Test', quantity: 1, rate: 200, amount: 200 }],
+  });
+  log(inv5.invoice_number !== inv4.invoice_number, 'consecutive creates get unique numbers');
+  log(inv5.invoice_number === 'INV-0052', `second gets next counter, got ${inv5.invoice_number}`);
+
+  await db.deleteInvoice(inv4.id);
+  await db.deleteInvoice(inv5.id);
+
   const totals = await db.repTotals();
   log(totals.some((t) => t.id === rep.id && Number(t.total) === 1150), 'rep totals aggregate');
 

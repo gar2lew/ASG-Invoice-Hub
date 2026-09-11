@@ -307,20 +307,14 @@ async function createInvoice(tx) {
   try {
     await client.query('BEGIN');
 
-    let invoice_number;
-    if (tx.invoice_number) {
-      invoice_number = tx.invoice_number;
-      await client.query(
-        `UPDATE settings SET next_invoice_number = GREATEST(next_invoice_number, $1 + 1) WHERE id = 1`,
-        [Number(String(invoice_number).replace(/\D/g, ''))],
-      );
-    } else {
-      const num = await client.query(
-        'UPDATE settings SET next_invoice_number = next_invoice_number + 1 WHERE id = 1 RETURNING invoice_prefix, next_invoice_number',
-      );
-      const { invoice_prefix, next_invoice_number } = num.rows[0];
-      invoice_number = `${invoice_prefix}-${String(Number(next_invoice_number) - 1).padStart(4, '0')}`;
-    }
+    // Always allocate the next invoice number from the settings counter.
+    // The form field is a display hint only — trusting it would allow
+    // duplicate-key violations if the same form is submitted twice.
+    const num = await client.query(
+      'UPDATE settings SET next_invoice_number = next_invoice_number + 1 WHERE id = 1 RETURNING invoice_prefix, next_invoice_number',
+    );
+    const { invoice_prefix, next_invoice_number } = num.rows[0];
+    const invoice_number = `${invoice_prefix}-${String(Number(next_invoice_number) - 1).padStart(4, '0')}`;
 
     const ins = await client.query(
       `INSERT INTO invoices
