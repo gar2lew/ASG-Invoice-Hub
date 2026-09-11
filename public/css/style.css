@@ -322,6 +322,8 @@ a:hover { color: var(--accent-deep); text-decoration: none; }
 }
 
 .card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.status-complete { color: var(--success, #2e7d32); }
+.status-missing { color: var(--warning, #ed6c02); }
 
 /* ---------- Flash ---------- */
 

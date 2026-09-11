@@ -295,6 +295,26 @@ async function resetPassword(id, password) {
   await getPool().query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, id]);
 }
 
+// Self-service profile update: updates own fields + optional PIN change.
+// Always derives the target from the authenticated session, never form input.
+async function updateOwnProfile(userId, { name, email, phone, abn, bank_name, bank_bsb, bank_account, pin }) {
+  await ensureReady();
+  const updates = {};
+  if (name !== undefined) updates.name = String(name).trim();
+  if (email !== undefined) updates.email = String(email).trim();
+  if (phone !== undefined) updates.phone = String(phone).trim();
+  if (abn !== undefined) updates.abn = String(abn).trim();
+  if (bank_name !== undefined) updates.bank_name = String(bank_name).trim();
+  if (bank_bsb !== undefined) updates.bank_bsb = String(bank_bsb).trim();
+  if (bank_account !== undefined) updates.bank_account = String(bank_account).trim();
+  if (Object.keys(updates).length > 0) {
+    await updateUser(userId, updates);
+  }
+  if (pin) {
+    await resetPin(userId, String(pin));
+  }
+}
+
 async function deleteUser(id) {
   await ensureReady();
   await getPool().query('DELETE FROM users WHERE id = $1', [id]);
@@ -598,6 +618,7 @@ module.exports = {
   resetPassword,
   resetPin,
   updateUser,
+  updateOwnProfile,
   deleteUser,
   createInvoice,
   getInvoice,

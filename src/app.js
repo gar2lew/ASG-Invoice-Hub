@@ -40,6 +40,7 @@ app.use(currentUser);
 
 app.use(require('../routes/auth'));
 app.use(require('../routes/pages'));
+app.use(require('../routes/profile'));
 app.use(require('../routes/invoices'));
 app.use(require('../routes/admin'));
 
