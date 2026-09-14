@@ -118,11 +118,11 @@ async function main() {
   const week = await db.statsForUserSince(rep.id, '2026-08-10', '2026-08-16');
   log(Number(week.total) === 1150 && Number(week.count) === 2, 'week window stats');
 
-  await db.updateSettings({ company_name: 'ASG Sales Pty Ltd', accounts_email: 'accounts@asg.com.au', next_invoice_number: 50 });
+  await db.updateSettings({ company_name: 'ASG Sales Pty Ltd', accounts_email: 'accounts@asg.com.au' });
   settings = await db.getSettings();
   log(settings.company_name === 'ASG Sales Pty Ltd', 'settings update persisted');
-  log(Number(settings.next_invoice_number) === 50, 'next invoice number updates');
 
+  // Per-rep numbering: first invoice for a new rep should auto-generate
   const inv3 = await db.createInvoice({
     user_id: rep.id,
     template: 'standard',
@@ -135,15 +135,15 @@ async function main() {
     status: 'draft',
     items: [{ description: 'Item', quantity: 1, rate: 10, amount: 10 }],
   });
-  log(inv3.invoice_number === 'INV-0050', 'numbering continues from setting value');
+  // Since rep already has invoices, should continue from their sequence
+  log(inv3.invoice_number === 'INV-0003', `continues from rep sequence, got ${inv3.invoice_number}`);
   await db.deleteInvoice(inv3.id);
 
-  // Regression: invoice_number from form must NOT be trusted — always allocate
-  // from the counter. This prevents duplicate-key violations on resubmission.
+  // Regression: userSuppliedNumber from form must NOT be trusted unless it's the first invoice
   const inv4 = await db.createInvoice({
     user_id: rep.id,
     template: 'standard',
-    invoice_number: 'INV-0099', // attempt to force a specific number
+    userSuppliedNumber: 'INV-0099', // attempt to force a specific number (should be ignored - not first invoice)
     customer_name: 'Trusted Number Co',
     issue_date: '2026-08-16',
     tax_rate: 0,
@@ -153,28 +153,152 @@ async function main() {
     status: 'draft',
     items: [{ description: 'Test', quantity: 1, rate: 100, amount: 100 }],
   });
-  log(inv4.invoice_number !== 'INV-0099', 'form-supplied invoice_number is ignored');
-  log(inv4.invoice_number === 'INV-0051', `allocated from counter, got ${inv4.invoice_number}`);
+  log(inv4.invoice_number !== 'INV-0099', 'userSuppliedNumber is ignored when not first invoice');
+  log(inv4.invoice_number === 'INV-0004', `allocated from rep counter, got ${inv4.invoice_number}`);
 
-  // Regression: two rapid creates never collide even if form sends same number
+  // Regression: two rapid creates never collide
   const inv5 = await db.createInvoice({
     user_id: rep.id,
     template: 'standard',
-    invoice_number: 'INV-0099',
+    userSuppliedNumber: 'INV-0099',
     customer_name: 'Second Co',
-    issue_date: '2026-08-16',
+    issue_date: '2026-08-17',
     tax_rate: 0,
     subtotal: 200,
     tax_amount: 0,
     total: 200,
     status: 'draft',
-    items: [{ description: 'Test', quantity: 1, rate: 200, amount: 200 }],
+    items: [{ description: 'Test 2', quantity: 1, rate: 200, amount: 200 }],
   });
   log(inv5.invoice_number !== inv4.invoice_number, 'consecutive creates get unique numbers');
-  log(inv5.invoice_number === 'INV-0052', `second gets next counter, got ${inv5.invoice_number}`);
-
+  log(inv5.invoice_number === 'INV-0005', `second gets next counter, got ${inv5.invoice_number}`);
   await db.deleteInvoice(inv4.id);
   await db.deleteInvoice(inv5.id);
+
+  // Test first-invoice starting number workflow
+  // Create a new rep with no invoices
+  await db.createUser({ username: 'rep2', password: 'secret2', name: 'Rep Two', email: 'rep2@co.com', abn: '98 765 432 109', bank_name: 'Bank B', bank_bsb: '654321', bank_account: '87654321', pin: '4321', role: 'rep' });
+  const rep2 = await db.getUserByUsername('rep2');
+  
+  // First invoice with user-supplied starting number
+  const firstInv = await db.createInvoice({
+    user_id: rep2.id,
+    template: 'standard',
+    userSuppliedNumber: 'INV-0045',
+    customer_name: 'First Customer',
+    issue_date: '2026-08-20',
+    tax_rate: 0,
+    subtotal: 500,
+    tax_amount: 0,
+    total: 500,
+    status: 'draft',
+    items: [{ description: 'Service', quantity: 1, rate: 500, amount: 500 }],
+  });
+  log(firstInv.invoice_number === 'INV-0045', `first invoice uses supplied number ${firstInv.invoice_number}`);
+  
+  // Second invoice should auto-generate next number
+  const secondInv = await db.createInvoice({
+    user_id: rep2.id,
+    template: 'standard',
+    customer_name: 'Second Customer',
+    issue_date: '2026-08-21',
+    tax_rate: 0,
+    subtotal: 300,
+    tax_amount: 0,
+    total: 300,
+    status: 'draft',
+    items: [{ description: 'Service', quantity: 1, rate: 300, amount: 300 }],
+  });
+  log(secondInv.invoice_number === 'INV-0046', `second invoice auto-generates ${secondInv.invoice_number}`);
+  
+  // Third invoice should continue sequence
+  const thirdInv = await db.createInvoice({
+    user_id: rep2.id,
+    template: 'standard',
+    customer_name: 'Third Customer',
+    issue_date: '2026-08-22',
+    tax_rate: 0,
+    subtotal: 200,
+    tax_amount: 0,
+    total: 200,
+    status: 'draft',
+    items: [{ description: 'Service', quantity: 1, rate: 200, amount: 200 }],
+  });
+  log(thirdInv.invoice_number === 'INV-0047', `third invoice continues sequence ${thirdInv.invoice_number}`);
+  
+  await db.deleteInvoice(firstInv.id);
+  await db.deleteInvoice(secondInv.id);
+  await db.deleteInvoice(thirdInv.id);
+  
+  await db.deleteInvoice(firstInv.id);
+  await db.deleteInvoice(secondInv.id);
+  await db.deleteInvoice(thirdInv.id);
+  
+  // Duplicate starting number test
+  // First invoice with INV-0100 should succeed
+  const dupRep = await db.createUser({ username: 'rep3', password: 'secret3', name: 'Rep Three', email: 'rep3@co.com', abn: '11 222 333 444', bank_name: 'Bank C', bank_bsb: '111222', bank_account: '33344455', pin: '5555', role: 'rep' });
+  const dupRepUser = await db.getUserByUsername('rep3');
+  const firstForDup = await db.createInvoice({
+    user_id: dupRepUser.id,
+    template: 'standard',
+    userSuppliedNumber: 'INV-0100',
+    customer_name: 'First',
+    issue_date: '2026-08-25',
+    tax_rate: 0,
+    subtotal: 100,
+    tax_amount: 0,
+    total: 100,
+    status: 'draft',
+    items: [{ description: 'Service', quantity: 1, rate: 100, amount: 100 }],
+  });
+  log(firstForDup.invoice_number === 'INV-0100', 'first invoice with INV-0100 succeeds');
+  
+  // Second attempt to use INV-0100 should be ignored (not first invoice)
+  const secondForDup = await db.createInvoice({
+    user_id: dupRepUser.id,
+    template: 'standard',
+    userSuppliedNumber: 'INV-0100', // should be ignored
+    customer_name: 'Second',
+    issue_date: '2026-08-26',
+    tax_rate: 0,
+    subtotal: 100,
+    tax_amount: 0,
+    total: 100,
+    status: 'draft',
+    items: [{ description: 'Test', quantity: 1, rate: 100, amount: 100 }],
+  });
+  log(secondForDup.invoice_number !== 'INV-0100', 'duplicate starting number is ignored for non-first invoice');
+  log(secondForDup.invoice_number === 'INV-0101', `second invoice auto-generates ${secondForDup.invoice_number}`);
+  
+  await db.deleteInvoice(firstForDup.id);
+  await db.deleteInvoice(secondForDup.id);
+  
+  // Malformed starting number should be rejected (need a fresh rep)
+  const malRep = await db.createUser({ username: 'rep4', password: 'secret4', name: 'Rep Four', email: 'rep4@co.com', abn: '66 777 888 999', bank_name: 'Bank D', bank_bsb: '666777', bank_account: '88899900', pin: '6666', role: 'rep' });
+  const malRepUser = await db.getUserByUsername('rep4');
+  let malformedError = null;
+  try {
+    await db.createInvoice({
+      user_id: malRepUser.id,
+      template: 'standard',
+      userSuppliedNumber: 'INVALID',
+      customer_name: 'Malformed',
+      issue_date: '2026-08-27',
+      tax_rate: 0,
+      subtotal: 100,
+      tax_amount: 0,
+      total: 100,
+      status: 'draft',
+      items: [{ description: 'Test', quantity: 1, rate: 100, amount: 100 }],
+    });
+  } catch (e) {
+    malformedError = e;
+  }
+  log(malformedError !== null, 'malformed starting number rejected');
+  await db.deleteUser(malRepUser.id);
+
+  await db.deleteUser(dupRepUser.id);
+  await db.deleteUser(rep2.id);
 
   const totals = await db.repTotals();
   log(totals.some((t) => t.id === rep.id && Number(t.total) === 1150), 'rep totals aggregate');

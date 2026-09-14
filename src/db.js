@@ -18,6 +18,7 @@ const SCHEMA = `
     bank_account TEXT DEFAULT '',
     role TEXT NOT NULL DEFAULT 'rep',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    next_invoice_number INTEGER DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE TABLE IF NOT EXISTS settings (
@@ -139,6 +140,30 @@ async function initDb() {
       await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE");
     } catch (e) {
       console.warn('users is_active migration skipped:', e.message);
+    }
+    try {
+      await p.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS next_invoice_number INTEGER DEFAULT 1");
+    } catch (e) {
+      console.warn('users next_invoice_number migration skipped:', e.message);
+    }
+  // Backfill next_invoice_number for existing reps based on their highest invoice number
+    try {
+      const repsWithInvoices = await p.query(
+        'SELECT DISTINCT user_id FROM invoices'
+      );
+      for (const row of repsWithInvoices.rows) {
+        const maxResult = await p.query(
+          'SELECT MAX(CAST(SPLIT_PART(invoice_number, '-', 2) AS INTEGER)) AS max_num FROM invoices WHERE user_id = $1',
+          [row.user_id]
+        );
+        const maxNum = maxResult.rows[0]?.max_num || 0;
+        await p.query(
+          'UPDATE users SET next_invoice_number = $1 WHERE id = $2',
+          [maxNum + 1, row.user_id]
+        );
+      }
+    } catch (e) {
+      console.warn('next_invoice_number backfill skipped:', e.message);
     }
     await ensureAdmin();
   })().catch((err) => {
@@ -320,6 +345,124 @@ async function deleteUser(id) {
   await getPool().query('DELETE FROM users WHERE id = $1', [id]);
 }
 
+/**
+ * Count invoices for a user. Used to detect first-invoice state.
+ */
+async function countInvoicesForUser(userId) {
+  await ensureReady();
+  const r = await getPool().query('SELECT COUNT(*) AS c FROM invoices WHERE user_id = $1', [userId]);
+  return Number(r.rows[0].c);
+}
+
+/**
+ * Allocate the next invoice number atomically.
+ * 
+ * For reps with invoices: uses per-rep next_invoice_number (auto-increment).
+ * For reps on first invoice: uses the user-supplied starting number.
+ * 
+ * This function is the SINGLE SOURCE OF TRUTH for invoice numbering.
+ * It must always be called inside a transaction.
+ */
+async function allocateInvoiceNumber(client, userId, userSuppliedNumber) {
+  // Get user's current next_invoice_number and invoice count
+  const userRes = await client.query(
+    'SELECT next_invoice_number FROM users WHERE id = $1 FOR UPDATE',
+    [userId]
+  );
+  if (!userRes.rows.length) {
+    throw new Error('User not found');
+  }
+  
+  const userNextNum = userRes.rows[0].next_invoice_number || 1;
+  
+  // Count existing invoices for this user
+  const countRes = await client.query(
+    'SELECT COUNT(*) AS c FROM invoices WHERE user_id = $1',
+    [userId]
+  );
+  const existingCount = Number(countRes.rows[0].c);
+  
+  // Get settings for prefix
+  const settingsRes = await client.query(
+    'SELECT invoice_prefix FROM settings WHERE id = 1'
+  );
+  const prefix = settingsRes.rows[0]?.invoice_prefix || 'INV';
+  
+  let finalNumber;
+  
+  // Only use supplied number for first invoice (no existing invoices)
+  if (userSuppliedNumber && existingCount === 0) {
+    // Validate format: PREFIX-XXXX
+    const pattern = new RegExp(`^${prefix}-\\d{4,}$`);
+    if (!pattern.test(userSuppliedNumber)) {
+      throw new Error(`Invalid invoice number format. Expected: ${prefix}-XXXX`);
+    }
+    
+    // Extract numeric part
+    const numericPart = parseInt(userSuppliedNumber.split('-')[1], 10);
+    if (Number.isNaN(numericPart) || numericPart < 1) {
+      throw new Error('Invalid invoice number. Must be a positive number.');
+    }
+    
+    // Check uniqueness
+    const dupCheck = await client.query(
+      'SELECT id FROM invoices WHERE invoice_number = $1',
+      [userSuppliedNumber]
+    );
+    if (dupCheck.rows.length > 0) {
+      throw new Error(`Invoice number ${userSuppliedNumber} already exists.`);
+    }
+    
+    finalNumber = userSuppliedNumber;
+    
+    // Advance user's next number past the supplied number
+    await client.query(
+      'UPDATE users SET next_invoice_number = $1 WHERE id = $2',
+      [numericPart + 1, userId]
+    );
+  } else {
+    // Auto-generate from per-rep sequence
+    finalNumber = `${prefix}-${String(userNextNum).padStart(4, '0')}`;
+    
+    // Check uniqueness (should always pass, but safety check)
+    const dupCheck = await client.query(
+      'SELECT id FROM invoices WHERE invoice_number = $1',
+      [finalNumber]
+    );
+    if (dupCheck.rows.length > 0) {
+      // Number already exists, advance until we find a free one
+      let candidate = userNextNum + 1;
+      while (true) {
+        const tryNumber = `${prefix}-${String(candidate).padStart(4, '0')}`;
+        const check = await client.query(
+          'SELECT id FROM invoices WHERE invoice_number = $1',
+          [tryNumber]
+        );
+        if (check.rows.length === 0) {
+          finalNumber = tryNumber;
+          await client.query(
+            'UPDATE users SET next_invoice_number = $1 WHERE id = $2',
+            [candidate + 1, userId]
+          );
+          break;
+        }
+        candidate++;
+        if (candidate > 999999) {
+          throw new Error('Unable to allocate invoice number');
+        }
+      }
+    } else {
+      // Advance per-rep counter
+      await client.query(
+        'UPDATE users SET next_invoice_number = $1 WHERE id = $2',
+        [userNextNum + 1, userId]
+      );
+    }
+  }
+  
+  return finalNumber;
+}
+
 async function createInvoice(tx) {
   await ensureReady();
   const p = getPool();
@@ -327,14 +470,8 @@ async function createInvoice(tx) {
   try {
     await client.query('BEGIN');
 
-    // Always allocate the next invoice number from the settings counter.
-    // The form field is a display hint only — trusting it would allow
-    // duplicate-key violations if the same form is submitted twice.
-    const num = await client.query(
-      'UPDATE settings SET next_invoice_number = next_invoice_number + 1 WHERE id = 1 RETURNING invoice_prefix, next_invoice_number',
-    );
-    const { invoice_prefix, next_invoice_number } = num.rows[0];
-    const invoice_number = `${invoice_prefix}-${String(Number(next_invoice_number) - 1).padStart(4, '0')}`;
+    // Allocate invoice number atomically using per-rep sequence
+    const invoice_number = await allocateInvoiceNumber(client, tx.user_id, tx.userSuppliedNumber);
 
     const ins = await client.query(
       `INSERT INTO invoices
@@ -643,4 +780,6 @@ module.exports = {
   setUserActive,
   getRepsAdmin,
   getPool,
+  countInvoicesForUser,
+  allocateInvoiceNumber,
 };

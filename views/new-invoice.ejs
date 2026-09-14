@@ -50,7 +50,14 @@
         <div class="grid2">
           <label class="field">
             <span class="field-label">Invoice number</span>
-            <input class="input" type="text" name="invoice_number" id="invoice_number" value="<%= nextNumber %>">
+            <% if (typeof isFirstInvoice !== 'undefined' && isFirstInvoice) { %>
+              <input class="input" type="text" name="invoice_number" id="invoice_number" value="<%= nextNumber %>" placeholder="e.g. INV-0045">
+              <span class="hint">Set your starting invoice number. Future invoices will continue automatically.</span>
+              <input type="hidden" name="isFirstInvoice" value="true">
+            <% } else { %>
+              <input class="input" type="text" name="invoice_number" id="invoice_number" value="<%= nextNumber %>" readonly style="background: var(--bg-2); cursor: default;">
+              <span class="hint">Generated automatically</span>
+            <% } %>
           </label>
           <label class="field">
             <span class="field-label">Email</span>
