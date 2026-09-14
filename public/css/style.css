@@ -2,8 +2,6 @@
    ASG INVOICE HUB — Premium Design System
    =================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
 /* ===================================================================
    THEME TOKENS
    =================================================================== */
@@ -47,9 +45,9 @@ html[data-theme="light"] {
   --danger-soft: rgba(229, 62, 62, 0.1);
 
   /* Typography */
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  --font-display: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Consolas', 'SF Mono', monospace;
 
   /* Radius */
   --radius-xs: 4px;
