@@ -33,23 +33,20 @@ function fromAddress(settings) {
   return '"Invoice Hub" <no-reply@localhost>';
 }
 
-async function sendInvoicePdf(settings, invoice, pdfBuffer, to) {
+async function sendInvoicePdf(settings, invoice, pdfBuffer, to, repName, weekRange) {
   const t = getTransporter();
   if (!t) throw new Error('SMTP is not configured. Set SMTP_HOST in .env');
   const recipients = (Array.isArray(to) ? to : [to]).map((e) => String(e).trim()).filter(Boolean);
   if (!recipients.length) throw new Error('No recipients provided');
-  const lines = [
-    `Please find attached invoice ${invoice.invoice_number}.`,
-    '',
-    `Customer: ${invoice.customer_name}`,
-    `Amount: $${Number(invoice.total || 0).toFixed(2)}`,
-    invoice.notes ? `Notes: ${invoice.notes}` : null,
-  ].filter(Boolean);
+
+  const subject = `Invoice ${invoice.invoice_number} - ${repName} - ${weekRange}`;
+  const body = `Hi Natalie,\n\nPlease see my invoice attached for ${repName} - ${weekRange}.\n\nKind Regards,\n${repName}`;
+
   await t.sendMail({
     from: fromAddress(settings),
     to: recipients.join(', '),
-    subject: `Invoice ${invoice.invoice_number} from ${settings.company_name || 'our company'}`,
-    text: lines.join('\n'),
+    subject: subject,
+    text: body,
     attachments: [{ filename: `${invoice.invoice_number}.pdf`, content: pdfBuffer }],
   });
 }

@@ -186,9 +186,9 @@ test.beforeEach(async ({ page }) => {
     expect(text).toContain('Test notes for XHR PDF');
 
     expect(text).toContain('Wages/Retainer');
-    expect(text).toContain('Mon — 24th');
-    expect(text).toContain('Wed — 26th');
-    expect(text).toContain('Sat — 29th');
+    expect(text).toContain('Mon - 24th');
+    expect(text).toContain('Wed - 26th');
+    expect(text).toContain('Sat - 29th');
     expect(text).toContain('Full day');
     expect(text).toContain('Half day');
     expect(text).toContain('180');

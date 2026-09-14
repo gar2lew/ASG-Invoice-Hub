@@ -50,7 +50,7 @@ test.describe('Shared Week State', () => {
     const weekStartValue = await page.inputValue('#week_start');
     console.log(`Week start value: '${weekStartValue}'`);
 
-    expect(weekHeader).toBe('Week of 24–29 Aug 2026');
+    expect(weekHeader).toBe('Week of 24-29 Aug 2026');
 
     const checkDate = async (name, expected) => {
       const val = await page.inputValue(name);

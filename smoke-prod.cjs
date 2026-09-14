@@ -78,12 +78,12 @@ async function main() {
   const previewHtml = await page.locator('#pv-items').innerHTML();
   // The day details live in the preview / wage-details sub-row, NOT in the
   // primary description. Verify both independently.
-  const primaryOk = /Wages\/Retainer — Week of 31–05 Sept 2026 — \$1000\.01/.test(wageDesc);
-  const detailsOk = /Mon — 31st/.test(previewHtml)
-    && /Tue — 1st/.test(previewHtml)
-    && /Fri — 4th/.test(previewHtml)
-    && /Sat — 5th \(½ day\)/.test(previewHtml)
-    && /Wages\/Retainer — Week of/.test(previewHtml);
+  const primaryOk = /Wages\/Retainer - Week of 31-05 Sept 2026 - \$1000\.01/.test(wageDesc);
+  const detailsOk = /Mon - 31st/.test(previewHtml)
+    && /Tue - 1st/.test(previewHtml)
+    && /Fri - 4th/.test(previewHtml)
+    && /Sat - 5th \(½ day\)/.test(previewHtml)
+    && /Wages\/Retainer - Week of/.test(previewHtml);
   check('#4 wage line structured description (primary + day details w/ Sat ½ + ordinals)',
     primaryOk && detailsOk, `primary_ok=${primaryOk} details_ok=${detailsOk}`);
 

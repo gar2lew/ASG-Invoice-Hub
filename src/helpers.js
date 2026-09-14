@@ -58,4 +58,30 @@ function round2(n) {
   return Math.round(Number(n || 0) * 100) / 100;
 }
 
-module.exports = { fmtMoney, fmtDate, fmtDateLong, todayISO, addDaysISO, weekBounds, round2 };
+function formatWeekRangeForEmail(items) {
+  if (!items || items.length === 0) return '';
+  const details = items[0].details;
+  if (!details || details.length === 0) return '';
+
+  const firstDetail = details[0];
+  const lastDetail = details[details.length - 1];
+
+  // Extract components from "Mon - 7th 07/09/2026 - Full day - $180"
+  const parts = firstDetail.split(' - ');
+  const firstDay = parts[0];
+  const firstDayNum = parts[1];
+  const firstDate = parts[2];
+
+  const lastParts = lastDetail.split(' - ');
+  const lastDay = lastParts[0];
+  const lastDayNum = lastParts[1];
+  const lastDate = lastParts[2];
+
+  if (!firstDay || !firstDayNum || !firstDate || !lastDay || !lastDayNum || !lastDate) {
+    return '';
+  }
+
+  return `${firstDay} - ${firstDayNum} ${firstDate} to ${lastDay} - ${lastDayNum} ${lastDate}`;
+}
+
+module.exports = { fmtMoney, fmtDate, fmtDateLong, todayISO, addDaysISO, weekBounds, round2, formatWeekRangeForEmail };

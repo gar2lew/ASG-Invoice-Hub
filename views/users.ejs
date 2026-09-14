@@ -29,9 +29,9 @@
               <td>
                 <% if (u.email) { %><span class="cell-main"><%= u.email %></span><% } %>
                 <% if (u.phone) { %><span class="cell-sub"><%= u.phone %></span><% } %>
-                <% if (!u.email && !u.phone) { %><span class="muted">—</span><% } %>
+                <% if (!u.email && !u.phone) { %><span class="muted">-</span><% } %>
               </td>
-              <td class="mono muted"><%= u.abn || '—' %></td>
+              <td class="mono muted"><%= u.abn || '-' %></td>
               <td>
                 <% if (u.bank_name && u.bank_bsb && u.bank_account) { %>
                   <span class="badge badge-paid">Complete</span>

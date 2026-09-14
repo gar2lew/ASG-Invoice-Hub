@@ -86,8 +86,8 @@ On the **My Profile** page, fill in:
 ![Payment Details](docs/screenshots/invoice-hub/04-payment-details.png)
 
 **Payment status indicator:**
-- **Complete** — all bank fields filled
-- **Missing information** — some fields empty
+- **Complete** - all bank fields filled
+- **Missing information** - some fields empty
 
 ---
 
@@ -124,7 +124,7 @@ On the **My Profile** page, scroll to **Security**:
 
 ## Step 8: Select Work Days (Weekdays)
 
-The wage calculator shows Monday–Friday. For each day, choose:
+The wage calculator shows Monday-Friday. For each day, choose:
 
 | Option | Amount |
 |--------|--------|
@@ -171,8 +171,8 @@ Three shortcuts to quickly set common patterns:
 
 | Button | What It Does |
 |--------|--------------|
-| **Select Mon–Fri** | Monday–Friday = **Full** ($180 each), Saturday = **Off** |
-| **Select Mon–Sat** | Monday–Friday = **Full** ($180 each), Saturday = **Half** ($100) |
+| **Select Mon-Fri** | Monday-Friday = **Full** ($180 each), Saturday = **Off** |
+| **Select Mon-Sat** | Monday-Friday = **Full** ($180 each), Saturday = **Half** ($100) |
 | **Clear Week** | All days = **Off** |
 
 1. Click/tap the button.
@@ -207,7 +207,7 @@ The **Week Total** displays at the bottom of the calculator.
 ## Step 13: Add to Invoice & Save Draft
 
 1. Click/tap **Add to invoice** to add the wage line item.
-2. Verify the line item appears in the invoice (description: "Wages/Retainer — Week of...").
+2. Verify the line item appears in the invoice (description: "Wages/Retainer - Week of...").
 3. Click/tap **Save draft** to save without sending.
 
 > **Tip:** Saving as a draft lets you come back and edit later.
@@ -276,16 +276,16 @@ The **Week Total** displays at the bottom of the calculator.
 | **Wednesday** | $180 | $90 | $0 |
 | **Thursday** | $180 | $90 | $0 |
 | **Friday** | $180 | $90 | $0 |
-| **Saturday** | — | $100 | $0 |
+| **Saturday** | - | $100 | $0 |
 
 ### Common Examples
 
 | Scenario | Calculation | Total |
 |----------|-------------|-------|
-| Mon–Fri Full | 5 × $180 | **$900** |
-| Mon–Fri Full + Saturday | 5 × $180 + $100 | **$1000** |
+| Mon-Fri Full | 5 × $180 | **$900** |
+| Mon-Fri Full + Saturday | 5 × $180 + $100 | **$1000** |
 | Monday Full + Tuesday Half | $180 + $90 | **$270** |
-| Mon–Fri Half | 5 × $90 | **$450** |
+| Mon-Fri Half | 5 × $90 | **$450** |
 | Monday Half + Saturday | $90 + $100 | **$190** |
 
 ---
@@ -338,4 +338,4 @@ Contact your administrator for:
 
 ---
 
-*ASG Invoice Hub — Staff Guide*
+*ASG Invoice Hub - Staff Guide*

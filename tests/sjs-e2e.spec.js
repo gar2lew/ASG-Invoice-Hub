@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('SJS End-to-End Flow', () => {
-  // Tests use storageState from auth.setup.js — already authenticated as rep
+  // Tests use storageState from auth.setup.js - already authenticated as rep
 
   test('rep logs in and creates SJS invoice', async ({ page }) => {
     await page.goto('/invoices/new');

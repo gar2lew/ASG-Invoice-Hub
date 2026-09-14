@@ -58,12 +58,12 @@ function parseLocalDate(dateString) {
   return new Date(year, month, day);
 }
 
-// Format a date range as "DD–DD Mon YYYY"
+// Format a date range as "DD-DD Mon YYYY"
 function formatWeekRange(startDate, endDate) {
   const startDay = String(startDate.getDate()).padStart(2, '0');
   const endDay = String(endDate.getDate()).padStart(2, '0');
   const monthYear = endDate.toLocaleString('en-AU', { month: 'short', year: 'numeric' });
-  return startDay + '–' + endDay + ' ' + monthYear;
+  return startDay + '-' + endDay + ' ' + monthYear;
 }
 
 function fmtWeekRange(weekStarting) {
@@ -1038,9 +1038,9 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
       var dayNum = dayDate.getDate();
       var suffix = getOrdinalSuffix(dayNum);
       var detailLabel = getDayDetailLabel(item.day, item.state);
-      var detail = item.day + ' — ' + dayNum + suffix + ' ' + fmtDate(dayDate);
+      var detail = item.day + ' - ' + dayNum + suffix + ' ' + fmtDate(dayDate);
       if (detailLabel) {
-        detail += ' — ' + detailLabel + ' — ' + fmt(getDayRate(item.day, item.state));
+        detail += ' - ' + detailLabel + ' - ' + fmt(getDayRate(item.day, item.state));
       }
       dayDetails.push(detail);
     });
@@ -1050,11 +1050,11 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
     selectedDays.forEach(function (item) {
       var dateInput = document.querySelector('input[name="date_' + item.day + '"]');
       var dateText = dateInput && dateInput.value ? ' ' + dateInput.value : '';
-      addLine({ description: 'Wages — ' + item.day + dateText, quantity: 1, rate: getDayRate(item.day, item.state) });
+      addLine({ description: 'Wages - ' + item.day + dateText, quantity: 1, rate: getDayRate(item.day, item.state) });
     });
   } else {
     var range = weekState.weekStarting ? 'Week of ' + fmtWeekRange(weekState.weekStarting) : '';
-    var primaryDesc = 'Wages/Retainer — ' + range;
+    var primaryDesc = 'Wages/Retainer - ' + range;
     addLine({
       description: primaryDesc,
       quantity: 1,

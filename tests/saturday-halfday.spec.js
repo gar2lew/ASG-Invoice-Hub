@@ -349,15 +349,15 @@ test.describe('Saturday Half-Day', () => {
     const detailsText = await detailsRow.textContent();
 
     // Off days should NOT appear
-    expect(detailsText).not.toContain('Wed —');
-    expect(detailsText).not.toContain('Thu —');
+    expect(detailsText).not.toContain('Wed -');
+    expect(detailsText).not.toContain('Thu -');
 
     // Worked days should appear with correct labels
-    expect(detailsText).toContain('Mon —');
+    expect(detailsText).toContain('Mon -');
     expect(detailsText).toContain('Full day');
-    expect(detailsText).toContain('Tue —');
+    expect(detailsText).toContain('Tue -');
     expect(detailsText).toContain('Half day');
-    expect(detailsText).toContain('Fri —');
-    expect(detailsText).toContain('Sat —');
+    expect(detailsText).toContain('Fri -');
+    expect(detailsText).toContain('Sat -');
   });
 });

@@ -3,7 +3,7 @@ const db = require('../src/db');
 const { renderInvoice, fmtDate } = require('../src/pdf');
 const { sendInvoicePdf, getInvoiceRecipients } = require('../src/mail');
 const { requireAuth, flash } = require('../src/middleware');
-const { round2, todayISO, addDaysISO } = require('../src/helpers');
+const { round2, todayISO, addDaysISO, formatWeekRangeForEmail } = require('../src/helpers');
 
 const router = express.Router();
 
@@ -124,7 +124,8 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
       }
       try {
         const recipients = getInvoiceRecipients();
-        await sendInvoicePdf(settings, invoice, pdf, recipients);
+        const weekRange = formatWeekRangeForEmail(itemsRes.items);
+        await sendInvoicePdf(settings, invoice, pdf, recipients, req.user.name, weekRange);
         await db.setInvoiceStatus(created.id, 'sent');
         return res.json({ id: created.id, invoice_number: created.invoice_number, sent: true });
       } catch (err) {
@@ -152,7 +153,7 @@ router.get('/invoices/:id/download', requireAuth, async (req, res, next) => {
     const invoice = await loadInvoiceForUser(req);
     if (!invoice) return res.status(404).send('Not found');
     const pdf = await pdfForInvoice(invoice);
-    // Record download tracking (non-blocking — don't fail the download if tracking fails)
+    // Record download tracking (non-blocking - don't fail the download if tracking fails)
     try {
       await db.recordInvoiceDownload(invoice.id);
     } catch (e) {
@@ -188,7 +189,9 @@ router.post('/invoices/:id/send', requireAuth, async (req, res, next) => {
     try {
       const pdf = await renderInvoice(invoice, items, settings);
       const recipients = getInvoiceRecipients();
-      await sendInvoicePdf(settings, invoice, pdf, recipients);
+      const weekRange = formatWeekRangeForEmail(items);
+      const repName = rep ? rep.name : (invoice.rep_name || invoice.user_name || 'Contractor');
+      await sendInvoicePdf(settings, invoice, pdf, recipients, repName, weekRange);
       await db.setInvoiceStatus(invoice.id, 'sent');
       flash(req, res, `Invoice ${invoice.invoice_number} sent to ${recipients}.`);
     } catch (err) {

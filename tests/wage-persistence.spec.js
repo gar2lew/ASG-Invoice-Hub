@@ -53,16 +53,16 @@ test.describe('Wage Detail Persistence', () => {
     await expect(wageRow).toBeVisible({ timeout: 5000 });
 
     const primaryDesc = await wageRow.locator('input[name="item_description"]').inputValue();
-    expect(primaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4}/);
+    expect(primaryDesc).toMatch(/Wages\/Retainer - Week of \d{2}-\d{2} [A-Za-z]{3} \d{4}/);
     expect(primaryDesc).not.toContain('$');
 
     const detailsRow = page.locator('.wage-details').first();
     await expect(detailsRow).toBeVisible({ timeout: 5000 });
 
     const detailsText = await detailsRow.textContent();
-    expect(detailsText).toContain('Mon — 24th 24/08/2026');
-    expect(detailsText).toContain('Wed — 26th 26/08/2026');
-    expect(detailsText).toContain('Sat — 29th 29/08/2026');
+    expect(detailsText).toContain('Mon - 24th 24/08/2026');
+    expect(detailsText).toContain('Wed - 26th 26/08/2026');
+    expect(detailsText).toContain('Sat - 29th 29/08/2026');
 
     expect(detailsText).not.toContain('Tue');
     expect(detailsText).not.toContain('Thu');
@@ -99,16 +99,16 @@ test.describe('Wage Detail Persistence', () => {
     await expect(restoredWageRow).toBeVisible({ timeout: 5000 });
 
     const restoredPrimaryDesc = await restoredWageRow.locator('input[name="item_description"]').inputValue();
-    expect(restoredPrimaryDesc).toMatch(/Wages\/Retainer — Week of \d{2}–\d{2} [A-Za-z]{3} \d{4}/);
+    expect(restoredPrimaryDesc).toMatch(/Wages\/Retainer - Week of \d{2}-\d{2} [A-Za-z]{3} \d{4}/);
     expect(restoredPrimaryDesc).not.toContain('$');
 
     const restoredDetailsRow = page.locator('.wage-details').first();
     await expect(restoredDetailsRow).toBeVisible({ timeout: 5000 });
 
     const restoredDetailsText = await restoredDetailsRow.textContent();
-    expect(restoredDetailsText).toContain('Mon — 24th 24/08/2026');
-    expect(restoredDetailsText).toContain('Wed — 26th 26/08/2026');
-    expect(restoredDetailsText).toContain('Sat — 29th 29/08/2026');
+    expect(restoredDetailsText).toContain('Mon - 24th 24/08/2026');
+    expect(restoredDetailsText).toContain('Wed - 26th 26/08/2026');
+    expect(restoredDetailsText).toContain('Sat - 29th 29/08/2026');
 
     expect(restoredDetailsText).not.toContain('Tue');
     expect(restoredDetailsText).not.toContain('Thu');

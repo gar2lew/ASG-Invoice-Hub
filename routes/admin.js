@@ -134,7 +134,7 @@ router.post('/users/:id/delete', requireAdmin, async (req, res, next) => {
     }
     const hasInvoices = Number((await db.statsForUser(user.id)).count) > 0;
     if (hasInvoices) {
-      flash(req, res, `Cannot delete ${user.name} — they have invoices on record.`, 'error');
+      flash(req, res, `Cannot delete ${user.name} - they have invoices on record.`, 'error');
       return res.redirect('/users');
     }
     await db.deleteUser(user.id);
@@ -361,7 +361,7 @@ router.get('/admin/reports', requireAdmin, async (req, res, next) => {
         ...i,
         totalText: fmtMoney(i.total),
         createdText: fmtDate(i.created_at),
-        downloadedText: i.downloaded_at ? fmtDate(i.downloaded_at) : '—',
+        downloadedText: i.downloaded_at ? fmtDate(i.downloaded_at) : '-',
       })),
       summary: {
         ...summary,
