@@ -25,8 +25,8 @@
   initTheme();
 
   // Toggle button click handler
-  function setupToggle() {
-    var btn = document.getElementById('theme-toggle');
+  function setupToggle(buttonId) {
+    var btn = document.getElementById(buttonId);
     if (!btn) return;
 
     function updateLabel() {
@@ -49,8 +49,27 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupToggle);
+    document.addEventListener('DOMContentLoaded', function () {
+      setupToggle('theme-toggle');
+      setupToggle('theme-toggle-mobile');
+      highlightBottomNav();
+    });
   } else {
-    setupToggle();
+    setupToggle('theme-toggle');
+    setupToggle('theme-toggle-mobile');
+    highlightBottomNav();
+  }
+
+  function highlightBottomNav() {
+    var path = window.location.pathname;
+    var items = document.querySelectorAll('.bottom-nav-item');
+    items.forEach(function (item) {
+      var href = item.getAttribute('href');
+      if (href === '/' && path === '/') {
+        item.classList.add('active');
+      } else if (href !== '/' && path.startsWith(href)) {
+        item.classList.add('active');
+      }
+    });
   }
 })();
