@@ -10,30 +10,30 @@
     margin: 18mm 16mm 20mm 16mm;
     @bottom-center {
       content: counter(page) " of " counter(pages);
-      font-family: 'Source Sans 3', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 10px;
-      color: #6B7280;
+      color: #718096;
     }
   }
   
   :root {
     --accent: #C79A4A;
     --accent-deep: #A67C2E;
-    --ink: #142033;
-    --ink-2: #2D3A4F;
-    --muted: #6B7280;
-    --line: #E8E4D8;
+    --ink: #1A2332;
+    --ink-2: #4A5568;
+    --muted: #718096;
+    --line: #E2E8F0;
     --surface: #FFFFFF;
-    --font-display: 'Archivo', 'Segoe UI', sans-serif;
-    --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
-    --font-mono: 'IBM Plex Mono', monospace;
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.55;
     color: var(--ink);
     background: #fff;
@@ -56,7 +56,7 @@
     background: var(--accent);
     color: #fff;
     padding: 7px 9px 6px;
-    border-radius: 8px;
+    border-radius: 6px;
     margin-bottom: 24px;
     display: inline-block;
   }
@@ -70,7 +70,7 @@
   }
 
   .cover-sub {
-    font-size: 16px;
+    font-size: 14px;
     color: var(--muted);
     margin-bottom: 40px;
   }
@@ -82,7 +82,7 @@
 
   .cover-toc h2 {
     font-family: var(--font-display);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--ink);
     margin-bottom: 12px;
@@ -92,65 +92,63 @@
 
   .cover-toc ol {
     padding-left: 20px;
+    column-count: 2;
+    column-gap: 20px;
   }
 
   .cover-toc li {
     margin-bottom: 4px;
-    font-size: 13px;
+    font-size: 11px;
     color: var(--ink-2);
-  }
-
-  .cover-toc a {
-    color: var(--accent);
-    text-decoration: none;
+    break-inside: avoid;
   }
 
   .step {
     page-break-inside: avoid;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
   }
 
   .step-header {
     display: flex;
     align-items: baseline;
-    gap: 12px;
-    margin-bottom: 10px;
+    gap: 10px;
+    margin-bottom: 8px;
     border-bottom: 2px solid var(--accent);
-    padding-bottom: 6px;
+    padding-bottom: 4px;
   }
 
   .step-num {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--accent);
     background: rgba(199, 154, 74, 0.1);
-    padding: 3px 8px;
-    border-radius: 4px;
+    padding: 2px 6px;
+    border-radius: 3px;
   }
 
   .step h2 {
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--ink);
   }
 
   .step p {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .step ol, .step ul {
-    padding-left: 20px;
-    margin-bottom: 10px;
+    padding-left: 18px;
+    margin-bottom: 8px;
   }
 
   .step li {
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
 
   .screenshot {
-    margin: 12px 0;
+    margin: 10px 0;
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
@@ -161,7 +159,7 @@
 
   .screenshot img {
     max-width: 100%;
-    max-height: 280px;
+    max-height: 220px;
     width: auto;
     height: auto;
     display: inline-block;
@@ -169,7 +167,7 @@
   }
 
   .caption {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--muted);
     margin-top: 4px;
     font-style: italic;
@@ -178,15 +176,15 @@
   .callout {
     border-left: 4px solid var(--accent);
     background: rgba(199, 154, 74, 0.05);
-    padding: 10px 14px;
-    margin: 10px 0;
+    padding: 8px 12px;
+    margin: 8px 0;
     border-radius: 0 6px 6px 0;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .callout-warn {
-    border-left-color: #D97706;
-    background: rgba(217, 119, 6, 0.05);
+    border-left-color: #D69E2E;
+    background: rgba(214, 158, 46, 0.05);
   }
 
   .callout strong {
@@ -196,19 +194,19 @@
   }
 
   .callout-warn strong {
-    color: #D97706;
+    color: #B7791F;
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    margin: 10px 0;
-    font-size: 12px;
+    margin: 8px 0;
+    font-size: 11px;
   }
 
   th, td {
     border: 1px solid var(--line);
-    padding: 8px 10px;
+    padding: 6px 8px;
     text-align: left;
   }
 
@@ -237,16 +235,11 @@
     page-break-before: always;
   }
 
-  .troubleshoot-table td:first-child {
-    font-weight: 600;
-    color: var(--ink);
-  }
-
   .footer-note {
-    margin-top: 40px;
-    padding-top: 12px;
+    margin-top: 30px;
+    padding-top: 10px;
     border-top: 1px solid var(--line);
-    font-size: 11px;
+    font-size: 10px;
     color: var(--muted);
     text-align: center;
   }
@@ -262,36 +255,38 @@
 <div class="cover">
   <div class="cover-brand">ASG INVOICE HUB</div>
   <h1>How to Use the<br>Invoice Hub</h1>
-  <p class="cover-sub">A simple step-by-step guide for sales representatives.</p>
+  <p class="cover-sub">A simple step-by-step guide for sales representatives.<br>Works on desktop, tablet, and mobile.</p>
   
   <div class="cover-toc">
     <h2>Contents</h2>
     <ol>
-      <li><a href="#s1">Logging In</a></li>
-      <li><a href="#s2">Dashboard</a></li>
-      <li><a href="#s3">My Profile</a></li>
-      <li><a href="#s4">Update Personal Details</a></li>
-      <li><a href="#s5">Update Payment Details</a></li>
-      <li><a href="#s6">Change Your PIN</a></li>
-      <li><a href="#s7">Create a New Invoice</a></li>
-      <li><a href="#s8">Select Work Days (Weekdays)</a></li>
-      <li><a href="#s9">Select Saturday</a></li>
-      <li><a href="#s10">Use Quick Actions</a></li>
-      <li><a href="#s11">Check the Weekly Total</a></li>
-      <li><a href="#s12">Add Dates &amp; Notes</a></li>
-      <li><a href="#s13">Save Draft</a></li>
-      <li><a href="#s14">View Your Invoices</a></li>
-      <li><a href="#s15">Edit a Draft Invoice</a></li>
-      <li><a href="#s16">Download the PDF</a></li>
-      <li><a href="#s17">Save &amp; Email</a></li>
-      <li><a href="#rates">Wage Rate Reference</a></li>
-      <li><a href="#trouble">Troubleshooting</a></li>
+      <li>Logging In</li>
+      <li>Dashboard</li>
+      <li>My Profile</li>
+      <li>Update Personal Details</li>
+      <li>Update Payment Details</li>
+      <li>Change Your PIN</li>
+      <li>Create a New Invoice</li>
+      <li>Select Work Days (Weekdays)</li>
+      <li>Select Saturday</li>
+      <li>Use Quick Actions</li>
+      <li>Check the Weekly Total</li>
+      <li>Add Dates &amp; Notes</li>
+      <li>Save Draft</li>
+      <li>View Your Invoices</li>
+      <li>Edit a Draft Invoice</li>
+      <li>Download the PDF</li>
+      <li>Save &amp; Email</li>
+      <li>Wage Rate Reference</li>
+      <li>Switching Themes</li>
+      <li>Mobile Navigation</li>
+      <li>Troubleshooting</li>
     </ol>
   </div>
 </div>
 
 <!-- STEP 1 -->
-<div class="step" id="s1">
+<div class="step">
   <div class="step-header">
     <span class="step-num">STEP 1</span>
     <h2>Logging In</h2>
@@ -304,7 +299,11 @@
   </ol>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/01-login.png" alt="Login Screen">
-    <div class="caption">Figure 1: Login screen — select your name and enter PIN</div>
+    <div class="caption">Desktop login screen</div>
+  </div>
+  <div class="screenshot">
+    <img src="screenshots/invoice-hub/15-login-mobile.png" alt="Mobile Login">
+    <div class="caption">Mobile login screen</div>
   </div>
   <div class="callout">
     <strong>Tip</strong>
@@ -320,8 +319,16 @@
   </div>
   <p>After signing in, you'll see your dashboard with summary statistics and a list of your previous invoices.</p>
   <div class="screenshot">
-    <img src="screenshots/invoice-hub/02-dashboard.png" alt="Dashboard">
-    <div class="caption">Figure 2: Dashboard — your invoice overview</div>
+    <img src="screenshots/invoice-hub/02-dashboard-desktop.png" alt="Dashboard">
+    <div class="caption">Desktop dashboard</div>
+  </div>
+  <div class="screenshot">
+    <img src="screenshots/invoice-hub/16-dashboard-mobile.png" alt="Mobile Dashboard">
+    <div class="caption">Mobile dashboard with bottom navigation</div>
+  </div>
+  <div class="callout">
+    <strong>Tip</strong>
+    On mobile, use the bottom navigation bar (Dashboard, New Invoice, My Profile) to move between pages.
   </div>
 </div>
 
@@ -331,10 +338,10 @@
     <span class="step-num">STEP 3</span>
     <h2>Open My Profile</h2>
   </div>
-  <p>In the left sidebar, click <strong>My Profile</strong>. This page shows your personal and payment details.</p>
+  <p>Click <strong>My Profile</strong> in the navigation (left sidebar on desktop, bottom nav on mobile).</p>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/03-my-profile.png" alt="My Profile">
-    <div class="caption">Figure 3: My Profile — manage your details</div>
+    <div class="caption">My Profile page</div>
   </div>
 </div>
 
@@ -364,7 +371,7 @@
     <span class="step-num">STEP 5</span>
     <h2>Update Payment Details</h2>
   </div>
-  <p>Scroll down to the <strong>Payment details</strong> section and fill in:</p>
+  <p>On the My Profile page, fill in:</p>
   <ul>
     <li>Bank name</li>
     <li>BSB</li>
@@ -373,7 +380,7 @@
   <p>Click <strong>Save Profile</strong>.</p>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/04-payment-details.png" alt="Payment Details">
-    <div class="caption">Figure 4: Payment details section — fill in your bank information</div>
+    <div class="caption">Payment details section</div>
   </div>
   <div class="callout callout-warn">
     <strong>Warning</strong>
@@ -388,7 +395,7 @@
     <h2>Change Your PIN</h2>
   </div>
   <ol>
-    <li>Scroll down to the <strong>Security</strong> section.</li>
+    <li>Scroll to the <strong>Security</strong> section on My Profile.</li>
     <li>Enter your <strong>Current PIN</strong>.</li>
     <li>Enter your <strong>New PIN</strong> (exactly 4 digits).</li>
     <li><strong>Confirm</strong> your new PIN.</li>
@@ -396,7 +403,7 @@
   </ol>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/05-change-pin.png" alt="Change PIN">
-    <div class="caption">Figure 5: Security section — change your PIN</div>
+    <div class="caption">Security section — change your PIN</div>
   </div>
   <div class="callout">
     <strong>Tip</strong>
@@ -414,15 +421,14 @@
     <span class="step-num">STEP 7</span>
     <h2>Create a New Invoice</h2>
   </div>
-  <p>In the sidebar, click <strong>New invoice</strong>. The invoice form opens with:</p>
-  <ul>
-    <li>Invoice details (number, email, company name, address)</li>
-    <li>Weekly wage calculator</li>
-    <li>Dates &amp; Notes</li>
-  </ul>
+  <p>Click <strong>New invoice</strong> in the navigation. The invoice form opens with invoice details, weekly wage calculator, and Dates &amp; Notes.</p>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/06-new-invoice.png" alt="New Invoice">
-    <div class="caption">Figure 6: New invoice form</div>
+    <div class="caption">New invoice form (desktop)</div>
+  </div>
+  <div class="screenshot">
+    <img src="screenshots/invoice-hub/17-new-invoice-mobile.png" alt="Mobile New Invoice">
+    <div class="caption">New invoice form (mobile)</div>
   </div>
 </div>
 
@@ -445,11 +451,11 @@
   </table>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/07-wage-selector.png" alt="Wage Selector">
-    <div class="caption">Figure 7: Wage selector showing Monday Full, Tuesday Half, Wednesday Off, Thursday-Friday Full, Saturday Half</div>
+    <div class="caption">Wage selector showing Monday Full, Tuesday Half, Wednesday Off</div>
   </div>
   <div class="callout">
     <strong>Tip</strong>
-    The selector clearly shows your choice. No more guessing!
+    The selector clearly shows your choice with distinct colors for each state.
   </div>
 </div>
 
@@ -471,7 +477,7 @@
   </table>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/08-half-day-example.png" alt="Saturday Options">
-    <div class="caption">Figure 8: Saturday selector — Off or Half ($100)</div>
+    <div class="caption">Saturday selector — Off or Half ($100)</div>
   </div>
   <div class="callout callout-warn">
     <strong>Note</strong>
@@ -491,14 +497,14 @@
       <tr><th>Button</th><th>What It Does</th></tr>
     </thead>
     <tbody>
-      <tr><td><strong>Select Mon–Fri</strong></td><td>Mon–Fri = Full ($180 each), Sat = Off</td></tr>
-      <tr><td><strong>Select Mon–Sat</strong></td><td>Mon–Fri = Full ($180 each), Sat = Half ($100)</td></tr>
+      <tr><td><strong>Select Mon–Fri</strong></td><td>Mon–Fri = Full, Sat = Off</td></tr>
+      <tr><td><strong>Select Mon–Sat</strong></td><td>Mon–Fri = Full, Sat = Half</td></tr>
       <tr><td><strong>Clear Week</strong></td><td>All days = Off</td></tr>
     </tbody>
   </table>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/09-quick-actions.png" alt="Quick Actions">
-    <div class="caption">Figure 9: Quick action buttons</div>
+    <div class="caption">Quick action buttons</div>
   </div>
 </div>
 
@@ -511,7 +517,7 @@
   <p>The <strong>Week Total</strong> displays at the bottom of the calculator. It updates automatically as you select or deselect days.</p>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/10-week-total.png" alt="Week Total">
-    <div class="caption">Figure 10: Week total showing $820.00 (Mon-Thu full, Sat half)</div>
+    <div class="caption">Week total showing calculated amount</div>
   </div>
 </div>
 
@@ -529,7 +535,7 @@
   </ol>
   <div class="callout">
     <strong>Tip</strong>
-    Dates automatically populate based on your selected week. Click a day tile to cycle through states.
+    Dates automatically populate based on your selected week. Tap/click a day tile to cycle through states.
   </div>
 </div>
 
@@ -540,13 +546,13 @@
     <h2>Save Draft</h2>
   </div>
   <ol>
-    <li>Click <strong>Add to invoice</strong> to add the wage line item.</li>
+    <li>Click/tap <strong>Add to invoice</strong> to add the wage line item.</li>
     <li>Verify the line item appears (description: "Wages/Retainer — Week of...").</li>
-    <li>Click <strong>Save draft</strong> to save without sending.</li>
+    <li>Click/tap <strong>Save draft</strong> to save without sending.</li>
   </ol>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/11-save-draft.png" alt="Save Draft">
-    <div class="caption">Figure 11: Save your invoice as a draft</div>
+    <div class="caption">Save your invoice as a draft</div>
   </div>
   <div class="callout">
     <strong>Tip</strong>
@@ -560,10 +566,10 @@
     <span class="step-num">STEP 14</span>
     <h2>View Your Invoices</h2>
   </div>
-  <p>Click <strong>Dashboard</strong> in the sidebar to see all your invoices. Click any invoice to view it.</p>
+  <p>Go to <strong>Dashboard</strong> (left sidebar on desktop, bottom nav on mobile) to see all your invoices. Tap/click any invoice to view it.</p>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/12-invoice-history.png" alt="Invoice History">
-    <div class="caption">Figure 12: Invoice history on dashboard</div>
+    <div class="caption">Invoice history on dashboard</div>
   </div>
 </div>
 
@@ -573,7 +579,7 @@
     <span class="step-num">STEP 15</span>
     <h2>Edit a Draft Invoice</h2>
   </div>
-  <p>From the dashboard, click the invoice you want to edit. On the invoice view page you can continue editing, download PDF, or send &amp; email.</p>
+  <p>From the dashboard, tap/click the invoice you want to edit. On the invoice view page you can continue editing, download PDF, or send &amp; email.</p>
   <div class="callout callout-warn">
     <strong>Note</strong>
     Only drafts can be edited. Sent invoices are locked.
@@ -586,10 +592,10 @@
     <span class="step-num">STEP 16</span>
     <h2>Download the PDF</h2>
   </div>
-  <p>Open the invoice (draft or sent) and click <strong>Download PDF</strong>. The PDF downloads to your computer.</p>
+  <p>Open the invoice (draft or sent) and click/tap <strong>Download PDF</strong>. The PDF downloads to your computer or device.</p>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/14-pdf-download.png" alt="PDF Download">
-    <div class="caption">Figure 14: Download the invoice PDF</div>
+    <div class="caption">Download the invoice PDF</div>
   </div>
 </div>
 
@@ -599,19 +605,14 @@
     <span class="step-num">STEP 17</span>
     <h2>Save &amp; Email</h2>
   </div>
-  <p>Complete your invoice with wage details, then click <strong>Save &amp; email</strong>. The system:</p>
-  <ol>
-    <li>Saves the invoice</li>
-    <li>Downloads the PDF</li>
-    <li>Opens an email with the invoice details pre-filled</li>
-  </ol>
+  <p>Complete your invoice with wage details, then click/tap <strong>Save &amp; email</strong>. The system saves the invoice, downloads the PDF, and opens an email with the invoice details pre-filled.</p>
   <div class="screenshot">
     <img src="screenshots/invoice-hub/13-save-email.png" alt="Save & Email">
-    <div class="caption">Figure 14: Save &amp; email your invoice</div>
+    <div class="caption">Save &amp; email your invoice</div>
   </div>
   <div class="callout callout-warn">
     <strong>Warning</strong>
-    Make sure your bank details (Payment Details) are complete before sending. Invoices without payment details may delay processing.
+    Make sure your bank details (Payment Details) are complete before sending.
   </div>
 </div>
 
@@ -635,7 +636,7 @@
     </tbody>
   </table>
 
-  <h3 style="margin-top: 20px; margin-bottom: 10px; font-family: var(--font-display); font-size: 14px;">Common Examples</h3>
+  <h3 style="margin-top: 16px; margin-bottom: 8px; font-family: var(--font-display); font-size: 13px;">Common Examples</h3>
   <table class="ref-table">
     <thead>
       <tr><th>Scenario</th><th>Calculation</th><th>Total</th></tr>
@@ -646,9 +647,43 @@
       <tr><td>Monday Full + Tuesday Half</td><td>$180 + $90</td><td><strong>$270</strong></td></tr>
       <tr><td>Mon–Fri Half</td><td>5 × $90</td><td><strong>$450</strong></td></tr>
       <tr><td>Monday Half + Saturday</td><td>$90 + $100</td><td><strong>$190</strong></td></tr>
-      <tr><td>Monday Full + Tuesday Half + Wed–Fri Off</td><td>$180 + $90</td><td><strong>$270</strong></td></tr>
     </tbody>
   </table>
+</div>
+
+<!-- THEME -->
+<div class="step" id="theme">
+  <div class="step-header">
+    <span class="step-num">TIP</span>
+    <h2>Switching Between Light and Dark Theme</h2>
+  </div>
+  <p>You can switch the appearance of the Invoice Hub:</p>
+  <ul>
+    <li><strong>Desktop:</strong> Click the theme button in the bottom-left corner</li>
+    <li><strong>Mobile:</strong> Tap the theme icon in the top-right corner</li>
+  </ul>
+  <div class="callout">
+    <strong>Tip</strong>
+    Your theme preference is saved automatically and will persist when you return.
+  </div>
+</div>
+
+<!-- MOBILE NAV -->
+<div class="step" id="mobile-nav">
+  <div class="step-header">
+    <span class="step-num">TIP</span>
+    <h2>Mobile Navigation</h2>
+  </div>
+  <p>On phones and tablets:</p>
+  <ul>
+    <li><strong>Top header</strong> shows "Invoice Hub" branding and the theme toggle</li>
+    <li><strong>Bottom navigation</strong> provides quick access to Dashboard, New Invoice, and My Profile</li>
+  </ul>
+  <p>The app adapts automatically to your screen size.</p>
+  <div class="screenshot">
+    <img src="screenshots/invoice-hub/18-profile-mobile.png" alt="Mobile Profile">
+    <div class="caption">Mobile profile page with bottom navigation</div>
+  </div>
 </div>
 
 <!-- TROUBLESHOOTING -->
@@ -657,7 +692,7 @@
     <span class="step-num">HELP</span>
     <h2>Troubleshooting</h2>
   </div>
-  <table class="troubleshoot-table">
+  <table>
     <thead>
       <tr><th>Problem</th><th>Solution</th></tr>
     </thead>
@@ -667,6 +702,7 @@
       <tr><td>Can't add to invoice</td><td>Make sure at least one day is selected (not Off).</td></tr>
       <tr><td>Invoice won't save</td><td>Check that customer name and at least one line item exist.</td></tr>
       <tr><td>PDF looks wrong</td><td>Check your personal details and payment info in My Profile.</td></tr>
+      <tr><td>Screen too narrow on phone</td><td>Use the bottom navigation instead of the sidebar.</td></tr>
     </tbody>
   </table>
 

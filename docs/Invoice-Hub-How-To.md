@@ -2,6 +2,8 @@
 
 A simple step-by-step guide for sales representatives.
 
+**Works on desktop, tablet, and mobile.**
+
 ---
 
 ## Step 1: Logging In
@@ -13,7 +15,13 @@ A simple step-by-step guide for sales representatives.
 
 > **Tip:** If you don't see your name, contact your administrator to set up your account.
 
+**Desktop:**
+
 ![Login Screen](docs/screenshots/invoice-hub/01-login.png)
+
+**Mobile:**
+
+![Login Mobile](docs/screenshots/invoice-hub/15-login-mobile.png)
 
 ---
 
@@ -23,13 +31,23 @@ After signing in, you'll see your dashboard with:
 - Summary statistics (week-to-date, all-time, drafts, sent invoices)
 - A list of your previous invoices
 
-![Dashboard](docs/screenshots/invoice-hub/02-dashboard.png)
+> **Tip:** On mobile, use the bottom navigation bar (Dashboard, New Invoice, My Profile) to move between pages.
+
+**Desktop:**
+
+![Dashboard](docs/screenshots/invoice-hub/02-dashboard-desktop.png)
+
+**Mobile:**
+
+![Dashboard Mobile](docs/screenshots/invoice-hub/16-dashboard-mobile.png)
 
 ---
 
 ## Step 3: Open My Profile
 
-1. In the left sidebar, click **My Profile**.
+1. Click **My Profile** in the navigation.
+   - **Desktop:** Left sidebar
+   - **Mobile:** Bottom navigation bar
 2. This page shows your personal and payment details.
 
 ![My Profile](docs/screenshots/invoice-hub/03-my-profile.png)
@@ -54,7 +72,7 @@ On the **My Profile** page, you can update:
 
 ## Step 5: Update Payment Details
 
-Scroll down to the **Payment details** section:
+On the **My Profile** page, fill in:
 
 - **Bank name**
 - **BSB**
@@ -75,7 +93,7 @@ Scroll down to the **Payment details** section:
 
 ## Step 6: Change Your PIN
 
-Scroll down to the **Security** section:
+On the **My Profile** page, scroll to **Security**:
 
 1. Enter your **Current PIN**.
 2. Enter your **New PIN** (exactly 4 digits).
@@ -92,7 +110,9 @@ Scroll down to the **Security** section:
 
 ## Step 7: Create a New Invoice
 
-1. In the sidebar, click **New invoice**.
+1. Click **New invoice** in the navigation.
+   - **Desktop:** Left sidebar
+   - **Mobile:** Bottom navigation bar
 2. The invoice form opens with:
    - Invoice details (number, email, company name, address)
    - Weekly wage calculator
@@ -112,10 +132,10 @@ The wage calculator shows Monday–Friday. For each day, choose:
 | **Half** | $90 |
 | **Full** | $180 |
 
-1. Click the day name (Mon, Tue, etc.) to reveal the options.
+1. Tap/click a day to reveal the options.
 2. Select **Off**, **Half**, or **Full**.
 
-> **Tip:** The selector clearly shows your choice. No more guessing!
+> **Tip:** The selector clearly shows your choice with distinct colors for each state.
 
 ![Wage Selector](docs/screenshots/invoice-hub/07-wage-selector.png)
 
@@ -136,7 +156,7 @@ Saturday has two options:
 | **Off** | $0 |
 | **Half** | $100 |
 
-1. Click the **Sat** day.
+1. Tap/click **Sat**.
 2. Select **Off** or **Half**.
 
 > **Note:** Saturday is always a fixed $100 half-day. There is no full-day option.
@@ -155,7 +175,7 @@ Three shortcuts to quickly set common patterns:
 | **Select Mon–Sat** | Monday–Friday = **Full** ($180 each), Saturday = **Half** ($100) |
 | **Clear Week** | All days = **Off** |
 
-1. Click the button.
+1. Click/tap the button.
 2. All days update automatically.
 
 ![Quick Actions](docs/screenshots/invoice-hub/09-quick-actions.png)
@@ -180,15 +200,15 @@ The **Week Total** displays at the bottom of the calculator.
 3. You can adjust individual dates if needed.
 4. Add any **Notes** that should appear on the invoice.
 
-> **Tip:** Dates automatically populate based on your selected week. Click a day tile in Dates & Notes to cycle through states (Off → Full → Half).
+> **Tip:** Dates automatically populate based on your selected week. Tap/click a day tile in Dates & Notes to cycle through states.
 
 ---
 
 ## Step 13: Add to Invoice & Save Draft
 
-1. Click **Add to invoice** to add the wage line item.
+1. Click/tap **Add to invoice** to add the wage line item.
 2. Verify the line item appears in the invoice (description: "Wages/Retainer — Week of...").
-3. Click **Save draft** to save without sending.
+3. Click/tap **Save draft** to save without sending.
 
 > **Tip:** Saving as a draft lets you come back and edit later.
 
@@ -198,9 +218,11 @@ The **Week Total** displays at the bottom of the calculator.
 
 ## Step 14: View Your Invoices
 
-1. Click **Dashboard** in the sidebar.
+1. Go to **Dashboard**.
+   - **Desktop:** Left sidebar
+   - **Mobile:** Bottom navigation (tap Dashboard icon)
 2. You'll see a list of all your invoices.
-3. Click any invoice to view it.
+3. Tap/click any invoice to view it.
 
 ![Invoice History](docs/screenshots/invoice-hub/12-invoice-history.png)
 
@@ -208,7 +230,7 @@ The **Week Total** displays at the bottom of the calculator.
 
 ## Step 15: Edit a Draft Invoice
 
-1. From the dashboard, click the invoice you want to edit.
+1. From the dashboard, tap/click the invoice you want to edit.
 2. On the invoice view page, you can:
    - Continue editing
    - Download PDF
@@ -221,8 +243,8 @@ The **Week Total** displays at the bottom of the calculator.
 ## Step 16: Download the PDF
 
 1. Open the invoice (draft or sent).
-2. Click **Download PDF**.
-3. The PDF downloads to your computer.
+2. Tap/click **Download PDF**.
+3. The PDF downloads to your computer or device.
 
 > **Tip:** The PDF shows your company details, work dates, and payment information.
 
@@ -233,7 +255,7 @@ The **Week Total** displays at the bottom of the calculator.
 ## Step 17: Save & Email
 
 1. Complete your invoice with wage details.
-2. Click **Save & email**.
+2. Click/tap **Save & email**.
 3. The system:
    - Saves the invoice
    - Downloads the PDF
@@ -268,10 +290,28 @@ The **Week Total** displays at the bottom of the calculator.
 
 ---
 
-## Keyboard Shortcuts
+## Switching Between Light and Dark Theme
 
-- **Tab** — move between fields
-- **Enter** — submit form (when focused on a button)
+You can switch the appearance of the Invoice Hub:
+
+- **Desktop:** Click the theme button in the bottom-left corner
+- **Mobile:** Tap the theme icon in the top-right corner
+
+> **Tip:** Your theme preference is saved automatically and will persist when you return.
+
+---
+
+## Mobile Navigation
+
+On phones and tablets:
+
+- **Top header** shows "Invoice Hub" branding and the theme toggle
+- **Bottom navigation** provides quick access to:
+  - Dashboard (home icon)
+  - New Invoice (plus icon)
+  - My Profile (person icon)
+
+The app adapts automatically to your screen size.
 
 ---
 
@@ -284,6 +324,7 @@ The **Week Total** displays at the bottom of the calculator.
 | Can't add to invoice | Make sure at least one day is selected (not Off). |
 | Invoice won't save | Check that customer name and at least one line item exist. |
 | PDF looks wrong | Check your personal details and payment info in My Profile. |
+| Screen too narrow on phone | Use the bottom navigation instead of the sidebar. |
 
 ---
 
