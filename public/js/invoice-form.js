@@ -1,4 +1,4 @@
-// public/js/invoice-form.js - Shared Week State Implementation
+// public/js/invoice-form.js - Shared Week State with Half/Full Day Support
 
 var form = document.getElementById('invoice-form');
 var lines = document.getElementById('lines');
@@ -48,7 +48,7 @@ function parseLocalDate(dateString) {
   if (parts.length !== 3) return null;
 
   const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+  const month = parseInt(parts[1], 10) - 1;
   const day = parseInt(parts[2], 10);
 
   if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
@@ -66,22 +66,18 @@ function formatWeekRange(startDate, endDate) {
   return startDay + '–' + endDay + ' ' + monthYear;
 }
 
-// Format week range from YYYY-MM-DD string
 function fmtWeekRange(weekStarting) {
   if (!weekStarting) return '';
 
   const startDate = parseLocalDate(weekStarting);
   if (!startDate) return '';
 
-  // Normalize to Monday: difference from Sunday (0) to Monday (1)
-  const day = startDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
-  // Days to subtract to get to Monday
+  const day = startDate.getDay();
   const diff = (day + 6) % 7;
   const monday = new Date(startDate);
   monday.setDate(startDate.getDate() - diff);
   monday.setHours(0, 0, 0, 0);
 
-  // Saturday is Monday + 5 days
   const saturday = new Date(monday);
   saturday.setDate(monday.getDate() + 5);
 
@@ -95,7 +91,6 @@ function fmtDate(d) {
   return day + '/' + month + '/' + year;
 }
 
-// Format date as YYYY-MM-DD in local time (for date inputs)
 function formatDateForInput(d) {
   var year = d.getFullYear();
   var month = String(d.getMonth() + 1).padStart(2, '0');
@@ -109,27 +104,37 @@ function getOrdinalSuffix(n) {
   return s[(v - 20) % 10] || s[v] || s[0];
 }
 
+// Canonical wage rates
+var WAGE_RATES = {
+  weekdayFull: 180,
+  weekdayHalf: 90,
+  saturdayHalf: 100,
+};
+
 var weekState = {
   company: 'asg',
   weekStarting: '',
-  workedDays: [],
-  perDayRate: 180,
-  saturdayRate: 100,
+  dayStates: {},
+  perDayRate: WAGE_RATES.weekdayFull,
+  weekdayHalfRate: WAGE_RATES.weekdayHalf,
+  saturdayRate: WAGE_RATES.saturdayHalf,
   notes: '',
 };
 var isEditing = typeof window.existingItems !== 'undefined' && Array.isArray(window.existingItems);
 
 var companyConfigs = {
   asg: {
-    perDayRate: 180,
-    saturdayRate: 100,
+    perDayRate: WAGE_RATES.weekdayFull,
+    weekdayHalfRate: WAGE_RATES.weekdayHalf,
+    saturdayRate: WAGE_RATES.saturdayHalf,
     gstTreatment: 'inclusive',
     wageLineMode: 'aggregated',
     defaultNotes: '',
   },
   sjs: {
-    perDayRate: 180,
-    saturdayRate: 100,
+    perDayRate: WAGE_RATES.weekdayFull,
+    weekdayHalfRate: WAGE_RATES.weekdayHalf,
+    saturdayRate: WAGE_RATES.saturdayHalf,
     gstTreatment: 'inclusive',
     wageLineMode: 'aggregated',
     defaultNotes: '',
@@ -137,13 +142,28 @@ var companyConfigs = {
 };
 
 var dayOffsets = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
+var ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-// Saturday uses fixed rate, not multiplier
-var dayMultipliers = { Mon: 1, Tue: 1, Wed: 1, Thu: 1, Fri: 1, Sat: 1 };
+function getDayRate(day, state) {
+  if (state === 'off' || !state) return 0;
+  if (day === 'Sat') {
+    return state === 'half' ? weekState.saturdayRate : 0;
+  }
+  if (state === 'half') return weekState.weekdayHalfRate;
+  if (state === 'full') return weekState.perDayRate;
+  return 0;
+}
 
-function getDayRate(day) {
-  if (day === 'Sat') return weekState.saturdayRate;
-  return weekState.perDayRate;
+function getDayLabel(day, state) {
+  if (state === 'half') return day + ' ½';
+  return day;
+}
+
+function getDayDetailLabel(day, state) {
+  if (state === 'full') return 'Full day';
+  if (state === 'half') return 'Half day';
+  return '';
 }
 
 function loadPersistedSettings() {
@@ -195,33 +215,22 @@ function persistSettings() {
   }
 }
 
+// Read day states from the Wage Calculator widget
 function updateWeekState() {
   var calcRate = document.getElementById('calc-rate');
   var weekStart = document.getElementById('week_start');
   var notes = document.getElementById('notes');
-  var selectedDays = [];
-  
-  // Standard week days (Mon-Fri)
-  var calcDaysStandard = document.getElementById('calc-days-standard');
-  if (calcDaysStandard) {
-    Array.prototype.slice.call(calcDaysStandard.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
-      selectedDays.push(cb.dataset.day);
-    });
-  }
-  
-  // Saturday
-  var calcDaysSat = document.getElementById('calc-days-sat');
-  if (calcDaysSat) {
-    Array.prototype.slice.call(calcDaysSat.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
-      selectedDays.push(cb.dataset.day);
-    });
-  }
-  
-  selectedDays = selectedDays.filter(function (day) { return dayOffsets[day] !== undefined; });
-  selectedDays.sort(function (a, b) { return dayOffsets[a] - dayOffsets[b]; });
+  var dayStates = {};
 
-  weekState.workedDays = selectedDays;
-  weekState.perDayRate = parseFloat(calcRate && calcRate.value) || 200;
+  var allDayControls = document.querySelectorAll('#calc-days-standard .calc-day[data-day], #calc-days-sat .calc-day[data-day]');
+  allDayControls.forEach(function (control) {
+    var day = control.dataset.day;
+    var activeBtn = control.querySelector('.day-btn-active');
+    dayStates[day] = activeBtn ? activeBtn.dataset.state : 'off';
+  });
+
+  weekState.dayStates = dayStates;
+  weekState.perDayRate = parseFloat(calcRate && calcRate.value) || WAGE_RATES.weekdayFull;
   weekState.weekStarting = weekStart ? weekStart.value : '';
   weekState.notes = notes ? notes.value : '';
 }
@@ -233,38 +242,61 @@ function renderWageCalculator() {
   var totalEl = document.getElementById('calc-total');
   var addBtn = document.getElementById('calc-add');
   var satAmountEl = document.getElementById('sat-amount');
-  var selected = weekState.workedDays;
-  
-  // Calculate total using new rate model
+  var dayStates = weekState.dayStates || {};
+
   var total = 0;
-  selected.forEach(function(day) {
-    total += getDayRate(day);
+  var selectedDays = [];
+  ALL_DAYS.forEach(function (day) {
+    var state = dayStates[day] || 'off';
+    if (state === 'half' || state === 'full') {
+      total += getDayRate(day, state);
+      selectedDays.push({ day: day, state: state });
+    }
   });
   total = Math.round(total * 100) / 100;
   if (totalEl) totalEl.textContent = fmt(total);
 
-  // Saturday amount display
   if (satAmountEl) {
-    var satSelected = selected.indexOf('Sat') !== -1;
-    satAmountEl.textContent = satSelected ? fmt(weekState.saturdayRate) : fmt(weekState.saturdayRate);
+    var satState = dayStates['Sat'];
+    satAmountEl.textContent = satState === 'half' ? fmt(weekState.saturdayRate) : fmt(weekState.saturdayRate);
   }
+
+  // Update button active states in the calculator
+  var allDayControls = document.querySelectorAll('#calc-days-standard .calc-day[data-day], #calc-days-sat .calc-day[data-day]');
+  allDayControls.forEach(function (control) {
+    var day = control.dataset.day;
+    var state = dayStates[day] || 'off';
+    var btns = control.querySelectorAll('.day-btn');
+    btns.forEach(function (btn) {
+      btn.classList.toggle('day-btn-active', btn.dataset.state === state);
+    });
+  });
+
+  // Update Dates & Notes tile active states
+  var wageTiles = document.querySelectorAll('#wage-days .wage-day-tile[data-day]');
+  wageTiles.forEach(function (tile) {
+    var day = tile.dataset.day;
+    var state = dayStates[day] || 'off';
+    tile.classList.toggle('wage-day-active', state !== 'off');
+    tile.classList.toggle('wage-day-half', state === 'half');
+    tile.classList.toggle('wage-day-full', state === 'full');
+  });
 
   var breakdownEl = document.getElementById('calc-breakdown');
   if (breakdownEl) {
-    if (!selected.length) {
+    if (!selectedDays.length) {
       breakdownEl.innerHTML = '<span class="muted">Select days worked to calculate wages.</span>';
     } else {
-      var parts = selected.map(function (day) {
-        var rate = getDayRate(day);
-        var label = day;
-        if (day === 'Sat') label += ' ½';
+      var parts =selectedDays.map(function (item) {
+        var rate = getDayRate(item.day, item.state);
+        var label = getDayLabel(item.day, item.state);
         return label + ': ' + fmt(rate);
       });
       breakdownEl.innerHTML = parts.join(' | ') + ' → ' + fmt(total);
     }
   }
 
-  if (addBtn) addBtn.disabled = !selected.length;
+  if (addBtn) addBtn.disabled = !selectedDays.length;
 }
 
 function renderDatesNotes() {
@@ -275,8 +307,7 @@ function renderDatesNotes() {
   var startDate = parseLocalDate(startVal);
   if (!startDate) return;
 
-  // Normalize to Monday: difference from Sunday (0) to Monday (1)
-  var day = startDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  var day = startDate.getDay();
   var diff = (day + 6) % 7;
   var normalizedStart = new Date(startDate);
   normalizedStart.setDate(startDate.getDate() - diff);
@@ -289,79 +320,8 @@ function renderDatesNotes() {
     var iso = formatDateForInput(d);
     var dateInput = document.querySelector('input[name="date_' + dayName + '"]');
     if (dateInput) dateInput.value = iso;
-    // Update visible DD/MM/YYYY display
     var dateDisplay = document.querySelector('#wage-days .wage-day-tile[data-day="' + dayName + '"] .wage-date-display');
     if (dateDisplay) dateDisplay.textContent = fmtDate(d);
-  });
-}
-
-function syncDayToggles(sourceContainer, targetContainer) {
-  if (!sourceContainer || !targetContainer) return;
-  var sourceBoxes = sourceContainer.querySelectorAll('input[data-day]');
-  var targetBoxes = targetContainer.querySelectorAll('input[data-day]');
-  if (sourceBoxes.length !== targetBoxes.length) {
-    var checked = {};
-    Array.prototype.slice.call(sourceBoxes).forEach(function (cb) {
-      checked[cb.dataset.day] = true;
-    });
-    Array.prototype.slice.call(targetBoxes).forEach(function (cb) {
-      cb.checked = !!checked[cb.dataset.day];
-    });
-    return;
-  }
-  sourceBoxes.forEach(function (box, index) {
-    targetBoxes[index].checked = box.checked;
-  });
-}
-
-function syncCalcToGrid() {
-  var calcStandard = document.getElementById('calc-days-standard');
-  var calcSat = document.getElementById('calc-days-sat');
-  var grid = document.getElementById('wage-days');
-  
-  if (!grid) return;
-  
-  var gridBoxes = grid.querySelectorAll('input[data-day]');
-  var checked = {};
-  
-  if (calcStandard) {
-    Array.prototype.slice.call(calcStandard.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
-      checked[cb.dataset.day] = true;
-    });
-  }
-  if (calcSat) {
-    Array.prototype.slice.call(calcSat.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
-      checked[cb.dataset.day] = true;
-    });
-  }
-  
-  Array.prototype.slice.call(gridBoxes).forEach(function (cb) {
-    cb.checked = !!checked[cb.dataset.day];
-  });
-}
-
-function syncGridToCalc() {
-  var grid = document.getElementById('wage-days');
-  var calcStandard = document.getElementById('calc-days-standard');
-  var calcSat = document.getElementById('calc-days-sat');
-  
-  if (!grid || !calcStandard || !calcSat) return;
-  
-  var gridBoxes = grid.querySelectorAll('input[data-day]');
-  var checked = {};
-  
-  Array.prototype.slice.call(gridBoxes).forEach(function (cb) {
-    checked[cb.dataset.day] = cb.checked;
-  });
-  
-  var standardBoxes = calcStandard.querySelectorAll('input[data-day]');
-  Array.prototype.slice.call(standardBoxes).forEach(function (cb) {
-    cb.checked = !!checked[cb.dataset.day];
-  });
-  
-  var satBoxes = calcSat.querySelectorAll('input[data-day]');
-  Array.prototype.slice.call(satBoxes).forEach(function (cb) {
-    cb.checked = !!checked[cb.dataset.day];
   });
 }
 
@@ -428,7 +388,6 @@ function updatePreview() {
         var a = q * r;
         var isWageLine = row.getAttribute('data-line-item-type') === 'wages';
         html += '<tr' + (isWageLine ? ' class="wage-line-primary"' : '') + '><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class="num">' + q + '</td><td class="num">' + fmt(r) + '</td><td class="num">' + fmt(a) + '</td></tr>';
-        // If this row has wage details, add them
         var detailsRow = row.nextElementSibling;
         if (detailsRow && detailsRow.classList && detailsRow.classList.contains('wage-details')) {
           var detailsHtml = '<tr class="wage-detail-row"><td colspan="5">';
@@ -476,7 +435,6 @@ function escHtml(s) {
 function addLine(data) {
   var row = document.createElement('div');
   row.className = 'line-row';
-  // Mark wage lines for stable test selection
   if (data && data.description && data.description.startsWith('Wages')) {
     row.setAttribute('data-line-item-type', 'wages');
   }
@@ -522,7 +480,6 @@ function addLine(data) {
   row.appendChild(amount);
   row.appendChild(remove);
 
-  // If wage details provided, add them as a sub-row
   if (data && data.wageDetails && data.wageDetails.length > 0) {
     var detailsRow = document.createElement('div');
     detailsRow.className = 'line-row wage-details';
@@ -615,14 +572,12 @@ function setTemplate(name) {
     var emailInput = document.getElementById('customer_email');
     var addressInput = document.getElementById('customer_address');
     if (!isEditing) {
-      // For new invoices, always update to template values when switching templates
       if (nameInput) {
         nameInput.value = tpl.company || tpl.name;
       }
       if (emailInput) emailInput.value = tpl.email || '';
       if (addressInput) addressInput.value = tpl.full_address || tpl.address || '';
     }
-    // else editing: preserve existing customer fields
   }
 
   var rateInput = document.getElementById('calc-rate');
@@ -699,11 +654,10 @@ if (submitDownload) submitDownload.addEventListener('click', function (e) {
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        // Extract filename from Content-Disposition if available
         var disp = xhr.getResponseHeader('Content-Disposition');
         var filename = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
         if (disp) {
-          var match = disp.match(/filename="?([^"]+)"?/);
+          var match = disp.match(/filename=\"?([^\"]+)\"?/);
           if (match) filename = match[1];
         }
         a.download = filename;
@@ -712,7 +666,6 @@ if (submitDownload) submitDownload.addEventListener('click', function (e) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else {
-        // Try to parse JSON error from server
         var reader = new FileReader();
         reader.onload = function () {
           try {
@@ -753,10 +706,8 @@ function buildPayload() {
     var quantity = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
     var rate = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
 
-    // Check if this is a wage line with details
     var details = [];
     if (row.getAttribute('data-line-item-type') === 'wages') {
-      // Find the corresponding wage-details sibling row
       var detailsRow = row.nextElementSibling;
       if (detailsRow && detailsRow.classList.contains('wage-details')) {
         var detailElements = detailsRow.querySelectorAll('.wage-details-container > div');
@@ -793,7 +744,6 @@ function buildPayload() {
 
 if (form) form.addEventListener('submit', function (e) {
   var action = actionField.value || 'draft';
-  // Download is handled by the submit-download button directly
   e.preventDefault();
   document.getElementById('send_now').checked = false;
   var payload = buildPayload();
@@ -855,121 +805,187 @@ if (form) form.addEventListener('submit', function (e) {
     });
 });
 
-/* ---- Wage calculator ---- */
-var calcDaysStandard = document.getElementById('calc-days-standard');
-var calcDaysSat = document.getElementById('calc-days-sat');
+/* ---- Wage Calculator ---- */
 var calcAdd = document.getElementById('calc-add');
 var weekStart = document.getElementById('week_start');
 var notesEl = document.getElementById('notes');
 var selectMonFriBtn = document.getElementById('select-mon-fri');
 var selectMonSatBtn = document.getElementById('select-mon-sat');
+var clearWeekBtn = document.getElementById('clear-week');
 
-function getSelectedDays() {
-  var selected = [];
-  
-  if (calcDaysStandard) {
-    Array.prototype.slice.call(calcDaysStandard.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
-      selected.push(cb.dataset.day);
+// Set day state for a specific day
+function setDayState(day, state) {
+  weekState.dayStates[day] = state;
+
+  // Update the button active states in the calculator
+  var control = document.querySelector('#calc-days-standard .calc-day[data-day="' + day + '"], #calc-days-sat .calc-day[data-day="' + day + '"]');
+  if (control) {
+    var btns = control.querySelectorAll('.day-btn');
+    btns.forEach(function (btn) {
+      btn.classList.toggle('day-btn-active', btn.dataset.state === state);
     });
   }
-  
-  if (calcDaysSat) {
-    Array.prototype.slice.call(calcDaysSat.querySelectorAll('input[data-day]:checked')).forEach(function (cb) {
-      selected.push(cb.dataset.day);
-    });
-  }
-  
-  return selected.filter(function (day) { return dayOffsets[day] !== undefined; }).sort(function (a, b) { return dayOffsets[a] - dayOffsets[b]; });
-}
 
-function onWeekStateChanged(source) {
-  // When source is wage-days, we need to sync to calc-days BEFORE reading state
-  if (source === 'wage-days') {
-    syncGridToCalc();
-  }
-  // When source is week-start, we need to sync from wage-days to calc-days to preserve worked days
-  else if (source === 'week-start') {
-    syncGridToCalc();
+  // Update Dates & Notes tile
+  var tile = document.querySelector('#wage-days .wage-day-tile[data-day="' + day + '"]');
+  if (tile) {
+    tile.classList.toggle('wage-day-active', state !== 'off');
+    tile.classList.toggle('wage-day-half', state === 'half');
+    tile.classList.toggle('wage-day-full', state === 'full');
   }
 
-  updateWeekState();
   renderWageCalculator();
   renderDatesNotes();
-
-  // After updating state, sync the other direction
-  if (source === 'calc-days-standard' || source === 'calc-days-sat' || source === 'calc-rate' || source === 'week-start' || source === 'select-mon-fri') {
-    syncCalcToGrid();
-  } else if (source === 'wage-days') {
-    // Already synced above
-  }
-
   updatePreview();
   recalc();
 }
 
-// Initialize week state from authoritative source, then render both widgets
+function onWeekStateChanged(source) {
+  updateWeekState();
+  renderWageCalculator();
+  renderDatesNotes();
+
+  if (source !== 'week-start') {
+    updatePreview();
+    recalc();
+  } else {
+    updatePreview();
+  }
+}
+
+// Initialize week state - all days off
 function initializeWeekState() {
-  // Authoritative initial state - no days worked
-  weekState.workedDays = [];
-  
-  // Uncheck all checkboxes to match the empty state
-  var calcDaysStandard = document.getElementById('calc-days-standard');
-  var calcDaysSat = document.getElementById('calc-days-sat');
-  var wageDatesGrid = document.getElementById('wage-days');
-  
-  if (calcDaysStandard) {
-    calcDaysStandard.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = false; });
-  }
-  if (calcDaysSat) {
-    calcDaysSat.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = false; });
-  }
-  if (wageDatesGrid) {
-    wageDatesGrid.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = false; });
-  }
-  
-  // Render both widgets from the same state
+  weekState.dayStates = {};
+  ALL_DAYS.forEach(function (day) {
+    weekState.dayStates[day] = 'off';
+  });
+
+  // Reset all day buttons
+  var allDayControls = document.querySelectorAll('#calc-days-standard .calc-day[data-day], #calc-days-sat .calc-day[data-day]');
+  allDayControls.forEach(function (control) {
+    var btns = control.querySelectorAll('.day-btn');
+    btns.forEach(function (btn) {
+      btn.classList.toggle('day-btn-active', btn.dataset.state === 'off');
+    });
+  });
+
+  // Reset all Dates & Notes tiles
+  var wageTiles = document.querySelectorAll('#wage-days .wage-day-tile[data-day]');
+  wageTiles.forEach(function (tile) {
+    tile.classList.remove('wage-day-active', 'wage-day-half', 'wage-day-full');
+  });
+
   renderWageCalculator();
   renderDatesNotes();
 }
 
-// Set up workers without race conditions using a single source of truth
-if (calcDaysStandard) calcDaysStandard.addEventListener('change', function(e) {
-  onWeekStateChanged('calc-days-standard');
-});
+// Day button click handler
+function onDayButtonClick(e) {
+  var btn = e.target.closest('.day-btn');
+  if (!btn) return;
+  var control = btn.closest('.calc-day[data-day]');
+  if (!control) return;
+  var day = control.dataset.day;
+  var newState = btn.dataset.state;
+  if (!newState) return;
 
-if (calcDaysSat) calcDaysSat.addEventListener('change', function(e) {
-  onWeekStateChanged('calc-days-sat');
-});
-
-var wageDatesGrid = document.getElementById('wage-days');
-if (wageDatesGrid) {
-  wageDatesGrid.addEventListener('change', function(e) {
-    onWeekStateChanged('wage-days');
-  });
+  var currentState = weekState.dayStates[day] || 'off';
+  // Toggle: clicking the active state turns it off
+  if (currentState === newState) {
+    setDayState(day, 'off');
+  } else {
+    setDayState(day, newState);
+  }
 }
 
-if (selectMonSatBtn) selectMonSatBtn.addEventListener('click', function () {
-  if (calcDaysStandard) {
-    calcDaysStandard.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = true; });
-  }
-  if (calcDaysSat) {
-    calcDaysSat.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = true; });
-  }
-  onWeekStateChanged('select-mon-sat');
-});
+// Attach day button click handlers
+var calcDaysStandard = document.getElementById('calc-days-standard');
+var calcDaysSat = document.getElementById('calc-days-sat');
+if (calcDaysStandard) calcDaysStandard.addEventListener('click', onDayButtonClick);
+if (calcDaysSat) calcDaysSat.addEventListener('click', onDayButtonClick);
 
+// Dates & Notes tile click handler - cycles through states
+function onWageTileClick(e) {
+  var tile = e.target.closest('.wage-day-tile[data-day]');
+  if (!tile) return;
+  var day = tile.dataset.day;
+  var currentState = weekState.dayStates[day] || 'off';
+  var nextState;
+
+  if (day === 'Sat') {
+    // Saturday cycles: off -> half -> off
+    nextState = currentState === 'half' ? 'off' : 'half';
+  } else {
+    // Weekdays cycle: off -> full -> half -> off
+    if (currentState === 'off') nextState = 'full';
+    else if (currentState === 'full') nextState = 'half';
+    else nextState = 'off';
+  }
+
+  setDayState(day, nextState);
+}
+
+var wageDatesGrid = document.getElementById('wage-days');
+if (wageDatesGrid) wageDatesGrid.addEventListener('click', onWageTileClick);
+
+// Select Mon-Fri button
 if (selectMonFriBtn) selectMonFriBtn.addEventListener('click', function () {
-  if (calcDaysStandard) {
-    calcDaysStandard.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = true; });
-  }
-  if (calcDaysSat) {
-    calcDaysSat.querySelectorAll('input[data-day]').forEach(function (box) { box.checked = false; });
-  }
+  WEEKDAYS.forEach(function (day) {
+    weekState.dayStates[day] = 'full';
+  });
+  weekState.dayStates['Sat'] = 'off';
+  ALL_DAYS.forEach(function (day) {
+    var state = weekState.dayStates[day];
+    var control = document.querySelector('#calc-days-standard .calc-day[data-day="' + day + '"], #calc-days-sat .calc-day[data-day="' + day + '"]');
+    if (control) {
+      var btns = control.querySelectorAll('.day-btn');
+      btns.forEach(function (btn) {
+        btn.classList.toggle('day-btn-active', btn.dataset.state === state);
+      });
+    }
+    var tile = document.querySelector('#wage-days .wage-day-tile[data-day="' + day + '"]');
+    if (tile) {
+      tile.classList.toggle('wage-day-active', state !== 'off');
+      tile.classList.toggle('wage-day-half', state === 'half');
+      tile.classList.toggle('wage-day-full', state === 'full');
+    }
+  });
   onWeekStateChanged('select-mon-fri');
 });
 
+// Select Mon-Sat button
+if (selectMonSatBtn) selectMonSatBtn.addEventListener('click', function () {
+  WEEKDAYS.forEach(function (day) {
+    weekState.dayStates[day] = 'full';
+  });
+  weekState.dayStates['Sat'] = 'half';
+  ALL_DAYS.forEach(function (day) {
+    var state = weekState.dayStates[day];
+    var control = document.querySelector('#calc-days-standard .calc-day[data-day="' + day + '"], #calc-days-sat .calc-day[data-day="' + day + '"]');
+    if (control) {
+      var btns = control.querySelectorAll('.day-btn');
+      btns.forEach(function (btn) {
+        btn.classList.toggle('day-btn-active', btn.dataset.state === state);
+      });
+    }
+    var tile = document.querySelector('#wage-days .wage-day-tile[data-day="' + day + '"]');
+    if (tile) {
+      tile.classList.toggle('wage-day-active', state !== 'off');
+      tile.classList.toggle('wage-day-half', state === 'half');
+      tile.classList.toggle('wage-day-full', state === 'full');
+    }
+  });
+  onWeekStateChanged('select-mon-sat');
+});
+
+// Clear Week button
+if (clearWeekBtn) clearWeekBtn.addEventListener('click', function () {
+  initializeWeekState();
+  onWeekStateChanged('clear-week');
+});
+
 if (weekStart) {
-  weekStart.addEventListener('change', function() {
+  weekStart.addEventListener('change', function () {
     onWeekStateChanged('week-start');
   });
 }
@@ -978,8 +994,13 @@ if (notesEl) notesEl.addEventListener('input', updatePreview);
 
 if (calcAdd) calcAdd.addEventListener('click', function () {
   updateWeekState();
-  var selected = weekState.workedDays;
-  if (!selected.length) return;
+  var dayStates = weekState.dayStates || {};
+  var hasSelected = false;
+  ALL_DAYS.forEach(function (day) {
+    if (dayStates[day] === 'half' || dayStates[day] === 'full') hasSelected = true;
+  });
+  if (!hasSelected) return;
+
   itemRows().filter(function (row) {
     return !row.querySelector('input[name="item_description"]').value.trim();
   }).forEach(function (row) {
@@ -990,44 +1011,46 @@ if (calcAdd) calcAdd.addEventListener('click', function () {
   var cfg = companyConfigs[weekState.company] || companyConfigs.asg;
   var mode = cfg.wageLineMode || 'aggregated';
 
-  // Calculate amount using new rate model
   var amount = 0;
-  selected.forEach(function(day) {
-    amount += getDayRate(day);
+  var selectedDays = [];
+  ALL_DAYS.forEach(function (day) {
+    var state = dayStates[day];
+    if (state === 'half' || state === 'full') {
+      amount += getDayRate(day, state);
+      selectedDays.push({ day: day, state: state });
+    }
   });
   amount = Math.round(amount * 100) / 100;
-  var rate = weekState.perDayRate;
 
-  // Build day details for description
   var dayDetails = [];
   var weekStartDate = parseLocalDate(weekState.weekStarting);
   if (weekStartDate) {
-    // Normalize to Monday
     var day = weekStartDate.getDay();
     var diff = (day + 6) % 7;
     var monday = new Date(weekStartDate);
     monday.setDate(weekStartDate.getDate() - diff);
     monday.setHours(0, 0, 0, 0);
 
-    selected.forEach(function(dayName) {
-      var offset = dayOffsets[dayName] || 0;
+    selectedDays.forEach(function (item) {
+      var offset = dayOffsets[item.day] || 0;
       var dayDate = new Date(monday);
       dayDate.setDate(monday.getDate() + offset);
       var dayNum = dayDate.getDate();
       var suffix = getOrdinalSuffix(dayNum);
-      var detail = dayName + ' — ' + dayNum + suffix + ' ' + fmtDate(dayDate);
-      if (dayName === 'Sat') {
-        detail += ' (½ day)';
+      var detailLabel = getDayDetailLabel(item.day, item.state);
+      var detail = item.day + ' — ' + dayNum + suffix + ' ' + fmtDate(dayDate);
+      if (detailLabel) {
+        detail += ' — ' + detailLabel + ' — ' + fmt(getDayRate(item.day, item.state));
       }
       dayDetails.push(detail);
     });
   }
 
   if (mode === 'daily') {
-    selected.forEach(function (day) {
-      var dateInput = document.querySelector('input[name="date_' + day + '"]');
+    selectedDays.forEach(function (item) {
+      var dateInput = document.querySelector('input[name="date_' + item.day + '"]');
       var dateText = dateInput && dateInput.value ? ' ' + dateInput.value : '';
-      addLine({ description: 'Wages — ' + day + dateText, quantity: 1, rate: rate, amount: rate });
+      addLine({ description: 'Wages — ' + item.day + dateText, quantity: 1, rate: getDayRate(item.day, item.state) });
     });
   } else {
     var range = weekState.weekStarting ? 'Week of ' + fmtWeekRange(weekState.weekStarting) : '';
@@ -1056,7 +1079,7 @@ initializeWeekState();
 
 // Handle existing items when editing an invoice
 if (typeof window.existingItems !== 'undefined' && Array.isArray(window.existingItems) && window.existingItems.length > 0) {
-  window.existingItems.forEach(function(item) {
+  window.existingItems.forEach(function (item) {
     addLine({
       description: item.description,
       quantity: item.quantity,
@@ -1065,6 +1088,54 @@ if (typeof window.existingItems !== 'undefined' && Array.isArray(window.existing
       wageDetails: item.details
     });
   });
+
+  // Attempt to restore day states from existing wage details
+  var firstWageItem = window.existingItems.find(function (it) {
+    return it.description && it.description.startsWith('Wages');
+  });
+  if (firstWageItem && firstWageItem.details && firstWageItem.details.length > 0) {
+    var restoredStates = {};
+    ALL_DAYS.forEach(function (d) { restoredStates[d] = 'off'; });
+
+    firstWageItem.details.forEach(function (detailText) {
+      var dayMatch = detailText.match(/^(Mon|Tue|Wed|Thu|Fri|Sat)\s*[—–-]\s*\d+/);
+      if (!dayMatch) return;
+      var d = dayMatch[1];
+      var state = 'full';
+      if (detailText.indexOf('Half day') !== -1) {
+        state = 'half';
+      } else if (detailText.indexOf('Full day') !== -1) {
+        state = 'full';
+      } else if (d === 'Sat') {
+        state = 'half';
+      } else {
+        state = 'full';
+      }
+      restoredStates[d] = state;
+    });
+
+    weekState.dayStates = restoredStates;
+
+    // Update UI to match restored states
+    ALL_DAYS.forEach(function (day) {
+      var state = restoredStates[day];
+      var control = document.querySelector('#calc-days-standard .calc-day[data-day="' + day + '"], #calc-days-sat .calc-day[data-day="' + day + '"]');
+      if (control) {
+        var btns = control.querySelectorAll('.day-btn');
+        btns.forEach(function (btn) {
+          btn.classList.toggle('day-btn-active', btn.dataset.state === state);
+        });
+      }
+      var tile = document.querySelector('#wage-days .wage-day-tile[data-day="' + day + '"]');
+      if (tile) {
+        tile.classList.toggle('wage-day-active', state !== 'off');
+        tile.classList.toggle('wage-day-half', state === 'half');
+        tile.classList.toggle('wage-day-full', state === 'full');
+      }
+    });
+
+    renderWageCalculator();
+  }
 } else {
   addLine();
 }

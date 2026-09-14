@@ -1657,6 +1657,7 @@ textarea.input { resize: vertical; line-height: 1.45; }
   margin-top: var(--space-md);
   display: flex;
   gap: var(--space-sm);
+  flex-wrap: wrap;
 }
 
 .calc-section-sat {
@@ -1676,6 +1677,136 @@ textarea.input { resize: vertical; line-height: 1.45; }
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--accent);
+}
+
+/* Day button group for Off/Half/Full selection */
+.day-btn-group {
+  display: inline-flex;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+
+.day-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--surface);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.day-btn:hover {
+  background: var(--bg-2);
+  color: var(--ink);
+}
+
+.day-btn-active {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.day-btn-active:hover {
+  background: var(--accent-deep);
+  color: var(--bg);
+}
+
+/* Day name label */
+.day-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink-2);
+  min-width: 28px;
+}
+
+/* Updated calc-day for vertical layout with name + buttons */
+.calc-day {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+}
+
+.calc-day:hover {
+  border-color: transparent;
+}
+
+/* Wage day tiles with state indicators */
+.wage-day-tile {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: border-color 0.15s, background 0.15s;
+  cursor: pointer;
+}
+
+.wage-day-tile:hover {
+  border-color: var(--muted-2);
+}
+
+.wage-day-tile.wage-day-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.wage-day-tile.wage-day-half {
+  border-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.wage-day-tile.wage-day-full {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+}
+
+.wage-day-tile-sat.wage-day-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.wage-day-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.wage-day-tile.wage-day-half .wage-day-name {
+  color: var(--warn);
+}
+
+.wage-day-tile.wage-day-full .wage-day-name {
+  color: var(--ok);
+}
+
+.wage-day-date {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.wage-day-date .wage-date {
+  width: 100%;
+  font-size: 12px;
+}
+
+/* Remove old checkbox-based styles */
+.calc-day:has(input:checked),
+.calc-day input,
+.calc-day em,
+.day-amount,
+.wage-day-check,
+.wage-day-check input,
+.wage-day-half {
+  display: none;
 }
 
 .calc-result {

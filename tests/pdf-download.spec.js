@@ -80,27 +80,24 @@ test.beforeEach(async ({ page }) => {
 
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
-    await page.waitForSelector('#calc-days-standard .calc-day input[data-day="Mon"]', { state: 'visible', timeout: 10000 });
+    await page.waitForSelector('#calc-days-standard .day-btn[data-state="off"]', { state: 'visible', timeout: 10000 });
 
-    // Uncheck all days first
+    // Clear all days first by clicking "Off" for each day
     const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     for (const day of allDays) {
-      const calcDayLabel = page.locator(`#calc-days-standard .calc-day:has(input[data-day="${day}"]), #calc-days-sat .calc-day:has(input[data-day="${day}"])`);
-      const calcDayInput = calcDayLabel.locator('input');
-      if (await calcDayInput.isChecked()) {
-        await calcDayLabel.click();
-      }
-      await expect(calcDayInput).not.toBeChecked();
+      const offBtn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="off"], #calc-days-sat .calc-day[data-day="${day}"] .day-btn[data-state="off"]`);
+      await offBtn.click();
     }
 
     await page.fill('#week_start', weekStart);
     await page.waitForTimeout(100);
 
-    // Select specified days
+    // Select specified days (weekdays = full, Saturday = half)
     for (const day of days) {
-      const selector = day === 'Sat' 
-        ? `#calc-days-sat .calc-day:has(input[data-day="${day}"])`
-        : `#calc-days-standard .calc-day:has(input[data-day="${day}"])`;
+      const state = day === 'Sat' ? 'half' : 'full';
+      const selector = day === 'Sat'
+        ? `#calc-days-sat .calc-day[data-day="${day}"] .day-btn[data-state="${state}"]`
+        : `#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="${state}"]`;
       await page.locator(selector).click();
     }
     await page.waitForTimeout(100);
@@ -113,7 +110,7 @@ test.beforeEach(async ({ page }) => {
     await page.fill('#customer_name', customerName);
     await page.fill('#customer_address', customerAddress);
     await page.fill('#notes', notes);
-    
+
     if (gst) {
       await page.locator('#gst').check();
     }
@@ -128,8 +125,8 @@ test.beforeEach(async ({ page }) => {
   }
 
   async function downloadPDF(page) {
-    const pdfResponsePromise = page.waitForResponse(response => 
-      response.url().includes('/api/invoices') && 
+    const pdfResponsePromise = page.waitForResponse(response =>
+      response.url().includes('/api/invoices') &&
       response.request().method() === 'POST' &&
       response.request().postData().includes('"action":"download"')
     );
@@ -161,7 +158,7 @@ test.beforeEach(async ({ page }) => {
     expect(pdfBuffer.slice(0,5).toString()).toBe('%PDF-');
 
     const { blobs, anchors } = await getCapturedData(page);
-    
+
     expect(blobs.length).toBeGreaterThan(0);
     const pdfBlob = blobs[0];
     expect(pdfBlob.type).toBe('application/pdf');
@@ -182,18 +179,21 @@ test.beforeEach(async ({ page }) => {
     expect(text).toContain('43 663 126 725');
     expect(text).toContain('14C, 1 The Esplanade');
     expect(text).toContain('Natalie@sjssolutionscorp.com.au');
-    
+
     // PDF should contain the template company name (ASG) in BILL TO section
     expect(text).toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
     expect(text).toContain('14C, 1 The Esplanade');
     expect(text).toContain('Test notes for XHR PDF');
-    
+
     expect(text).toContain('Wages/Retainer');
     expect(text).toContain('Mon — 24th');
     expect(text).toContain('Wed — 26th');
     expect(text).toContain('Sat — 29th');
-    expect(text).toContain('½');
-    
+    expect(text).toContain('Full day');
+    expect(text).toContain('Half day');
+    expect(text).toContain('180');
+    expect(text).toContain('100');
+
     expect(text).toContain('Subtotal');
     expect(text).toContain('GST');
     expect(text).toContain('TOTAL');
@@ -256,9 +256,9 @@ test.beforeEach(async ({ page }) => {
     await expect(page.locator('#customer_email')).toHaveValue('Natalie@sjssolutionscorp.com.au');
     await expect(page.locator('#customer_address')).toHaveValue('14C, 1 The Esplanade, Mount pleasant, 6153');
 
-    await page.waitForSelector('#calc-days-standard .calc-day input[data-day="Mon"]', { state: 'visible' });
+    await page.waitForSelector('#calc-days-standard .day-btn[data-state="off"]', { state: 'visible' });
     await page.fill('#week_start', '2026-08-24');
-    await page.locator('#calc-days-standard .calc-day:has(input[data-day="Mon"])').click();
+    await page.locator('#calc-days-standard .calc-day[data-day="Mon"] .day-btn[data-state="full"]').click();
     await page.fill('#customer_name', 'ASG Test Customer');
     await page.click('#calc-add');
     await page.waitForTimeout(500);
@@ -288,9 +288,9 @@ test.beforeEach(async ({ page }) => {
 
     await expect(page.locator('#customer_name')).not.toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
 
-    await page.waitForSelector('#calc-days-standard .calc-day input[data-day="Mon"]', { state: 'visible' });
+    await page.waitForSelector('#calc-days-standard .day-btn[data-state="off"]', { state: 'visible' });
     await page.fill('#week_start', '2026-08-24');
-    await page.locator('#calc-days-standard .calc-day:has(input[data-day="Mon"])').click();
+    await page.locator('#calc-days-standard .calc-day[data-day="Mon"] .day-btn[data-state="full"]').click();
     await page.fill('#customer_name', 'SJS Test Customer');
     await page.click('#calc-add');
     await page.waitForTimeout(500);
@@ -347,7 +347,7 @@ test.beforeEach(async ({ page }) => {
 
     const pdfResponse = await downloadPDF(page);
     const contentDisposition = pdfResponse.headers()['content-disposition'];
-    
+
     // Expected format: Contractor Invoice - Rep Name - DD-MM-YYYY - $Amount.pdf
     expect(contentDisposition).toMatch(/Contractor Invoice - .* - \d{2}-\d{2}-\d{4} - \$[\d,]+\.\d{2}\.pdf/);
   });

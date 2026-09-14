@@ -26,6 +26,7 @@ const WEEKLY_WAGE = {
   halfDays: 1,
   defaultTotal: 900,
   weekdayRate: 180,
+  weekdayHalfRate: 90,
   saturdayRate: 100,
   get perDay() {
     return WEEKLY_WAGE.weekdayRate;

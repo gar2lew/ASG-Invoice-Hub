@@ -50,8 +50,8 @@ test.describe('Invoice Edit Route', () => {
     // This prevents potential form reset issues that occur after wage line interaction
     const days = ['Mon', 'Tue', 'Wed', 'Thu'];
     for (const day of days) {
-      const label = page.locator(`#calc-days-standard .calc-day:has(input[data-day="${day}"])`);
-      await label.click();
+      const btn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="full"]`);
+      await btn.click();
     }
     await page.click('#calc-add');
 
