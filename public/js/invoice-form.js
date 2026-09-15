@@ -17,6 +17,11 @@ var templateInput = form ? form.querySelector('input[name="template"]') : null;
 var tplButtons = form ? Array.prototype.slice.call(form.querySelectorAll('.tpl')) : [];
 var submitSend = document.getElementById('submit-send-email');
 
+var editId = form ? form.dataset.editId || null : null;
+var isEditing = Boolean(editId);
+var apiUrl = editId ? '/api/invoices/' + editId : '/api/invoices';
+var apiMethod = editId ? 'PUT' : 'POST';
+
 var tplMeta = {
   asg: {
     name: 'ASG',
@@ -120,7 +125,6 @@ var weekState = {
   saturdayRate: WAGE_RATES.saturdayHalf,
   notes: '',
 };
-var isEditing = typeof window.existingItems !== 'undefined' && Array.isArray(window.existingItems);
 
 var companyConfigs = {
   asg: {
@@ -763,8 +767,8 @@ if (form) form.addEventListener('submit', function (e) {
     submitSendBtn.textContent = 'Working…';
   }
 
-  fetch('/api/invoices', {
-    method: 'POST',
+  fetch(apiUrl, {
+    method: apiMethod,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })

@@ -518,7 +518,7 @@ async function getItems(invoiceId) {
   const r = await getPool().query('SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY id', [invoiceId]);
   return r.rows.map(row => ({
     ...row,
-    details: row.details || []
+    details: (typeof row.details === 'string' ? JSON.parse(row.details) : row.details) || []
   }));
 }
 
@@ -556,6 +556,53 @@ async function deleteInvoices(ids) {
   if (!cleanIds.length) return 0;
   const result = await getPool().query('DELETE FROM invoices WHERE id = ANY($1::int[])', [cleanIds]);
   return result.rowCount || 0;
+}
+
+// Update an existing draft invoice. Preserves invoice_id and invoice_number.
+async function updateInvoice(invoiceId, tx) {
+  await ensureReady();
+  const p = getPool();
+  const client = await p.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Verify invoice is still a draft
+    const checkRes = await client.query('SELECT status FROM invoices WHERE id = $1 FOR UPDATE', [invoiceId]);
+    if (checkRes.rows.length === 0) throw new Error('Invoice not found');
+    if (checkRes.rows.length > 0 && checkRes.rows[0].status !== 'draft') {
+      throw new Error('Only draft invoices can be edited');
+    }
+
+    // Update the invoice record (preserving invoice_number)
+    await client.query(`
+      UPDATE invoices SET
+        template = $1, customer_name = $2, customer_company = $3, customer_email = $4,
+        customer_address = $5, issue_date = $6, due_date = $7, notes = $8,
+        tax_rate = $9, subtotal = $10, tax_amount = $11, total = $12
+      WHERE id = $13
+    `, [
+      tx.template, tx.customer_name, tx.customer_company, tx.customer_email,
+      tx.customer_address, tx.issue_date, tx.due_date, tx.notes,
+      tx.tax_rate, tx.subtotal, tx.tax_amount, tx.total, invoiceId
+    ]);
+
+    // Delete existing items and re-insert
+    await client.query('DELETE FROM invoice_items WHERE invoice_id = $1', [invoiceId]);
+    for (const item of tx.items) {
+      await client.query(
+        'INSERT INTO invoice_items (invoice_id, description, quantity, rate, amount, details) VALUES ($1,$2,$3,$4,$5,$6)',
+        [invoiceId, item.description, item.quantity, item.rate, item.amount, JSON.stringify(item.details || [])]
+      );
+    }
+
+    await client.query('COMMIT');
+    return { id: invoiceId };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function statsForUser(userId) {
@@ -607,10 +654,10 @@ async function repTotals() {
 async function sentDatesForUser(userId) {
   await ensureReady();
   const r = await getPool().query(`
-    SELECT sent_at::date AS sent_date, COUNT(*) AS count, SUM(total) AS total
+    SELECT substring(sent_at, 1, 10) AS sent_date, COUNT(*) AS count, SUM(total) AS total
     FROM invoices
-    WHERE user_id = $1 AND status IN ('sent','paid') AND sent_at IS NOT NULL
-    GROUP BY sent_date
+    WHERE user_id = $1 AND status IN ('sent','paid') AND sent_at IS NOT NULL AND sent_at <> ''
+    GROUP BY substring(sent_at, 1, 10)
     ORDER BY sent_date DESC
   `, [userId]);
   return r.rows;
@@ -765,6 +812,7 @@ module.exports = {
   setInvoiceStatus,
   deleteInvoice,
   deleteInvoices,
+  updateInvoice,
   statsForUser,
   statsForUserSince,
   recentInvoices,

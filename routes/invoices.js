@@ -148,6 +148,74 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
   }
 });
 
+router.put('/api/invoices/:id', requireAuth, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const invoiceId = parseInt(req.params.id, 10);
+    if (!invoiceId) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    // Verify ownership/draft status
+    const existing = await db.getInvoice(invoiceId);
+    if (!existing) return res.status(404).json({ error: 'Invoice not found' });
+    if (req.user.role !== 'admin' && existing.user_id !== req.user.id) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+    if (existing.status !== 'draft') {
+      return res.status(400).json({ error: 'Only draft invoices can be edited' });
+    }
+
+    const itemsRes = validateItems(b.items);
+    if (itemsRes.error) return res.status(400).json({ error: itemsRes.error });
+
+    const taxRate = b.gst ? 0.1 : 0;
+    const subtotal = round2(itemsRes.items.reduce((s, it) => s + it.amount, 0));
+    const taxAmount = round2(subtotal * taxRate);
+    const total = round2(subtotal + taxAmount);
+
+    await db.updateInvoice(invoiceId, {
+      template: b.template === 'sjs' ? 'sjs' : 'asg',
+      customer_name: String(b.customer_name || '').trim(),
+      customer_company: String(b.customer_company || '').trim(),
+      customer_email: String(b.customer_email || '').trim(),
+      customer_address: String(b.customer_address || '').trim(),
+      issue_date: String(b.issue_date || todayISO()),
+      due_date: String(b.due_date || addDaysISO(14)),
+      notes: String(b.notes || '').trim(),
+      tax_rate: taxRate,
+      subtotal,
+      tax_amount: taxAmount,
+      total,
+      items: itemsRes.items,
+    });
+
+    if (b.send_now) {
+      const rep = await db.getUserById(req.user.id);
+      if (!rep.bank_name || !rep.bank_bsb || !rep.bank_account) {
+        return res.status(400).json({ error: 'Payment details missing' });
+      }
+      try {
+        const recipients = getInvoiceRecipients();
+        const weekRange = formatWeekRangeForEmail(itemsRes.items);
+        const invoice = await db.getInvoice(invoiceId);
+        const items = await db.getItems(invoiceId);
+        const settings = await db.getSettings();
+        const pdf = await renderInvoice(invoice, items, settings);
+        await sendInvoicePdf(settings, invoice, pdf, recipients, req.user.name, weekRange);
+        await db.setInvoiceStatus(invoiceId, 'sent');
+        return res.json({ id: invoiceId, invoice_number: existing.invoice_number, sent: true });
+      } catch (err) {
+        return res.json({ id: invoiceId, invoice_number: existing.invoice_number, sent: false, warning: true });
+      }
+    }
+
+    return res.json({ id: invoiceId, invoice_number: existing.invoice_number, sent: false });
+  } catch (err) {
+    console.error('Invoice update error:', err);
+    const message = err && err.message ? err.message : 'Something went wrong.';
+    return res.status(500).json({ error: message });
+  }
+});
+
 router.get('/invoices/:id/download', requireAuth, async (req, res, next) => {
   try {
     const invoice = await loadInvoiceForUser(req);

@@ -12,6 +12,9 @@
     <% if (invoice.status === 'draft' || invoice.status === 'paid') { %>
       <a class="btn btn-ink" href="mailto:natalie@sjssolutionscorp.com.au?subject=<%= encodeURIComponent('Invoice ' + invoice.invoice_number) %>&amp;body=<%= encodeURIComponent('Please see my invoice attached for &quot;' + invoice.repName + '&quot; - &quot;' + invoice.issue_date + '&quot;') %>">Open email</a>
     <% } %>
+    <% if (invoice.status === 'draft') { %>
+      <a class="btn btn-ghost" href="/invoices/<%= invoice.id %>/edit">Edit invoice</a>
+    <% } %>
     <% if (invoice.status === 'sent') { %>
       <a class="btn btn-ink" href="mailto:natalie@sjssolutionscorp.com.au?subject=<%= encodeURIComponent('Invoice ' + invoice.invoice_number) %>&amp;body=<%= encodeURIComponent('Please see my invoice attached for &quot;' + invoice.repName + '&quot; - &quot;' + invoice.issue_date + '&quot;') %>">Open email again</a>
     <% } %>
