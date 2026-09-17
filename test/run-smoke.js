@@ -179,7 +179,7 @@ async function main() {
   // Create a new rep with no invoices
   await db.createUser({ username: 'rep2', password: 'secret2', name: 'Rep Two', email: 'rep2@co.com', abn: '98 765 432 109', bank_name: 'Bank B', bank_bsb: '654321', bank_account: '87654321', pin: '4321', role: 'rep' });
   const rep2 = await db.getUserByUsername('rep2');
-  
+
   // First invoice with user-supplied starting number
   const firstInv = await db.createInvoice({
     user_id: rep2.id,
@@ -195,7 +195,7 @@ async function main() {
     items: [{ description: 'Service', quantity: 1, rate: 500, amount: 500 }],
   });
   log(firstInv.invoice_number === 'INV-0045', `first invoice uses supplied number ${firstInv.invoice_number}`);
-  
+
   // Second invoice should auto-generate next number
   const secondInv = await db.createInvoice({
     user_id: rep2.id,
@@ -210,7 +210,7 @@ async function main() {
     items: [{ description: 'Service', quantity: 1, rate: 300, amount: 300 }],
   });
   log(secondInv.invoice_number === 'INV-0046', `second invoice auto-generates ${secondInv.invoice_number}`);
-  
+
   // Third invoice should continue sequence
   const thirdInv = await db.createInvoice({
     user_id: rep2.id,
@@ -225,15 +225,143 @@ async function main() {
     items: [{ description: 'Service', quantity: 1, rate: 200, amount: 200 }],
   });
   log(thirdInv.invoice_number === 'INV-0047', `third invoice continues sequence ${thirdInv.invoice_number}`);
-  
+
   await db.deleteInvoice(firstInv.id);
   await db.deleteInvoice(secondInv.id);
   await db.deleteInvoice(thirdInv.id);
-  
+
   await db.deleteInvoice(firstInv.id);
   await db.deleteInvoice(secondInv.id);
   await db.deleteInvoice(thirdInv.id);
-  
+
+  // ===== INVOICE NUMBER MANUAL OVERRIDE TESTS =====
+
+  // Test 1: Manual override persists exact requested number
+  const manualInv = await db.createInvoice({
+    user_id: rep.id,
+    template: 'standard',
+    invoice_number: 'INV-0016',
+    invoice_number_manual_override: true,
+    customer_name: 'Manual Override Co',
+    issue_date: '2026-09-01',
+    tax_rate: 0,
+    subtotal: 500,
+    tax_amount: 0,
+    total: 500,
+    status: 'draft',
+    items: [{ description: 'Service', quantity: 1, rate: 500, amount: 500 }],
+  });
+  log(manualInv.invoice_number === 'INV-0016', `manual override persists exact number: ${manualInv.invoice_number}`);
+
+  // Test 2: Counter advances when manual number is higher
+  const afterManualInv = await db.createInvoice({
+    user_id: rep.id,
+    template: 'standard',
+    customer_name: 'After Manual Co',
+    issue_date: '2026-09-02',
+    tax_rate: 0,
+    subtotal: 100,
+    tax_amount: 0,
+    total: 100,
+    status: 'draft',
+    items: [{ description: 'Item', quantity: 1, rate: 100, amount: 100 }],
+  });
+  log(afterManualInv.invoice_number === 'INV-0017', `counter advanced after higher manual: ${afterManualInv.invoice_number}`);
+
+  // Test 3: Duplicate manual number is rejected
+  let duplicateRejected = false;
+  try {
+    await db.createInvoice({
+      user_id: rep.id,
+      template: 'standard',
+      invoice_number: 'INV-0016',
+      invoice_number_manual_override: true,
+      customer_name: 'Duplicate Co',
+      issue_date: '2026-09-03',
+      tax_rate: 0,
+      subtotal: 100,
+      tax_amount: 0,
+      total: 100,
+      status: 'draft',
+      items: [{ description: 'Item', quantity: 1, rate: 100, amount: 100 }],
+    });
+  } catch (e) {
+    duplicateRejected = e.message.includes('already in use');
+  }
+  log(duplicateRejected, 'duplicate manual number is rejected');
+
+  // Test 4: Draft edit can change invoice number
+  const draftInv = await db.createInvoice({
+    user_id: rep.id,
+    template: 'standard',
+    customer_name: 'Draft Edit Co',
+    issue_date: '2026-09-04',
+    tax_rate: 0,
+    subtotal: 200,
+    tax_amount: 0,
+    total: 200,
+    status: 'draft',
+    items: [{ description: 'Service', quantity: 1, rate: 200, amount: 200 }],
+  });
+
+  await db.updateInvoice(draftInv.id, {
+    template: 'standard',
+    customer_name: 'Draft Edit Co Updated',
+    invoice_number: 'INV-0099',
+    invoice_number_manual_override: true,
+    issue_date: '2026-09-04',
+    tax_rate: 0,
+    subtotal: 200,
+    tax_amount: 0,
+    total: 200,
+    items: [{ description: 'Service', quantity: 1, rate: 200, amount: 200 }],
+  });
+
+  const editedInv = await db.getInvoice(draftInv.id);
+  log(editedInv.invoice_number === 'INV-0099', `draft edit changes number: ${editedInv.invoice_number}`);
+  log(editedInv.id === draftInv.id, 'draft edit retains same invoice ID');
+
+  // Test 5: Draft edit uniqueness excludes itself
+  await db.updateInvoice(draftInv.id, {
+    template: 'standard',
+    customer_name: 'Draft Edit Co Updated',
+    invoice_number: 'INV-0099',
+    invoice_number_manual_override: true,
+    issue_date: '2026-09-04',
+    tax_rate: 0,
+    subtotal: 200,
+    tax_amount: 0,
+    total: 200,
+    items: [{ description: 'Service', quantity: 1, rate: 200, amount: 200 }],
+  });
+  const sameNumberEdit = await db.getInvoice(draftInv.id);
+  log(sameNumberEdit.invoice_number === 'INV-0099', 'draft edit succeeds when number unchanged');
+
+  // Test 6: Sent invoice number cannot be changed
+  await db.setInvoiceStatus(manualInv.id, 'sent');
+  let sentNumberChangeRejected = false;
+  try {
+    await db.updateInvoice(manualInv.id, {
+      template: 'standard',
+      customer_name: 'Should Fail',
+      invoice_number: 'INV-9999',
+      invoice_number_manual_override: true,
+      issue_date: '2026-09-01',
+      tax_rate: 0,
+      subtotal: 500,
+      tax_amount: 0,
+      total: 500,
+      items: [{ description: 'Service', quantity: 1, rate: 500, amount: 500 }],
+    });
+  } catch (e) {
+    sentNumberChangeRejected = e.message.includes('Only draft invoices can be edited');
+  }
+  log(sentNumberChangeRejected, 'sent invoice number cannot be changed');
+
+  await db.deleteInvoice(manualInv.id);
+  await db.deleteInvoice(afterManualInv.id);
+  await db.deleteInvoice(draftInv.id);
+
   // Duplicate starting number test
   // First invoice with INV-0100 should succeed
   const dupRep = await db.createUser({ username: 'rep3', password: 'secret3', name: 'Rep Three', email: 'rep3@co.com', abn: '11 222 333 444', bank_name: 'Bank C', bank_bsb: '111222', bank_account: '33344455', pin: '5555', role: 'rep' });
@@ -252,7 +380,7 @@ async function main() {
     items: [{ description: 'Service', quantity: 1, rate: 100, amount: 100 }],
   });
   log(firstForDup.invoice_number === 'INV-0100', 'first invoice with INV-0100 succeeds');
-  
+
   // Second attempt to use INV-0100 should be ignored (not first invoice)
   const secondForDup = await db.createInvoice({
     user_id: dupRepUser.id,
@@ -269,10 +397,10 @@ async function main() {
   });
   log(secondForDup.invoice_number !== 'INV-0100', 'duplicate starting number is ignored for non-first invoice');
   log(secondForDup.invoice_number === 'INV-0101', `second invoice auto-generates ${secondForDup.invoice_number}`);
-  
+
   await db.deleteInvoice(firstForDup.id);
   await db.deleteInvoice(secondForDup.id);
-  
+
   // Malformed starting number should be rejected (need a fresh rep)
   const malRep = await db.createUser({ username: 'rep4', password: 'secret4', name: 'Rep Four', email: 'rep4@co.com', abn: '66 777 888 999', bank_name: 'Bank D', bank_bsb: '666777', bank_account: '88899900', pin: '6666', role: 'rep' });
   const malRepUser = await db.getUserByUsername('rep4');

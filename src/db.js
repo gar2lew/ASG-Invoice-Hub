@@ -470,8 +470,38 @@ async function createInvoice(tx) {
   try {
     await client.query('BEGIN');
 
-    // Allocate invoice number atomically using per-rep sequence
-    const invoice_number = await allocateInvoiceNumber(client, tx.user_id, tx.userSuppliedNumber);
+    let invoice_number;
+
+    // Manual override: user explicitly changed the number
+    if (tx.invoice_number_manual_override && tx.invoice_number) {
+      const settingsRes = await client.query('SELECT invoice_prefix FROM settings WHERE id = 1');
+      const prefix = settingsRes.rows[0]?.invoice_prefix || 'INV';
+      const pattern = new RegExp(`^${prefix}-\\d{4,}$`);
+      if (!pattern.test(tx.invoice_number)) {
+        throw new Error(`Invalid invoice number format. Expected: ${prefix}-XXXX`);
+      }
+
+      const dupCheck = await client.query(
+        'SELECT id FROM invoices WHERE invoice_number = $1',
+        [tx.invoice_number]
+      );
+      if (dupCheck.rows.length > 0) {
+        throw new Error(`Invoice number ${tx.invoice_number} is already in use. Please choose another number.`);
+      }
+
+      invoice_number = tx.invoice_number;
+
+      const numericPart = parseInt(tx.invoice_number.split('-')[1], 10);
+      if (!Number.isNaN(numericPart)) {
+        const userRes = await client.query('SELECT next_invoice_number FROM users WHERE id = $1', [tx.user_id]);
+        const userNextNum = userRes.rows[0]?.next_invoice_number || 1;
+        if (numericPart >= userNextNum) {
+          await client.query('UPDATE users SET next_invoice_number = $1 WHERE id = $2', [numericPart + 1, tx.user_id]);
+        }
+      }
+    } else {
+      invoice_number = await allocateInvoiceNumber(client, tx.user_id, tx.userSuppliedNumber);
+    }
 
     const ins = await client.query(
       `INSERT INTO invoices
@@ -566,24 +596,61 @@ async function updateInvoice(invoiceId, tx) {
   try {
     await client.query('BEGIN');
 
-    // Verify invoice is still a draft
-    const checkRes = await client.query('SELECT status FROM invoices WHERE id = $1 FOR UPDATE', [invoiceId]);
+    // Verify invoice is still a draft and get current number
+    const checkRes = await client.query('SELECT status, invoice_number FROM invoices WHERE id = $1 FOR UPDATE', [invoiceId]);
     if (checkRes.rows.length === 0) throw new Error('Invoice not found');
-    if (checkRes.rows.length > 0 && checkRes.rows[0].status !== 'draft') {
+    if (checkRes.rows[0].status !== 'draft') {
       throw new Error('Only draft invoices can be edited');
     }
 
-    // Update the invoice record (preserving invoice_number)
+    const currentNumber = checkRes.rows[0].invoice_number;
+    let finalNumber = currentNumber;
+
+    // Handle manual invoice number override
+    if (tx.invoice_number_manual_override && tx.invoice_number && tx.invoice_number !== currentNumber) {
+      const settingsRes = await client.query('SELECT invoice_prefix FROM settings WHERE id = 1');
+      const prefix = settingsRes.rows[0]?.invoice_prefix || 'INV';
+      const pattern = new RegExp(`^${prefix}-\\d{4,}$`);
+      if (!pattern.test(tx.invoice_number)) {
+        throw new Error(`Invalid invoice number format. Expected: ${prefix}-XXXX`);
+      }
+
+      // Check uniqueness (excluding current invoice)
+      const dupCheck = await client.query(
+        'SELECT id FROM invoices WHERE invoice_number = $1 AND id != $2',
+        [tx.invoice_number, invoiceId]
+      );
+      if (dupCheck.rows.length > 0) {
+        throw new Error(`Invoice number ${tx.invoice_number} is already in use. Please choose another number.`);
+      }
+
+      finalNumber = tx.invoice_number;
+
+      // Advance counter if manual number is higher
+      const numericPart = parseInt(tx.invoice_number.split('-')[1], 10);
+      if (!Number.isNaN(numericPart)) {
+        const userRes = await client.query('SELECT next_invoice_number FROM users WHERE id = (SELECT user_id FROM invoices WHERE id = $1)', [invoiceId]);
+        const userNextNum = userRes.rows[0]?.next_invoice_number || 1;
+        if (numericPart >= userNextNum) {
+          await client.query(
+            'UPDATE users SET next_invoice_number = $1 WHERE id = (SELECT user_id FROM invoices WHERE id = $2)',
+            [numericPart + 1, invoiceId]
+          );
+        }
+      }
+    }
+
+    // Update the invoice record
     await client.query(`
       UPDATE invoices SET
         template = $1, customer_name = $2, customer_company = $3, customer_email = $4,
         customer_address = $5, issue_date = $6, due_date = $7, notes = $8,
-        tax_rate = $9, subtotal = $10, tax_amount = $11, total = $12
-      WHERE id = $13
+        tax_rate = $9, subtotal = $10, tax_amount = $11, total = $12, invoice_number = $13
+      WHERE id = $14
     `, [
       tx.template, tx.customer_name, tx.customer_company, tx.customer_email,
       tx.customer_address, tx.issue_date, tx.due_date, tx.notes,
-      tx.tax_rate, tx.subtotal, tx.tax_amount, tx.total, invoiceId
+      tx.tax_rate, tx.subtotal, tx.tax_amount, tx.total, finalNumber, invoiceId
     ]);
 
     // Delete existing items and re-insert

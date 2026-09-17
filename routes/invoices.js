@@ -83,6 +83,7 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
       user_id: req.user.id,
       template: b.template === 'sjs' ? 'sjs' : 'asg',
       userSuppliedNumber: b.isFirstInvoice ? b.invoice_number : null,
+      invoice_number_manual_override: b.invoice_number_manual_override,
       customer_name,
       customer_company: String(b.customer_company || '').trim(),
       customer_email: String(b.customer_email || '').trim(),
@@ -186,6 +187,8 @@ router.put('/api/invoices/:id', requireAuth, async (req, res, next) => {
       tax_amount: taxAmount,
       total,
       items: itemsRes.items,
+      invoice_number: b.invoice_number,
+      invoice_number_manual_override: b.invoice_number_manual_override,
     });
 
     if (b.send_now) {

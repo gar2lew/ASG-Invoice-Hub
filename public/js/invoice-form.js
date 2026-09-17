@@ -703,6 +703,12 @@ function clearError() {
   if (box) box.remove();
 }
 
+function isInvoiceNumberManuallyOverridden() {
+  var invNumEl = document.getElementById('invoice_number');
+  if (!invNumEl) return false;
+  return invNumEl.value.trim() !== initialInvoiceNumber;
+}
+
 function buildPayload() {
   var data = new FormData(form);
   var items = itemRows().map(function (row) {
@@ -733,6 +739,7 @@ function buildPayload() {
   return {
     template: templateInput.value,
     invoice_number: data.get('invoice_number'),
+    invoice_number_manual_override: isInvoiceNumberManuallyOverridden(),
     customer_name: data.get('customer_name'),
     customer_company: data.get('customer_company'),
     customer_email: data.get('customer_email'),
@@ -1080,6 +1087,9 @@ if (initRate && initCfg.perDayRate) initRate.value = initCfg.perDayRate;
 
 setTemplate(initialCompany);
 initializeWeekState();
+
+// Track initial invoice number for manual override detection
+var initialInvoiceNumber = (document.getElementById('invoice_number') || {}).value || '';
 
 // Handle existing items when editing an invoice
 if (typeof window.existingItems !== 'undefined' && Array.isArray(window.existingItems) && window.existingItems.length > 0) {
