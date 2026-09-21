@@ -71,6 +71,7 @@ router.get('/', requireAuth, async (req, res, next) => {
 router.get('/invoices/new', requireAuth, async (req, res, next) => {
   try {
     const settings = await db.getSettings();
+    const rep = await db.getUserById(req.user.id);
     const flashMsg = req.session.flash || null;
     req.session.flash = null;
     
@@ -78,9 +79,8 @@ router.get('/invoices/new', requireAuth, async (req, res, next) => {
     const invoiceCount = await db.countInvoicesForUser(req.user.id);
     const isFirstInvoice = invoiceCount === 0;
     
-    // For first invoice, show editable field with suggested number
-    // For subsequent invoices, show auto-generated read-only number
-    const nextNumber = `${settings.invoice_prefix}-${String(settings.next_invoice_number).padStart(4, '0')}`;
+    const nextInvoiceNumber = rep && rep.next_invoice_number ? rep.next_invoice_number : 1;
+    const nextNumber = `${settings.invoice_prefix}-${String(nextInvoiceNumber).padStart(4, '0')}`;
     
     res.render('new-invoice', {
       title: 'New invoice',

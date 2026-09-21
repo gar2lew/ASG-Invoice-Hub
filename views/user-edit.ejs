@@ -37,6 +37,17 @@
 
   <section class="card">
     <div class="card-head">
+      <h2 class="card-title">Invoice numbering</h2>
+      <p class="card-sub">The next invoice this rep creates will use this number, then continue sequentially.</p>
+    </div>
+    <label class="field">
+      <span class="field-label">Next invoice number</span>
+      <input class="input" type="number" name="next_invoice_number" min="1" step="1" value="<%= user.next_invoice_number || 1 %>" required>
+    </label>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
       <h2 class="card-title">Payment details</h2>
       <p class="card-sub">Bank details printed under PAYMENT DETAILS on invoices.</p>
     </div>

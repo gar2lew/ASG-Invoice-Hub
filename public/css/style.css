@@ -695,6 +695,39 @@ textarea.input {
   background: var(--surface-2);
 }
 
+.rep-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 250px;
+}
+
+.rep-actions form {
+  margin: 0;
+}
+
+.rep-pin-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+@media (max-width: 700px) {
+  .rep-actions {
+    min-width: 190px;
+  }
+
+  .rep-pin-form {
+    width: 100%;
+  }
+
+  .rep-pin-form .input-sm {
+    min-width: 0;
+    flex: 1;
+  }
+}
+
 /* ===================================================================
    BADGES / STATUS
    =================================================================== */

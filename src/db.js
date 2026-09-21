@@ -252,7 +252,7 @@ async function updateSettings(patch) {
 
 async function getUsers() {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, name, email, phone, abn, bank_name, bank_bsb, bank_account, role, is_active, created_at FROM users ORDER BY name');
+  const r = await getPool().query('SELECT id, username, name, email, phone, abn, bank_name, bank_bsb, bank_account, role, is_active, next_invoice_number, created_at FROM users ORDER BY name');
   return r.rows;
 }
 
@@ -264,7 +264,7 @@ async function getUserByUsername(username) {
 
 async function getUserById(id) {
   await ensureReady();
-  const r = await getPool().query('SELECT id, username, name, email, phone, abn, bank_name, bank_bsb, bank_account, role, is_active, created_at FROM users WHERE id = $1', [id]);
+  const r = await getPool().query('SELECT id, username, name, email, phone, abn, bank_name, bank_bsb, bank_account, role, is_active, next_invoice_number, created_at FROM users WHERE id = $1', [id]);
   return r.rows[0];
 }
 
@@ -302,13 +302,22 @@ async function resetPin(id, pin) {
 
 async function updateUser(id, updates) {
   await ensureReady();
-  const allowed = ['name', 'email', 'phone', 'abn', 'bank_name', 'bank_bsb', 'bank_account'];
+  const allowed = ['name', 'email', 'phone', 'abn', 'bank_name', 'bank_bsb', 'bank_account', 'next_invoice_number'];
   const cols = [];
   const values = [];
   for (const k of allowed) {
     if (!(k in updates)) continue;
+    let value = updates[k];
+    if (k === 'next_invoice_number') {
+      value = Number(value);
+      if (!Number.isInteger(value) || value < 1) {
+        throw new Error('Next invoice number must be a positive whole number.');
+      }
+    } else {
+      value = String(value ?? '');
+    }
     cols.push(`${k} = $${cols.length + 2}`);
-    values.push(String(updates[k] ?? ''));
+    values.push(value);
   }
   if (!cols.length) return;
   await getPool().query(`UPDATE users SET ${cols.join(', ')} WHERE id = $1`, [id, ...values]);
@@ -342,7 +351,18 @@ async function updateOwnProfile(userId, { name, email, phone, abn, bank_name, ba
 
 async function deleteUser(id) {
   await ensureReady();
-  await getPool().query('DELETE FROM users WHERE id = $1', [id]);
+  const client = await getPool().connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM user_audit WHERE target_user_id = $1 OR actor_user_id = $1', [id]);
+    await client.query('DELETE FROM users WHERE id = $1', [id]);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /**

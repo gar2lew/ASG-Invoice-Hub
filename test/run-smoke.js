@@ -60,6 +60,7 @@ async function main() {
   const repAuth2 = await db.getUserForAuth(rep.id);
   log(bcrypt.compareSync('5678', repAuth2.pin_hash), 'resetPin updates PIN hash');
 
+
   const created = await db.createInvoice({
     user_id: rep.id,
     template: 'standard',
@@ -96,6 +97,25 @@ async function main() {
   });
   log(inv2.invoice_number === 'INV-0002', 'invoice numbers are sequential');
 
+  await db.createUser({ username: 'sequence-rep', password: 'secret-sequence', name: 'Sequence Rep', email: 'sequence@co.com', role: 'rep' });
+  const sequenceRep = await db.getUserByUsername('sequence-rep');
+  await db.updateUser(sequenceRep.id, { next_invoice_number: 250 });
+  const repWithSequence = await db.getUserById(sequenceRep.id);
+  log(repWithSequence.next_invoice_number === 250, 'admin can save a rep next invoice number');
+  const sequenceInvoice = await db.createInvoice({
+    user_id: sequenceRep.id,
+    template: 'standard',
+    customer_name: 'Sequence Co',
+    issue_date: '2026-08-14',
+    tax_rate: 0,
+    subtotal: 1,
+    tax_amount: 0,
+    total: 1,
+    status: 'draft',
+    items: [{ description: 'Sequence item', quantity: 1, rate: 1, amount: 1 }],
+  });
+  log(sequenceInvoice.invoice_number === 'INV-0250', 'rep invoice sequence starts from saved next invoice number');
+
   const invoice = await db.getInvoice(created.id);
   log(invoice.customer_name === 'Acme Pty Ltd' && invoice.user_id === rep.id, 'invoice persisted');
 
@@ -104,7 +124,7 @@ async function main() {
 
   const repList = await db.listInvoices({ userId: rep.id, admin: false });
   const adminList = await db.listInvoices({ userId: admin.id, admin: true });
-  log(repList.length === 2 && adminList.length === 2, 'list scopes correctly');
+  log(repList.length === 2 && adminList.length === 3, 'list scopes correctly');
   log(Boolean(repList[0].rep_name), 'rep name joined onto list rows');
 
   await db.setInvoiceStatus(created.id, 'sent');
@@ -424,6 +444,22 @@ async function main() {
   }
   log(malformedError !== null, 'malformed starting number rejected');
   await db.deleteUser(malRepUser.id);
+
+  const removableRep = await db.createUser({ username: 'removable-rep', password: 'secret5', name: 'Removable Rep', email: 'remove@co.com', role: 'rep' });
+  const removableRepUser = await db.getUserByUsername('removable-rep');
+  await db.logUserAudit({
+    targetUserId: removableRepUser.id,
+    actorUserId: admin.id,
+    action: 'FIELD_CHANGED',
+    fieldName: 'email',
+    oldValue: '',
+    newValue: 'remove@co.com',
+  });
+  await db.deleteUser(removableRepUser.id);
+  log(!(await db.getUserByUsername('removable-rep')), 'rep with audit history can be deleted');
+
+  await db.deleteInvoice(sequenceInvoice.id);
+  await db.deleteUser(sequenceRep.id);
 
   await db.deleteUser(dupRepUser.id);
   await db.deleteUser(rep2.id);

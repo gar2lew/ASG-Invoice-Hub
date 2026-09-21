@@ -183,7 +183,7 @@ router.post('/users/:id/edit', requireAdmin, async (req, res, next) => {
       flash(req, res, 'Admin accounts are edited separately.', 'error');
       return res.redirect('/users');
     }
-    const { name, email, phone, abn, bank_name, bank_bsb, bank_account, pin, pin_confirm } = req.body || {};
+    const { name, email, phone, abn, bank_name, bank_bsb, bank_account, next_invoice_number, pin, pin_confirm } = req.body || {};
     if (!name || !String(name).trim()) {
       flash(req, res, 'Name is required.', 'error');
       return res.redirect(`/users/${user.id}/edit`);
@@ -205,6 +205,11 @@ router.post('/users/:id/edit', requireAdmin, async (req, res, next) => {
         hasBankDetails,
       });
     }
+    const nextInvoiceNumber = Number(next_invoice_number);
+    if (!Number.isInteger(nextInvoiceNumber) || nextInvoiceNumber < 1) {
+      flash(req, res, 'Next invoice number must be a positive whole number.', 'error');
+      return res.redirect(`/users/${user.id}/edit`);
+    }
     const cleanPin = pin ? String(pin).trim() : null;
     const updates = {
       name: String(name).trim(),
@@ -214,6 +219,7 @@ router.post('/users/:id/edit', requireAdmin, async (req, res, next) => {
       bank_name: String(bank_name || '').trim(),
       bank_bsb: String(bank_bsb || '').trim(),
       bank_account: String(bank_account || '').trim(),
+      next_invoice_number: nextInvoiceNumber,
     };
     await db.updateUser(user.id, updates);
     if (cleanPin) {
@@ -228,7 +234,7 @@ router.post('/users/:id/edit', requireAdmin, async (req, res, next) => {
       });
     }
     // Audit profile field changes
-    const auditFields = ['name', 'email', 'phone', 'abn', 'bank_name', 'bank_bsb', 'bank_account'];
+    const auditFields = ['name', 'email', 'phone', 'abn', 'bank_name', 'bank_bsb', 'bank_account', 'next_invoice_number'];
     for (const field of auditFields) {
       const oldVal = user[field] || '';
       const newVal = updates[field] || '';
