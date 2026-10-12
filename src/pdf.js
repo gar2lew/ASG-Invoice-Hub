@@ -354,7 +354,8 @@ function renderInvoice(invoice, items, settings) {
     if (!PDFDocument) PDFDocument = require('pdfkit');
     const doc = new PDFDocument({ size: 'A4', margin: 0, bufferPages: true });
     const chunks = [];
-    const tplConfig = getTemplate(invoice.template);
+    const tplConfig = { ...getTemplate(invoice.template) };
+    if (invoice.template === 'asg' && settings.asg_address) tplConfig.address = settings.asg_address;
     doc.on('data', (c) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);

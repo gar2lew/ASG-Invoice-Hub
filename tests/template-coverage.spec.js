@@ -31,7 +31,7 @@ test.describe('ASG Template Coverage', () => {
     await page.fill('[name="item_description"]', 'Test service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '100');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     // Verify customer name on detail page - first .dl is Customer section
@@ -46,7 +46,7 @@ test.describe('ASG Template Coverage', () => {
     await page.fill('[name="item_description"]', 'Service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '100');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     const [download] = await Promise.all([
@@ -68,7 +68,7 @@ test.describe('SJS Template Coverage', () => {
     await page.fill('[name="item_description"]', 'SJS Service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '200');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     // Verify customer name on detail page - first .dl is Customer section
@@ -84,7 +84,7 @@ test.describe('SJS Template Coverage', () => {
     await page.fill('[name="item_description"]', 'SJS Service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '200');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     const [download] = await Promise.all([
@@ -103,7 +103,7 @@ test.describe('SJS Template Coverage', () => {
     await page.fill('[name="item_description"]', 'SJS Service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '200');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     // Now create ASG invoice - switching to ASG template fills ASG company name

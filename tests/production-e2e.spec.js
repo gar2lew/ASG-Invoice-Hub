@@ -75,7 +75,7 @@ test.describe('Full Production E2E Lifecycle', () => {
     await page.fill('[name="item_description"]', 'Test service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '100');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
   });
 
@@ -87,7 +87,7 @@ test.describe('Full Production E2E Lifecycle', () => {
     await page.fill('[name="item_description"]', 'Draft service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '100');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     const invoiceUrl = page.url();
@@ -104,7 +104,7 @@ test.describe('Full Production E2E Lifecycle', () => {
     await page.fill('[name="item_description"]', 'Service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '100');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     const invoiceUrl = page.url();
@@ -136,7 +136,7 @@ test.describe('Full Production E2E Lifecycle', () => {
     await page.fill('[name="item_description"]', 'Report service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '100');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     // Go to reports

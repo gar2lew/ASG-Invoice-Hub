@@ -23,7 +23,11 @@ test.describe('Wage Detail Persistence', () => {
   });
 
   async function setDayState(page, day, state) {
-    const btn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="${state}"], #calc-days-sat .calc-day[data-day="${day}"] .day-btn[data-state="${state}"]`);
+    const isSat = day === 'Sat';
+    const sel = isSat
+      ? `.saturday-controls .day-btn[data-state="${state}"]`
+      : `.weekday[data-day="${day}"] .day-btn[data-state="${state}"]`;
+    const btn = page.locator(sel);
     await btn.click();
     await page.waitForTimeout(50);
   }
@@ -60,9 +64,9 @@ test.describe('Wage Detail Persistence', () => {
     await expect(detailsRow).toBeVisible({ timeout: 5000 });
 
     const detailsText = await detailsRow.textContent();
-    expect(detailsText).toContain('Mon - 24th 24/08/2026');
-    expect(detailsText).toContain('Wed - 26th 26/08/2026');
-    expect(detailsText).toContain('Sat - 29th 29/08/2026');
+    expect(detailsText).toContain('Mon - 24/08/2026 - Full day - $180.00');
+    expect(detailsText).toContain('Wed - 26/08/2026 - Full day - $180.00');
+    expect(detailsText).toContain('Sat - 29/08/2026 - Half day - $100.00');
 
     expect(detailsText).not.toContain('Tue');
     expect(detailsText).not.toContain('Thu');
@@ -106,9 +110,9 @@ test.describe('Wage Detail Persistence', () => {
     await expect(restoredDetailsRow).toBeVisible({ timeout: 5000 });
 
     const restoredDetailsText = await restoredDetailsRow.textContent();
-    expect(restoredDetailsText).toContain('Mon - 24th 24/08/2026');
-    expect(restoredDetailsText).toContain('Wed - 26th 26/08/2026');
-    expect(restoredDetailsText).toContain('Sat - 29th 29/08/2026');
+    expect(restoredDetailsText).toContain('Mon - 24/08/2026 - Full day - $180.00');
+    expect(restoredDetailsText).toContain('Wed - 26/08/2026 - Full day - $180.00');
+    expect(restoredDetailsText).toContain('Sat - 29/08/2026 - Half day - $100.00');
 
     expect(restoredDetailsText).not.toContain('Tue');
     expect(restoredDetailsText).not.toContain('Thu');

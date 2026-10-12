@@ -23,13 +23,21 @@ test.describe('Shared Week State', () => {
   });
 
   async function setDayState(page, day, state) {
-    const btn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="${state}"], #calc-days-sat .calc-day[data-day="${day}"] .day-btn[data-state="${state}"]`);
+    const isSat = day === 'Sat';
+    const sel = isSat
+      ? `.saturday-controls .day-btn[data-state="${state}"]`
+      : `.weekday[data-day="${day}"] .day-btn[data-state="${state}"]`;
+    const btn = page.locator(sel);
     await btn.click();
     await page.waitForTimeout(50);
   }
 
   async function getDayState(page, day) {
-    const activeBtn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn-active, #calc-days-sat .calc-day[data-day="${day}"] .day-btn-active`);
+    const isSat = day === 'Sat';
+    const sel = isSat
+      ? `.saturday-controls .day-btn-active`
+      : `.weekday[data-day="${day}"] .day-btn-active`;
+    const activeBtn = page.locator(sel);
     return await activeBtn.getAttribute('data-state');
   }
 

@@ -71,6 +71,13 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
     const customer_name = String(b.customer_name || '').trim();
     if (!customer_name) return res.status(400).json({ error: 'Customer name is required.' });
 
+    const invoiceNumber = String(b.invoice_number || '').trim();
+    const invoiceSettings = await db.getSettings();
+    const prefix = String(invoiceSettings.invoice_prefix || 'INV').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!new RegExp(`^${prefix}-\\d{4,}$`).test(invoiceNumber)) {
+      return res.status(400).json({ error: `Invalid invoice number format. Expected: ${invoiceSettings.invoice_prefix || 'INV'}-XXXX` });
+    }
+
     const itemsRes = validateItems(b.items);
     if (itemsRes.error) return res.status(400).json({ error: itemsRes.error });
 
@@ -82,8 +89,9 @@ router.post('/api/invoices', requireAuth, async (req, res, next) => {
     const created = await db.createInvoice({
       user_id: req.user.id,
       template: b.template === 'sjs' ? 'sjs' : 'asg',
-      userSuppliedNumber: b.isFirstInvoice ? b.invoice_number : null,
-      invoice_number_manual_override: b.invoice_number_manual_override,
+      invoice_number: invoiceNumber,
+      invoice_number_manual_override: true,
+      continue_numbering: Boolean(b.continue_numbering),
       customer_name,
       customer_company: String(b.customer_company || '').trim(),
       customer_email: String(b.customer_email || '').trim(),

@@ -53,7 +53,7 @@ test.describe('Invoice Download Tracking', () => {
     await page.fill('[name="item_description"]', 'Test service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '100');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     const invoiceUrl = page.url();
@@ -81,7 +81,7 @@ test.describe('Invoice Download Tracking', () => {
     await page.fill('[name="item_description"]', 'Service');
     await page.fill('[name="item_qty"]', '1');
     await page.fill('[name="item_rate"]', '200');
-    await page.click('[data-action="save"]');
+    await page.click('#submit-draft');
     await expect(page).toHaveURL(/\/invoices\/\d+/);
 
     const invoiceUrl = page.url();
@@ -209,6 +209,7 @@ test.describe('Rep Profile Management', () => {
     await expect(page.locator('input[name="bank_name"]')).toBeVisible();
     await expect(page.locator('input[name="bank_bsb"]')).toBeVisible();
     await expect(page.locator('input[name="bank_account"]')).toBeVisible();
+    await expect(page.locator('input[name="next_invoice_number"]')).toBeVisible();
   });
 
   test('rep cannot access Edit Rep page', async ({ page }) => {
@@ -222,6 +223,17 @@ test.describe('Rep Profile Management', () => {
     await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
     await expect(page.locator('input[name="name"]')).not.toHaveValue('');
     await expect(page.locator('input[name="abn"]')).not.toHaveValue('');
+  });
+
+  test('admin can set a rep next invoice number', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await page.fill('input[name="next_invoice_number"]', '250');
+    await page.click('button:has-text("Save changes")');
+    await expect(page).toHaveURL('/users');
+    await page.locator('.user-table tbody tr').filter({ has: page.locator('a:has-text("Edit")') }).first().locator('a:has-text("Edit")').click();
+    await expect(page.locator('input[name="next_invoice_number"]')).toHaveValue('250');
   });
 
   test('admin can update rep name', async ({ page }) => {

@@ -20,13 +20,21 @@ test.describe('Saturday Half-Day', () => {
   });
 
   async function setDayState(page, day, state) {
-    const btn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="${state}"], #calc-days-sat .calc-day[data-day="${day}"] .day-btn[data-state="${state}"]`);
+    const isSat = day === 'Sat';
+    const sel = isSat
+      ? `.saturday-controls .day-btn[data-state="${state}"]`
+      : `.weekday[data-day="${day}"] .day-btn[data-state="${state}"]`;
+    const btn = page.locator(sel);
     await btn.click();
     await page.waitForTimeout(50);
   }
 
   async function getDayState(page, day) {
-    const activeBtn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn-active, #calc-days-sat .calc-day[data-day="${day}"] .day-btn-active`);
+    const isSat = day === 'Sat';
+    const sel = isSat
+      ? `.saturday-controls .day-btn-active`
+      : `.weekday[data-day="${day}"] .day-btn-active`;
+    const activeBtn = page.locator(sel);
     return await activeBtn.getAttribute('data-state');
   }
 
@@ -64,7 +72,7 @@ test.describe('Saturday Half-Day', () => {
 
     // 5. Confirm breakdown includes "Sat ½: $100.00"
     const calcBreakdown = await page.locator('#calc-breakdown').textContent();
-    expect(calcBreakdown).toContain('Sat ½');
+    expect(calcBreakdown).toContain('Sat Half');
     expect(calcBreakdown).toContain('100.00');
 
     // 6. Confirm total is $820.00 (720.00 + 100.00)

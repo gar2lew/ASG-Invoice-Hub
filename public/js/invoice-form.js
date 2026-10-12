@@ -14,7 +14,7 @@ var gstRowInline = document.getElementById('gst-row-inline');
 var wageDays = document.getElementById('wage-days');
 var weekRangeEl = document.getElementById('calc-week-range');
 var templateInput = form ? form.querySelector('input[name="template"]') : null;
-var tplButtons = form ? Array.prototype.slice.call(form.querySelectorAll('.tpl')) : [];
+var tplButtons = form ? Array.prototype.slice.call(form.querySelectorAll('.company-option')) : [];
 var submitSend = document.getElementById('submit-send-email');
 
 var editId = form ? form.dataset.editId || null : null;
@@ -26,10 +26,10 @@ var tplMeta = {
   asg: {
     name: 'ASG',
     email: 'Natalie@sjssolutionscorp.com.au',
-    address: '14C, 1 The Esplanade, Mount pleasant, 6153',
+    address: window.asgInvoiceAddress || '4/58 Kishorn Road, Mount Pleasant WA 6153',
     company: 'AMPLIFY SOLUTIONS GROUP PTY LTD',
     abn: '43 663 126 725',
-    full_address: '14C, 1 The Esplanade, Mount pleasant, 6153',
+    full_address: window.asgInvoiceAddress || '4/58 Kishorn Road, Mount Pleasant WA 6153',
     phone: '08 6147 7927',
   },
   sjs: {
@@ -90,10 +90,18 @@ function fmtWeekRange(weekStarting) {
 }
 
 function fmtDate(d) {
-  const day = String(d.getDate()).padStart(2, '0');
+  if (!d || !d.getDate) return '';
+  const day = d.getDate();
+  const ordinal = getOrdinal(day);
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  return day + '/' + month + '/' + year;
+  return `${day}${ordinal} ${day}/${month}/${year}`;
+}
+
+function getOrdinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
 }
 
 function formatDateForInput(d) {
@@ -103,605 +111,43 @@ function formatDateForInput(d) {
   return year + '-' + month + '-' + day;
 }
 
-function getOrdinalSuffix(n) {
-  var s = ['th', 'st', 'nd', 'rd'];
-  var v = n % 100;
-  return s[(v - 20) % 10] || s[v] || s[0];
-}
-
-// Canonical wage rates
-var WAGE_RATES = {
-  weekdayFull: 180,
-  weekdayHalf: 90,
-  saturdayHalf: 100,
-};
-
-var weekState = {
-  company: 'asg',
-  weekStarting: '',
-  dayStates: {},
-  perDayRate: WAGE_RATES.weekdayFull,
-  weekdayHalfRate: WAGE_RATES.weekdayHalf,
-  saturdayRate: WAGE_RATES.saturdayHalf,
-  notes: '',
-};
-
-var companyConfigs = {
-  asg: {
-    perDayRate: WAGE_RATES.weekdayFull,
-    weekdayHalfRate: WAGE_RATES.weekdayHalf,
-    saturdayRate: WAGE_RATES.saturdayHalf,
-    gstTreatment: 'inclusive',
-    wageLineMode: 'aggregated',
-    defaultNotes: '',
-  },
-  sjs: {
-    perDayRate: WAGE_RATES.weekdayFull,
-    weekdayHalfRate: WAGE_RATES.weekdayHalf,
-    saturdayRate: WAGE_RATES.saturdayHalf,
-    gstTreatment: 'inclusive',
-    wageLineMode: 'aggregated',
-    defaultNotes: '',
-  },
-};
-
-var dayOffsets = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
-var ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-var WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-
-function getDayRate(day, state) {
-  if (state === 'off' || !state) return 0;
-  if (day === 'Sat') {
-    return state === 'half' ? weekState.saturdayRate : 0;
-  }
-  if (state === 'half') return weekState.weekdayHalfRate;
-  if (state === 'full') return weekState.perDayRate;
-  return 0;
-}
-
-function getDayLabel(day, state) {
-  if (state === 'half') return day + ' ½';
-  return day;
-}
-
-function getDayDetailLabel(day, state) {
-  if (state === 'full') return 'Full day';
-  if (state === 'half') return 'Half day';
-  return '';
-}
-
-function loadPersistedSettings() {
-  try {
-    var raw = localStorage.getItem('invoice-week-settings');
-    if (!raw) return;
-    var data = JSON.parse(raw);
-    if (data && data.asg) applyPersistedSettings('asg', data.asg);
-    if (data && data.sjs) applyPersistedSettings('sjs', data.sjs);
-  } catch (e) {
-    // ignore invalid stored data
-  }
-}
-
-function applyPersistedSettings(company, data) {
-  var cfg = companyConfigs[company];
-  if (!cfg) return;
-  if (typeof data.perDayRate === 'number' && !isNaN(data.perDayRate) && data.perDayRate >= 0) cfg.perDayRate = data.perDayRate;
-  if (data.gstTreatment === 'inclusive' || data.gstTreatment === 'exclusive' || data.gstTreatment === 'none') cfg.gstTreatment = data.gstTreatment;
-  if (data.wageLineMode === 'aggregated' || data.wageLineMode === 'daily') cfg.wageLineMode = data.wageLineMode;
-  if (typeof data.address === 'string') tplMeta[company].address = data.address;
-  if (typeof data.abn === 'string') tplMeta[company].abn = data.abn;
-  if (typeof data.email === 'string') tplMeta[company].email = data.email;
-}
-
-function persistSettings() {
-  try {
-    var data = {
-      asg: {
-        perDayRate: companyConfigs.asg.perDayRate,
-        address: tplMeta.asg.address,
-        abn: tplMeta.asg.abn,
-        email: tplMeta.asg.email,
-        gstTreatment: companyConfigs.asg.gstTreatment,
-        wageLineMode: companyConfigs.asg.wageLineMode,
-      },
-      sjs: {
-        perDayRate: companyConfigs.sjs.perDayRate,
-        address: tplMeta.sjs.address,
-        abn: tplMeta.sjs.abn,
-        email: tplMeta.sjs.email,
-        gstTreatment: companyConfigs.sjs.gstTreatment,
-        wageLineMode: companyConfigs.sjs.wageLineMode,
-      },
-    };
-    localStorage.setItem('invoice-week-settings', JSON.stringify(data));
-  } catch (e) {
-    // ignore storage errors
-  }
-}
-
-// Read day states from the Wage Calculator widget
-function updateWeekState() {
-  var calcRate = document.getElementById('calc-rate');
-  var weekStart = document.getElementById('week_start');
-  var notes = document.getElementById('notes');
-  var dayStates = {};
-
-  var allDayControls = document.querySelectorAll('#calc-days-standard .calc-day[data-day], #calc-days-sat .calc-day[data-day]');
-  allDayControls.forEach(function (control) {
-    var day = control.dataset.day;
-    var activeBtn = control.querySelector('.day-btn-active');
-    dayStates[day] = activeBtn ? activeBtn.dataset.state : 'off';
-  });
-
-  weekState.dayStates = dayStates;
-  weekState.perDayRate = parseFloat(calcRate && calcRate.value) || WAGE_RATES.weekdayFull;
-  weekState.weekStarting = weekStart ? weekStart.value : '';
-  weekState.notes = notes ? notes.value : '';
-}
-
-function renderWageCalculator() {
-  var header = document.getElementById('calc-week-range');
-  if (header) header.textContent = weekState.weekStarting ? 'Week of ' + fmtWeekRange(weekState.weekStarting) : '';
-
-  var totalEl = document.getElementById('calc-total');
-  var addBtn = document.getElementById('calc-add');
-  var satAmountEl = document.getElementById('sat-amount');
-  var dayStates = weekState.dayStates || {};
-
-  var total = 0;
-  var selectedDays = [];
-  ALL_DAYS.forEach(function (day) {
-    var state = dayStates[day] || 'off';
-    if (state === 'half' || state === 'full') {
-      total += getDayRate(day, state);
-      selectedDays.push({ day: day, state: state });
-    }
-  });
-  total = Math.round(total * 100) / 100;
-  if (totalEl) totalEl.textContent = fmt(total);
-
-  if (satAmountEl) {
-    var satState = dayStates['Sat'];
-    satAmountEl.textContent = satState === 'half' ? fmt(weekState.saturdayRate) : fmt(weekState.saturdayRate);
-  }
-
-  // Update button active states in the calculator
-  var allDayControls = document.querySelectorAll('#calc-days-standard .calc-day[data-day], #calc-days-sat .calc-day[data-day]');
-  allDayControls.forEach(function (control) {
-    var day = control.dataset.day;
-    var state = dayStates[day] || 'off';
-    var btns = control.querySelectorAll('.day-btn');
-    btns.forEach(function (btn) {
-      btn.classList.toggle('day-btn-active', btn.dataset.state === state);
-    });
-  });
-
-  // Update Dates & Notes tile active states
-  var wageTiles = document.querySelectorAll('#wage-days .wage-day-tile[data-day]');
-  wageTiles.forEach(function (tile) {
-    var day = tile.dataset.day;
-    var state = dayStates[day] || 'off';
-    tile.classList.toggle('wage-day-active', state !== 'off');
-    tile.classList.toggle('wage-day-half', state === 'half');
-    tile.classList.toggle('wage-day-full', state === 'full');
-  });
-
-  var breakdownEl = document.getElementById('calc-breakdown');
-  if (breakdownEl) {
-    if (!selectedDays.length) {
-      breakdownEl.innerHTML = '<span class="muted">Select days worked to calculate wages.</span>';
-    } else {
-      var parts =selectedDays.map(function (item) {
-        var rate = getDayRate(item.day, item.state);
-        var label = getDayLabel(item.day, item.state);
-        return label + ': ' + fmt(rate);
-      });
-      breakdownEl.innerHTML = parts.join(' | ') + ' → ' + fmt(total);
-    }
-  }
-
-  if (addBtn) addBtn.disabled = !selectedDays.length;
-}
-
-function renderDatesNotes() {
-  var weekStart = document.getElementById('week_start');
-  var startVal = weekStart ? weekStart.value : '';
-  if (!startVal) return;
-
-  var startDate = parseLocalDate(startVal);
-  if (!startDate) return;
-
+// Calculate Saturday date from week start
+function getSaturdayDate(weekStart) {
+  var startDate = parseLocalDate(weekStart);
+  if (!startDate) return null;
   var day = startDate.getDay();
   var diff = (day + 6) % 7;
-  var normalizedStart = new Date(startDate);
-  normalizedStart.setDate(startDate.getDate() - diff);
-  normalizedStart.setHours(0, 0, 0, 0);
-
-  var dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  dayNames.forEach(function (dayName, idx) {
-    var d = new Date(normalizedStart);
-    d.setDate(normalizedStart.getDate() + idx);
-    var iso = formatDateForInput(d);
-    var dateInput = document.querySelector('input[name="date_' + dayName + '"]');
-    if (dateInput) dateInput.value = iso;
-    var dateDisplay = document.querySelector('#wage-days .wage-day-tile[data-day="' + dayName + '"] .wage-date-display');
-    if (dateDisplay) dateDisplay.textContent = fmtDate(d);
-  });
+  var monday = new Date(startDate);
+  monday.setDate(startDate.getDate() - diff);
+  monday.setHours(0, 0, 0, 0);
+  var saturday = new Date(monday);
+  saturday.setDate(monday.getDate() + 5);
+  return saturday;
 }
 
-/* ---- Preview ---- */
-function updatePreview() {
-  var tpl = tplMeta[templateInput.value] || tplMeta.asg;
-
-  var pvCompany = document.getElementById('pv-company');
-  var pvCompanySub = document.getElementById('pv-company-sub');
-  var pvInvNum = document.getElementById('pv-inv-num');
-  var pvClientName = document.getElementById('pv-client-name');
-  var pvClientContact = document.getElementById('pv-client-contact');
-  var pvClientEmail = document.getElementById('pv-client-email');
-  var pvClientAddress = document.getElementById('pv-client-address');
-  var pvIssueDate = document.getElementById('pv-issue-date');
-  var pvDueDate = document.getElementById('pv-due-date');
-  var pvItems = document.getElementById('pv-items');
-  var pvSubtotal = document.getElementById('pv-subtotal');
-  var pvGstRow = document.getElementById('pv-gst-row');
-  var pvGst = document.getElementById('pv-gst');
-  var pvTotal = document.getElementById('pv-total');
-  var pvNotes = document.getElementById('pv-notes');
-
-  if (pvCompany) pvCompany.textContent = window.__previewData ? window.__previewData.repName : '';
-  if (pvCompanySub) pvCompanySub.textContent = window.__previewData && window.__previewData.repAbn ? 'ABN ' + window.__previewData.repAbn : '';
-  var repDetailsEl = document.getElementById('pv-rep-details');
-  if (repDetailsEl && window.invoiceRepDetails) {
-    var rd = window.invoiceRepDetails;
-    repDetailsEl.innerHTML = '<strong>FROM</strong><br>' + escHtml(rd.name || '') + '<br>' +
-      (rd.abn ? 'ABN: ' + escHtml(rd.abn) + '<br>' : '') +
-      (rd.email ? escHtml(rd.email) + '<br>' : '') +
-      (rd.bankName ? 'Bank: ' + escHtml(rd.bankName) + '<br>' : '') +
-      (rd.bankBsb ? 'BSB: ' + escHtml(rd.bankBsb) + '<br>' : '') +
-      (rd.bankAccount ? 'Account: ' + escHtml(rd.bankAccount) : '');
-  }
-
-  var invNum = document.getElementById('invoice_number');
-  if (pvInvNum) pvInvNum.textContent = invNum ? invNum.value : '';
-
-  var cn = document.getElementById('customer_name');
-  if (pvClientName) pvClientName.textContent = cn ? cn.value : '';
-  var cc = document.getElementById('customer_company');
-  if (pvClientContact) pvClientContact.textContent = cc ? cc.value : '';
-  var ce = document.getElementById('customer_email');
-  if (pvClientEmail) pvClientEmail.textContent = ce ? ce.value : '';
-  var ca = document.getElementById('customer_address');
-  if (pvClientAddress) pvClientAddress.textContent = ca ? ca.value : '';
-
-  var id = document.getElementById('issue_date');
-  if (pvIssueDate) pvIssueDate.textContent = id ? fmtDate(parseLocalDate(id.value)) : '';
-  var dd = document.getElementById('due_date');
-  if (pvDueDate) pvDueDate.textContent = dd ? fmtDate(parseLocalDate(dd.value)) : '';
-
-  var rows = itemRows();
-  if (pvItems) {
-    if (rows.length === 0) {
-      pvItems.innerHTML = '<tr class="preview-empty"><td colspan="5">No items yet</td></tr>';
-    } else {
-      var html = '';
-      rows.forEach(function (row, i) {
-        var d = row.querySelector('input[name="item_description"]').value;
-        var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
-        var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
-        var a = q * r;
-        var isWageLine = row.getAttribute('data-line-item-type') === 'wages';
-        html += '<tr' + (isWageLine ? ' class="wage-line-primary"' : '') + '><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class="num">' + q + '</td><td class="num">' + fmt(r) + '</td><td class="num">' + fmt(a) + '</td></tr>';
-        var detailsRow = row.nextElementSibling;
-        if (detailsRow && detailsRow.classList && detailsRow.classList.contains('wage-details')) {
-          var detailsHtml = '<tr class="wage-detail-row"><td colspan="5">';
-          var detailItems = detailsRow.querySelectorAll('.wage-details-container div');
-          detailItems.forEach(function(detailEl) {
-            detailsHtml += escHtml(detailEl.textContent) + '<br>';
-          });
-          detailsHtml += '</td></tr>';
-          html += detailsHtml;
-        }
-      });
-      pvItems.innerHTML = html;
-    }
-  }
-
-  var subtotal = 0;
-  rows.forEach(function (row) {
-    var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
-    var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
-    subtotal += q * r;
-  });
-  var gst = gstInput.checked ? subtotal * 0.1 : 0;
-  if (pvSubtotal) pvSubtotal.textContent = fmt(subtotal);
-  if (pvGstRow) pvGstRow.style.display = gstInput.checked ? '' : 'none';
-  if (pvGst) pvGst.textContent = fmt(gst);
-  if (pvTotal) pvTotal.textContent = fmt(subtotal + gst);
-
-  var notes = document.getElementById('notes');
-  if (pvNotes) {
-    if (!notes || !notes.value.trim()) {
-      pvNotes.innerHTML = '';
-    } else {
-      pvNotes.innerHTML = '<span class="kicker">Notes</span>' + escHtml(notes.value).replace(/\n/g, '<br>');
-    }
-  }
+// Get date for a specific day offset from Monday
+function getDayDate(weekStart, dayOffset) {
+  var startDate = parseLocalDate(weekStart);
+  if (!startDate) return null;
+  var day = startDate.getDay();
+  var diff = (day + 6) % 7;
+  var monday = new Date(startDate);
+  monday.setDate(startDate.getDate() - diff);
+  monday.setHours(0, 0, 0, 0);
+  var targetDay = new Date(monday);
+  targetDay.setDate(monday.getDate() + dayOffset);
+  return targetDay;
 }
 
-function escHtml(s) {
-  var div = document.createElement('div');
-  div.appendChild(document.createTextNode(s));
-  return div.innerHTML;
+// Get short date label like "14 Sep"
+function getShortDate(d) {
+  if (!d) return '-';
+  var day = d.getDate();
+  var month = d.toLocaleString('en-AU', { month: 'short' });
+  return day + ' ' + month;
 }
 
-/* ---- Lines ---- */
-function addLine(data) {
-  var row = document.createElement('div');
-  row.className = 'line-row';
-  if (data && data.description && data.description.startsWith('Wages')) {
-    row.setAttribute('data-line-item-type', 'wages');
-  }
-
-  var desc = document.createElement('input');
-  desc.type = 'text';
-  desc.className = 'input';
-  desc.placeholder = 'Description';
-  desc.name = 'item_description';
-  desc.value = (data && data.description) || '';
-
-  var qty = document.createElement('input');
-  qty.type = 'number';
-  qty.className = 'input';
-  qty.name = 'item_qty';
-  qty.min = '0';
-  qty.step = 'any';
-  qty.placeholder = 'Qty';
-  qty.value = (data && data.quantity) || '1';
-
-  var rate = document.createElement('input');
-  rate.type = 'number';
-  rate.className = 'input';
-  rate.name = 'item_rate';
-  rate.min = '0';
-  rate.step = '0.01';
-  rate.placeholder = 'Rate';
-  rate.value = (data && data.rate) || '';
-
-  var amount = document.createElement('span');
-  amount.className = 'line-amount';
-  amount.textContent = '$0.00';
-
-  var remove = document.createElement('button');
-  remove.type = 'button';
-  remove.className = 'line-remove';
-  remove.setAttribute('aria-label', 'Remove line');
-  remove.textContent = '×';
-
-  row.appendChild(desc);
-  row.appendChild(qty);
-  row.appendChild(rate);
-  row.appendChild(amount);
-  row.appendChild(remove);
-
-  if (data && data.wageDetails && data.wageDetails.length > 0) {
-    var detailsRow = document.createElement('div');
-    detailsRow.className = 'line-row wage-details';
-    detailsRow.style.marginTop = '4px';
-    detailsRow.style.paddingLeft = '12px';
-    detailsRow.style.borderLeft = '2px solid var(--accent-soft)';
-
-    var detailsContainer = document.createElement('div');
-    detailsContainer.className = 'wage-details-container';
-    detailsContainer.style.fontSize = '12px';
-    detailsContainer.style.color = 'var(--muted)';
-    detailsContainer.style.lineHeight = '1.8';
-
-    data.wageDetails.forEach(function(detail) {
-      var detailEl = document.createElement('div');
-      detailEl.textContent = detail;
-      detailsContainer.appendChild(detailEl);
-    });
-
-    detailsRow.appendChild(detailsContainer);
-    lines.appendChild(row);
-    lines.appendChild(detailsRow);
-
-    [desc, qty, rate].forEach(function (el) {
-      el.addEventListener('input', recalc);
-    });
-    remove.addEventListener('click', function () {
-      row.remove();
-      detailsRow.remove();
-      recalc();
-    });
-    recalc();
-    if (desc && typeof desc.focus === 'function') desc.focus();
-    return { row: row, detailsRow: detailsRow };
-  }
-
-  [desc, qty, rate].forEach(function (el) {
-    el.addEventListener('input', recalc);
-  });
-  remove.addEventListener('click', function () {
-    row.remove();
-    recalc();
-  });
-
-  lines.appendChild(row);
-  recalc();
-  if (desc && typeof desc.focus === 'function') desc.focus();
-  return row;
-}
-
-function itemRows() {
-  return Array.prototype.slice.call(lines.querySelectorAll('.line-row:not(.line-head):not(.wage-details)'));
-}
-
-function recalc() {
-  var subtotal = 0;
-  itemRows().forEach(function (row) {
-    var qty = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
-    var rate = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
-    var amount = qty * rate;
-    subtotal += amount;
-    row.querySelector('.line-amount').textContent = fmt(amount);
-  });
-  var gst = gstInput.checked ? subtotal * 0.1 : 0;
-  tSub.textContent = fmt(subtotal);
-  tGst.textContent = fmt(gst);
-  tTotal.textContent = fmt(subtotal + gst);
-  gstRow.hidden = !gstInput.checked;
-  if (tSubInline) tSubInline.textContent = fmt(subtotal);
-  if (tGstInline) tGstInline.textContent = fmt(gst);
-  if (tTotalInline) tTotalInline.textContent = fmt(subtotal + gst);
-  if (gstRowInline) gstRowInline.hidden = !gstInput.checked;
-  updatePreview();
-}
-
-/* ---- Template ---- */
-function setTemplate(name) {
-  if (!templateInput) return;
-  templateInput.value = name;
-  weekState.company = name;
-  tplButtons.forEach(function (btn) {
-    var active = btn.dataset.template === name;
-    btn.classList.toggle('tpl-active', active);
-    btn.setAttribute('aria-checked', active ? 'true' : 'false');
-  });
-  var cfg = companyConfigs[name] || companyConfigs.asg;
-  var tpl = tplMeta[name];
-  if (tpl) {
-    var nameInput = document.getElementById('customer_name');
-    var emailInput = document.getElementById('customer_email');
-    var addressInput = document.getElementById('customer_address');
-    if (!isEditing) {
-      if (nameInput) {
-        nameInput.value = tpl.company || tpl.name;
-      }
-      if (emailInput) emailInput.value = tpl.email || '';
-      if (addressInput) addressInput.value = tpl.full_address || tpl.address || '';
-    }
-  }
-
-  var rateInput = document.getElementById('calc-rate');
-  if (rateInput && cfg.perDayRate) rateInput.value = cfg.perDayRate;
-
-  var notes = document.getElementById('notes');
-  if (notes && tpl && !isEditing) {
-    notes.value = '';
-  }
-
-  updateWeekState();
-  renderWageCalculator();
-  renderDatesNotes();
-  recalc();
-}
-
-tplButtons.forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    setTemplate(btn.dataset.template);
-  });
-});
-
-if (gstInput) gstInput.addEventListener('change', recalc);
-
-var addLineBtn = document.getElementById('add-line');
-if (addLineBtn) addLineBtn.addEventListener('click', function () {
-  addLine();
-});
-
-/* ---- Preview live bindings ---- */
-var previewFields = ['invoice_number', 'customer_name', 'customer_company', 'customer_email', 'customer_address', 'issue_date', 'due_date', 'notes'];
-previewFields.forEach(function (id) {
-  var el = document.getElementById(id);
-  if (el) el.addEventListener('input', updatePreview);
-});
-
-/* ---- Form submit ---- */
-var actionField = document.getElementById('action-field');
-
-var submitDraft = document.getElementById('submit-draft');
-var submitSendBtn = document.getElementById('submit-send-email');
-var submitDownload = document.getElementById('submit-download');
-
-if (submitDraft) submitDraft.addEventListener('click', function () {
-  actionField.value = 'draft';
-});
-if (submitSendBtn) submitSendBtn.addEventListener('click', function () {
-  actionField.value = 'send';
-});
-if (submitDownload) submitDownload.addEventListener('click', function (e) {
-  e.preventDefault();
-  actionField.value = 'download';
-  if (form) {
-    var payload = buildPayload();
-    if (!payload.items.length) {
-      showError('Add at least one line item with a description.');
-      return;
-    }
-    if (!payload.customer_name) {
-      showError('Customer name is required.');
-      return;
-    }
-    clearError();
-    payload.action = 'download';
-    document.getElementById('send_now').checked = false;
-    var xhr = new XMLHttpRequest();
-    var actionUrl = form.getAttribute('action') || '/api/invoices';
-    xhr.open('POST', actionUrl, true);
-    xhr.responseType = 'blob';
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onload = function () {
-      if (xhr.status === 200) {
-        var blob = xhr.response;
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        var disp = xhr.getResponseHeader('Content-Disposition');
-        var filename = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
-        if (disp) {
-          var match = disp.match(/filename=\"?([^\"]+)\"?/);
-          if (match) filename = match[1];
-        }
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } else {
-        var reader = new FileReader();
-        reader.onload = function () {
-          try {
-            var err = JSON.parse(reader.result);
-            showError(err.error || 'Download failed.');
-          } catch (parseErr) {
-            showError('Download failed.');
-          }
-        };
-        reader.readAsText(xhr.response);
-      }
-    };
-    xhr.onerror = function () { showError('Network error.'); };
-    xhr.send(JSON.stringify(payload));
-  }
-});
-
-function showError(msg) {
-  var box = document.getElementById('form-error');
-  if (!box) {
-    box = document.createElement('div');
-    box.id = 'form-error';
-    box.className = 'flash flash-error';
-    if (form) form.insertBefore(box, form.firstChild);
-  }
-  box.textContent = msg;
-}
-
-function clearError() {
-  var box = document.getElementById('form-error');
-  if (box) box.remove();
-}
+var initialInvoiceNumber = '';
 
 function isInvoiceNumberManuallyOverridden() {
   var invNumEl = document.getElementById('invoice_number');
@@ -740,6 +186,7 @@ function buildPayload() {
     template: templateInput.value,
     invoice_number: data.get('invoice_number'),
     invoice_number_manual_override: isInvoiceNumberManuallyOverridden(),
+    continue_numbering: Boolean(data.get('continue_numbering')),
     customer_name: data.get('customer_name'),
     customer_company: data.get('customer_company'),
     customer_email: data.get('customer_email'),
@@ -747,16 +194,616 @@ function buildPayload() {
     issue_date: data.get('issue_date'),
     due_date: data.get('due_date'),
     notes: data.get('notes'),
-    gst: gstInput.checked,
+    gst: gstInput ? gstInput.checked : false,
     items: items,
-    send_now: document.getElementById('send_now').checked,
+    send_now: false,
   };
+}
+
+// (removed duplicate submit handler — see below)
+
+function downloadPdf(invoiceId) {
+  var payload = buildPayload();
+  fetch('/api/invoices', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({}, payload, { action: 'download' })),
+  })
+  .then(function (res) { return res.blob(); })
+  .then(function (blob) {
+    var url = URL.createObjectURL(blob);
+    var download = document.createElement('a');
+    download.href = url;
+    download.download = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
+    download.click();
+    URL.revokeObjectURL(url);
+  })
+  .catch(function (err) {
+    showError('Download failed: ' + err.message);
+  });
+}
+
+function showError(msg) {
+  var errorEl = document.getElementById('form-error');
+  if (!errorEl) {
+    errorEl = document.createElement('div');
+    errorEl.id = 'form-error';
+    errorEl.className = 'flash flash-error';
+    form.insertBefore(errorEl, form.firstChild);
+  }
+  errorEl.textContent = msg;
+  errorEl.style.display = 'block';
+  errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function hideError() {
+  var errorEl = document.getElementById('form-error');
+  if (errorEl) errorEl.style.display = 'none';
+}
+
+/* ---- Template ---- */
+function setTemplate(name) {
+  if (!templateInput) return;
+  templateInput.value = name;
+  weekState.company = name;
+  tplButtons.forEach(function (btn) {
+    var active = btn.dataset.template === name;
+    btn.classList.toggle('tpl-active', active);
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+  var cfg = companyConfigs[name] || companyConfigs.asg;
+  var tpl = tplMeta[name];
+  if (tpl) {
+    var nameInput = document.getElementById('customer_name');
+    var emailInput = document.getElementById('customer_email');
+    var addressInput = document.getElementById('customer_address');
+    if (!isEditing) {
+      if (nameInput) {
+        nameInput.value = tpl.company || tpl.name;
+      }
+      if (emailInput) emailInput.value = tpl.email || '';
+      if (addressInput) addressInput.value = tpl.full_address || tpl.address || '';
+    }
+  }
+
+  var rateInput = document.getElementById('calc-rate');
+  if (rateInput && cfg.perDayRate) rateInput.value = cfg.perDayRate;
+
+  var notes = document.getElementById('notes');
+  if (notes && tpl && !isEditing) {
+    notes.value = '';
+  }
+
+  updatePreview();
+}
+
+var WAGE_RATES = {
+  weekdayFull: 180,
+  weekdayHalf: 90,
+  saturdayHalf: 100,
+};
+
+var ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+var weekState = {
+  company: 'asg',
+  perDayRate: WAGE_RATES.weekdayFull,
+  saturdayRate: WAGE_RATES.saturdayHalf,
+  dayStates: {},
+  weekStarting: '',
+  notes: '',
+};
+
+var companyConfigs = {
+  asg: {
+    perDayRate: 180,
+    saturdayRate: 100,
+  },
+  sjs: {
+    perDayRate: 180,
+    saturdayRate: 100,
+  },
+};
+
+function initializeWeekState() {
+  ALL_DAYS.forEach(function (d) { weekState.dayStates[d] = 'off'; });
+  var weekStart = document.getElementById('week_start');
+  if (weekStart && weekStart.value) {
+    weekState.weekStarting = weekStart.value;
+    updateWeekRange();
+    updateDateTiles();
+  }
+}
+
+function updateWeekRange() {
+  if (weekRangeEl) {
+    weekRangeEl.textContent = fmtWeekRange(weekState.weekStarting);
+  }
+  updateDateTiles();
+  updatePreview();
+}
+
+function updateDateTiles() {
+  var weekStart = weekState.weekStarting;
+  if (!weekStart) return;
+
+  for (var i = 0; i < 5; i++) {
+    var d = getDayDate(weekStart, i);
+    var dayName = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i];
+    var dateEl = document.getElementById('date-' + dayName);
+    if (dateEl) dateEl.textContent = getShortDate(d);
+    var dateInput = document.querySelector('input[name="date_' + dayName + '"]');
+    if (dateInput) dateInput.value = formatDateForInput(d);
+  }
+  var sat = getSaturdayDate(weekStart);
+  var satEl = document.getElementById('date-Sat');
+  if (satEl) satEl.textContent = getShortDate(sat);
+  var satInput = document.querySelector('input[name="date_Sat"]');
+  if (satInput) satInput.value = formatDateForInput(sat);
+
+  var tiles = document.querySelectorAll('#wage-days .wage-day-tile[data-day]');
+  tiles.forEach(function (tile) {
+    var day = tile.dataset.day;
+    var dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].indexOf(day);
+    if (dayIndex === -1 && day === 'Sat') dayIndex = 5;
+    var d = dayIndex < 5 ? getDayDate(weekStart, dayIndex) : getSaturdayDate(weekStart);
+    var dateDisplay = tile.querySelector('.wage-date-display');
+    if (dateDisplay) dateDisplay.textContent = getShortDate(d);
+  });
+}
+
+function setDayState(day, state) {
+  weekState.dayStates[day] = state;
+  updateDayUI(day);
+  updateWeekTotal();
+  updatePreview();
+}
+
+function updateDayUI(day) {
+  var state = weekState.dayStates[day];
+  var isSat = day === 'Sat';
+
+  var weekdayEl = document.querySelector('.weekday[data-day="' + day + '"]');
+  if (weekdayEl) {
+    var btns = weekdayEl.querySelectorAll('.day-btn');
+    btns.forEach(function (btn) {
+      btn.classList.toggle('day-btn-active', btn.dataset.state === state);
+    });
+  }
+
+  var satControls = document.querySelector('.saturday-controls');
+  if (isSat && satControls) {
+    var satBtns = satControls.querySelectorAll('.day-btn');
+    satBtns.forEach(function (btn) {
+      btn.classList.toggle('day-btn-active', btn.dataset.state === state);
+    });
+  }
+
+  var tile = document.querySelector('#wage-days .wage-day-tile[data-day="' + day + '"]');
+  if (tile) {
+    tile.classList.toggle('wage-day-active', state !== 'off');
+    tile.classList.toggle('wage-day-half', state === 'half');
+    tile.classList.toggle('wage-day-full', state === 'full');
+  }
+}
+
+function updateWeekTotal() {
+  var total = 0;
+  var breakdown = [];
+
+  for (var i = 0; i < 5; i++) {
+    var dayName = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i];
+    var state = weekState.dayStates[dayName];
+    if (state === 'full') {
+      total += WAGE_RATES.weekdayFull;
+      breakdown.push(dayName + ' Full');
+    } else if (state === 'half') {
+      total += WAGE_RATES.weekdayHalf;
+      breakdown.push(dayName + ' Half');
+    }
+  }
+
+  var satState = weekState.dayStates['Sat'];
+  if (satState === 'half') {
+    total += WAGE_RATES.saturdayHalf;
+    breakdown.push('Sat Half');
+  }
+
+  var totalEl = document.getElementById('calc-total');
+  if (totalEl) totalEl.textContent = fmt(total);
+
+  var breakdownEl = document.getElementById('calc-breakdown');
+  if (breakdownEl) {
+    breakdownEl.textContent = breakdown.length > 0 ? breakdown.join(' + ') : 'Select days worked to calculate wages.';
+  }
+
+  var satAmountEl = document.getElementById('sat-amount');
+  if (satAmountEl) satAmountEl.textContent = fmt(WAGE_RATES.saturdayHalf);
+
+  return total;
+}
+
+function addWageLine() {
+  var total = updateWeekTotal();
+  if (total === 0) {
+    showError('Select at least one day worked before adding to invoice.');
+    return;
+  }
+
+  var weekStart = weekState.weekStarting;
+  var weekRange = fmtWeekRange(weekStart);
+
+  var existingWageRow = null;
+  var rows = itemRows();
+  rows.forEach(function (row) {
+    if (row.getAttribute('data-line-item-type') === 'wages') {
+      existingWageRow = row;
+    }
+  });
+
+  var details = [];
+  for (var i = 0; i < 5; i++) {
+    var dayName = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i];
+    var state = weekState.dayStates[dayName];
+    if (state === 'off') continue;
+    var d = getDayDate(weekStart, i);
+    var dateStr = fmtDate(d);
+    var amount = state === 'full' ? WAGE_RATES.weekdayFull : WAGE_RATES.weekdayHalf;
+    var label = state === 'full' ? 'Full day' : 'Half day';
+    details.push(dayName + ' - ' + dateStr + ' - ' + label + ' - ' + fmt(amount));
+  }
+  var satState = weekState.dayStates['Sat'];
+  if (satState === 'half') {
+    var sat = getSaturdayDate(weekStart);
+    details.push('Sat - ' + fmtDate(sat) + ' - Half day - ' + fmt(WAGE_RATES.saturdayHalf));
+  }
+
+  if (existingWageRow) {
+    existingWageRow.querySelector('input[name="item_description"]').value = 'Wages/Retainer - Week of ' + weekRange;
+    existingWageRow.querySelector('input[name="item_qty"]').value = 1;
+    existingWageRow.querySelector('input[name="item_rate"]').value = total;
+    var detailsRow = existingWageRow.nextElementSibling;
+    if (detailsRow && detailsRow.classList.contains('wage-details')) {
+      detailsRow.querySelector('.wage-details-container').innerHTML = details.map(function (d) { return '<div>' + d + '</div>'; }).join('');
+    }
+  } else {
+    addLine({
+      description: 'Wages/Retainer - Week of ' + weekRange,
+      quantity: 1,
+      rate: total,
+      amount: total,
+      wageDetails: details
+    });
+  }
+
+  updateTotals();
+  updatePreview();
+}
+
+/* ---- Preview live bindings ---- */
+var previewFields = ['invoice_number', 'customer_name', 'customer_company', 'customer_email', 'customer_address', 'issue_date', 'due_date', 'notes'];
+previewFields.forEach(function (id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('input', updatePreview);
+});
+
+function updatePreview() {
+  if (!window.__previewData) window.__previewData = {};
+  window.__previewData.repName = window.invoiceRepName || '';
+  window.__previewData.repAbn = window.invoiceRepDetails ? window.invoiceRepDetails.abn : '';
+
+  var pvCompany = document.getElementById('pv-company');
+  var pvCompanySub = document.getElementById('pv-company-sub');
+  var pvInvNum = document.getElementById('pv-inv-num');
+  var pvClientName = document.getElementById('pv-client-name');
+  var pvClientContact = document.getElementById('pv-client-contact');
+  var pvClientEmail = document.getElementById('pv-client-email');
+  var pvClientAddress = document.getElementById('pv-client-address');
+  var pvWeekRange = document.getElementById('pv-week-range');
+  var pvItems = document.getElementById('pv-items');
+  var pvSubtotal = document.getElementById('pv-subtotal');
+  var pvGstRow = document.getElementById('pv-gst-row');
+  var pvGst = document.getElementById('pv-gst');
+  var pvTotal = document.getElementById('pv-total');
+  var pvNotes = document.getElementById('pv-notes');
+
+  if (pvCompany) pvCompany.textContent = window.__previewData.repName || '';
+  if (pvCompanySub) pvCompanySub.textContent = window.__previewData.repAbn ? 'ABN ' + window.__previewData.repAbn : '';
+  var repDetailsEl = document.getElementById('pv-rep-details');
+  if (repDetailsEl && window.invoiceRepDetails) {
+    var rd = window.invoiceRepDetails;
+    repDetailsEl.innerHTML = '<strong>FROM</strong><br>' + escHtml(rd.name || '') + '<br>' +
+      (rd.abn ? 'ABN: ' + escHtml(rd.abn) + '<br>' : '') +
+      (rd.email ? escHtml(rd.email) + '<br>' : '') +
+      (templateInput && templateInput.value === 'asg' && window.asgInvoiceAddress ? escHtml(window.asgInvoiceAddress) + '<br>' : '') +
+      (rd.bankName ? 'Bank: ' + escHtml(rd.bankName) + '<br>' : '') +
+      (rd.bankBsb ? 'BSB: ' + escHtml(rd.bankBsb) + '<br>' : '') +
+      (rd.bankAccount ? 'Account: ' + escHtml(rd.bankAccount) : '');
+  }
+
+  var invNum = document.getElementById('invoice_number');
+  if (pvInvNum) pvInvNum.textContent = invNum ? invNum.value : '';
+
+  var cn = document.getElementById('customer_name');
+  if (pvClientName) pvClientName.textContent = cn ? cn.value : '';
+  var cc = document.getElementById('customer_company');
+  if (pvClientContact) pvClientContact.textContent = cc ? cc.value : '';
+  var ce = document.getElementById('customer_email');
+  if (pvClientEmail) pvClientEmail.textContent = ce ? ce.value : '';
+  var ca = document.getElementById('customer_address');
+  if (pvClientAddress) pvClientAddress.textContent = ca ? ca.value : '';
+
+  if (pvWeekRange) pvWeekRange.textContent = fmtWeekRange(weekState.weekStarting);
+
+  var rows = itemRows();
+  if (pvItems) {
+    if (rows.length === 0) {
+      pvItems.innerHTML = '<tr class="summary-empty"><td colspan="5">No items yet</td></tr>';
+    } else {
+      var html = '';
+      rows.forEach(function (row, i) {
+        var d = row.querySelector('input[name="item_description"]').value;
+        var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+        var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
+        var a = q * r;
+        var isWageLine = row.getAttribute('data-line-item-type') === 'wages';
+        html += '<tr' + (isWageLine ? ' class="wage-line-primary"' : '') + '><td>' + (i + 1) + '</td><td>' + escHtml(d) + '</td><td class="num">' + q + '</td><td class="num">' + fmt(r) + '</td><td class="num">' + fmt(a) + '</td></tr>';
+        var detailsRow = row.nextElementSibling;
+        if (detailsRow && detailsRow.classList && detailsRow.classList.contains('wage-details')) {
+          var detailsHtml = '<tr class="wage-detail-row"><td colspan="5">';
+          var detailItems = detailsRow.querySelectorAll('.wage-details-container div');
+          detailItems.forEach(function(detailEl) {
+            detailsHtml += escHtml(detailEl.textContent) + '<br>';
+          });
+          detailsHtml += '</td></tr>';
+          html += detailsHtml;
+        }
+      });
+      pvItems.innerHTML = html;
+    }
+  }
+
+  var subtotal = 0;
+  rows.forEach(function (row) {
+    var q = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+    var r = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
+    subtotal += q * r;
+  });
+  var gst = gstInput.checked ? subtotal * 0.1 : 0;
+  if (pvSubtotal) pvSubtotal.textContent = fmt(subtotal);
+  if (pvGstRow) pvGstRow.style.display = gstInput.checked ? '' : 'none';
+  if (pvGst) pvGst.textContent = fmt(gst);
+  if (pvTotal) pvTotal.textContent = fmt(subtotal + gst);
+
+  // Update review section
+  var reviewInvNum = document.getElementById('review-inv-num');
+  var reviewTotal = document.getElementById('review-total');
+  if (reviewInvNum) reviewInvNum.textContent = invNum ? invNum.value : '';
+  if (reviewTotal) reviewTotal.textContent = fmt(subtotal + gst);
+
+  var notes = document.getElementById('notes');
+  if (pvNotes) {
+    if (!notes || !notes.value.trim()) {
+      pvNotes.innerHTML = '';
+    } else {
+      pvNotes.innerHTML = '<span class="kicker">Notes</span>' + escHtml(notes.value).replace(/\n/g, '<br>');
+    }
+  }
+}
+
+function escHtml(s) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(s));
+  return div.innerHTML;
+}
+
+/* ---- Lines ---- */
+function addLine(data) {
+  var row = document.createElement('div');
+  row.className = 'line-row';
+  if (data && data.description && data.description.startsWith('Wages')) {
+    row.setAttribute('data-line-item-type', 'wages');
+  }
+
+  var desc = document.createElement('input');
+  desc.type = 'text';
+  desc.className = 'input';
+  desc.placeholder = 'Description';
+  desc.name = 'item_description';
+  if (data && data.description) desc.value = data.description;
+  row.appendChild(desc);
+
+  var qty = document.createElement('input');
+  qty.type = 'number';
+  qty.className = 'input';
+  qty.placeholder = 'Qty';
+  qty.name = 'item_qty';
+  qty.min = '0';
+  qty.step = 'any';
+  if (data && data.quantity) qty.value = data.quantity;
+  qty.addEventListener('input', function () {
+    updateTotals();
+    updatePreview();
+  });
+  row.appendChild(qty);
+
+  var rate = document.createElement('input');
+  rate.type = 'number';
+  rate.className = 'input';
+  rate.placeholder = 'Rate';
+  rate.name = 'item_rate';
+  rate.min = '0';
+  rate.step = '0.01';
+  if (data && data.rate) rate.value = data.rate;
+  rate.addEventListener('input', function () {
+    updateTotals();
+    updatePreview();
+  });
+  row.appendChild(rate);
+
+  var amount = document.createElement('span');
+  amount.className = 'line-amount';
+  var amt = (data && data.quantity || 0) * (data && data.rate || 0);
+  amount.textContent = fmt(amt);
+  row.appendChild(amount);
+
+  var removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'line-remove';
+  removeBtn.setAttribute('aria-label', 'Remove line');
+  removeBtn.textContent = '×';
+  removeBtn.addEventListener('click', function () {
+    row.remove();
+    if (row.nextElementSibling && row.nextElementSibling.classList.contains('wage-details')) {
+      row.nextElementSibling.remove();
+    }
+    updateTotals();
+    updatePreview();
+  });
+  row.appendChild(removeBtn);
+
+  lines.appendChild(row);
+
+  if (data && data.wageDetails && data.wageDetails.length > 0) {
+    var detailsRow = document.createElement('div');
+    detailsRow.className = 'line-row wage-details';
+    detailsRow.style.marginTop = '4px';
+    detailsRow.style.paddingLeft = '12px';
+    detailsRow.style.borderLeft = '2px solid var(--accent-soft)';
+    var container = document.createElement('div');
+    container.className = 'wage-details-container';
+    container.style.fontSize = '12px';
+    container.style.color = 'var(--muted)';
+    container.style.lineHeight = '1.8';
+    data.wageDetails.forEach(function (d) {
+      var div = document.createElement('div');
+      div.textContent = d;
+      container.appendChild(div);
+    });
+    detailsRow.appendChild(container);
+    lines.insertBefore(detailsRow, row.nextSibling);
+  }
+
+  updateTotals();
+  updatePreview();
+}
+
+function itemRows() {
+  return Array.prototype.slice.call(lines.querySelectorAll('.line-row:not(.line-head):not(.wage-details)'));
+}
+
+function updateTotals() {
+  var subtotal = 0;
+  itemRows().forEach(function (row) {
+    var qty = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
+    var rate = parseFloat(row.querySelector('input[name="item_rate"]').value) || 0;
+    var amount = qty * rate;
+    subtotal += amount;
+    row.querySelector('.line-amount').textContent = fmt(amount);
+  });
+  var gst = gstInput.checked ? subtotal * 0.1 : 0;
+  tSub.textContent = fmt(subtotal);
+  tGst.textContent = fmt(gst);
+  tTotal.textContent = fmt(subtotal + gst);
+  gstRow.hidden = !gstInput.checked;
+  if (tSubInline) tSubInline.textContent = fmt(subtotal);
+  if (tGstInline) tGstInline.textContent = fmt(gst);
+  if (tTotalInline) tTotalInline.textContent = fmt(subtotal + gst);
+  if (gstRowInline) gstRowInline.hidden = !gstInput.checked;
+  updatePreview();
+}
+
+/* ---- Event bindings ---- */
+if (form) {
+  // Company selector buttons
+  tplButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      setTemplate(btn.dataset.template);
+    });
+  });
+
+  // Weekday buttons
+  var weekdayBtns = document.querySelectorAll('.weekday-controls .day-btn');
+  weekdayBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var weekday = btn.closest('.weekday');
+      var day = weekday.dataset.day;
+      setDayState(day, btn.dataset.state);
+    });
+  });
+
+  // Saturday buttons
+  var satBtns = document.querySelectorAll('.saturday-controls .day-btn');
+  satBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      setDayState('Sat', btn.dataset.state);
+    });
+  });
+
+  // Quick actions
+  var selectMonFri = document.getElementById('select-mon-fri');
+  var selectMonSat = document.getElementById('select-mon-sat');
+  var clearWeek = document.getElementById('clear-week');
+
+  if (selectMonFri) selectMonFri.addEventListener('click', function () {
+    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].forEach(function (d) { setDayState(d, 'full'); });
+    setDayState('Sat', 'off');
+  });
+  if (selectMonSat) selectMonSat.addEventListener('click', function () {
+    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].forEach(function (d) { setDayState(d, 'full'); });
+    setDayState('Sat', 'half');
+  });
+  if (clearWeek) clearWeek.addEventListener('click', function () {
+    ALL_DAYS.forEach(function (d) { setDayState(d, 'off'); });
+  });
+
+  // Week start
+  var weekStart = document.getElementById('week_start');
+  if (weekStart) weekStart.addEventListener('change', function () {
+    weekState.weekStarting = weekStart.value;
+    updateWeekRange();
+  });
+
+  // Add wage line
+  var calcAdd = document.getElementById('calc-add');
+  if (calcAdd) calcAdd.addEventListener('click', addWageLine);
+
+  // Add line
+  var addLineBtn = document.getElementById('add-line');
+  if (addLineBtn) addLineBtn.addEventListener('click', function () {
+    addLine();
+  });
+
+  // GST toggle
+  if (gstInput) gstInput.addEventListener('change', function () {
+    updateTotals();
+    updatePreview();
+  });
+
+  // Submit buttons
+  var submitDraft = document.getElementById('submit-draft');
+  var submitDownload = document.getElementById('submit-download');
+  var submitSendBtn = document.getElementById('submit-send-email');
+  var actionField = document.getElementById('action-field');
+
+  if (submitDraft) submitDraft.addEventListener('click', function () {
+    actionField.value = 'draft';
+  });
+  if (submitSendBtn) submitSendBtn.addEventListener('click', function () {
+    actionField.value = 'send';
+  });
+  if (submitDownload) submitDownload.addEventListener('click', function (e) {
+    e.preventDefault();
+    actionField.value = 'download';
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+  });
 }
 
 if (form) form.addEventListener('submit', function (e) {
   var action = actionField.value || 'draft';
   e.preventDefault();
-  document.getElementById('send_now').checked = false;
+  var sendNowEl = document.getElementById('send_now');
+  if (sendNowEl) sendNowEl.checked = false;
   var payload = buildPayload();
 
   if (!payload.items.length) {
@@ -764,14 +811,29 @@ if (form) form.addEventListener('submit', function (e) {
     return;
   }
   if (!payload.customer_name) {
-    showError('Customer name is required.');
+    showError('Company name is required.');
     return;
   }
 
-  clearError();
-  if (submitSendBtn) {
-    submitSendBtn.disabled = true;
-    submitSendBtn.textContent = 'Working…';
+  if (action === 'download') {
+    fetch('/api/invoices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({}, payload, { action: 'download' })),
+    })
+    .then(function (res) { return res.blob(); })
+    .then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(function (err) {
+      showError('Download failed: ' + err.message);
+    });
+    return;
   }
 
   fetch(apiUrl, {
@@ -779,314 +841,28 @@ if (form) form.addEventListener('submit', function (e) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-    .then(function (r) {
-      return r.json().then(function (body) { return { ok: r.ok, body: body }; });
-    })
-    .then(function (res) {
-      if (!res.ok) {
-        showError(res.body.error || 'Something went wrong. Try again.');
-        if (submitSendBtn) {
-          submitSendBtn.disabled = false;
-          submitSendBtn.textContent = 'Save & email';
-        }
+  .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }) })
+  .then(function (result) {
+    var res = result.res;
+    var body = result.body;
+    if (!res.ok) {
+      showError(body.error || 'Something went wrong.');
+      return;
+    }
+    if (action === 'send') {
+      if (body.warning) {
+        showError('Invoice saved but email failed. Please try again.');
         return;
       }
-      if (action === 'send') {
-        var repName = window.invoiceRepName || '';
-        var issueDate = document.getElementById('issue_date').value;
-        var body = 'Please see my invoice attached for "' + repName + '" - "' + issueDate + '"';
-        var mailto = 'mailto:natalie@sjssolutionscorp.com.au?subject=' + encodeURIComponent('Invoice ' + res.body.invoice_number) + '&body=' + encodeURIComponent(body);
-        var download = document.createElement('a');
-        download.href = '/invoices/' + res.body.id + '/download';
-        download.download = res.body.invoice_number + '.pdf';
-        document.body.appendChild(download);
-        download.click();
-        document.body.removeChild(download);
-        window.location.href = mailto;
-        return;
-      }
-      window.location.href = '/invoices/' + res.body.id;
-    })
-    .catch(function (err) {
-      showError(err.message || 'Network error.');
-      if (submitSendBtn) {
-        submitSendBtn.disabled = false;
-        submitSendBtn.textContent = 'Save & email';
-      }
-    });
-});
-
-/* ---- Wage Calculator ---- */
-var calcAdd = document.getElementById('calc-add');
-var weekStart = document.getElementById('week_start');
-var notesEl = document.getElementById('notes');
-var selectMonFriBtn = document.getElementById('select-mon-fri');
-var selectMonSatBtn = document.getElementById('select-mon-sat');
-var clearWeekBtn = document.getElementById('clear-week');
-
-// Set day state for a specific day
-function setDayState(day, state) {
-  weekState.dayStates[day] = state;
-
-  // Update the button active states in the calculator
-  var control = document.querySelector('#calc-days-standard .calc-day[data-day="' + day + '"], #calc-days-sat .calc-day[data-day="' + day + '"]');
-  if (control) {
-    var btns = control.querySelectorAll('.day-btn');
-    btns.forEach(function (btn) {
-      btn.classList.toggle('day-btn-active', btn.dataset.state === state);
-    });
-  }
-
-  // Update Dates & Notes tile
-  var tile = document.querySelector('#wage-days .wage-day-tile[data-day="' + day + '"]');
-  if (tile) {
-    tile.classList.toggle('wage-day-active', state !== 'off');
-    tile.classList.toggle('wage-day-half', state === 'half');
-    tile.classList.toggle('wage-day-full', state === 'full');
-  }
-
-  renderWageCalculator();
-  renderDatesNotes();
-  updatePreview();
-  recalc();
-}
-
-function onWeekStateChanged(source) {
-  updateWeekState();
-  renderWageCalculator();
-  renderDatesNotes();
-
-  if (source !== 'week-start') {
-    updatePreview();
-    recalc();
-  } else {
-    updatePreview();
-  }
-}
-
-// Initialize week state - all days off
-function initializeWeekState() {
-  weekState.dayStates = {};
-  ALL_DAYS.forEach(function (day) {
-    weekState.dayStates[day] = 'off';
-  });
-
-  // Reset all day buttons
-  var allDayControls = document.querySelectorAll('#calc-days-standard .calc-day[data-day], #calc-days-sat .calc-day[data-day]');
-  allDayControls.forEach(function (control) {
-    var btns = control.querySelectorAll('.day-btn');
-    btns.forEach(function (btn) {
-      btn.classList.toggle('day-btn-active', btn.dataset.state === 'off');
-    });
-  });
-
-  // Reset all Dates & Notes tiles
-  var wageTiles = document.querySelectorAll('#wage-days .wage-day-tile[data-day]');
-  wageTiles.forEach(function (tile) {
-    tile.classList.remove('wage-day-active', 'wage-day-half', 'wage-day-full');
-  });
-
-  renderWageCalculator();
-  renderDatesNotes();
-}
-
-// Day button click handler
-function onDayButtonClick(e) {
-  var btn = e.target.closest('.day-btn');
-  if (!btn) return;
-  var control = btn.closest('.calc-day[data-day]');
-  if (!control) return;
-  var day = control.dataset.day;
-  var newState = btn.dataset.state;
-  if (!newState) return;
-
-  var currentState = weekState.dayStates[day] || 'off';
-  // Toggle: clicking the active state turns it off
-  if (currentState === newState) {
-    setDayState(day, 'off');
-  } else {
-    setDayState(day, newState);
-  }
-}
-
-// Attach day button click handlers
-var calcDaysStandard = document.getElementById('calc-days-standard');
-var calcDaysSat = document.getElementById('calc-days-sat');
-if (calcDaysStandard) calcDaysStandard.addEventListener('click', onDayButtonClick);
-if (calcDaysSat) calcDaysSat.addEventListener('click', onDayButtonClick);
-
-// Dates & Notes tile click handler - cycles through states
-function onWageTileClick(e) {
-  var tile = e.target.closest('.wage-day-tile[data-day]');
-  if (!tile) return;
-  var day = tile.dataset.day;
-  var currentState = weekState.dayStates[day] || 'off';
-  var nextState;
-
-  if (day === 'Sat') {
-    // Saturday cycles: off -> half -> off
-    nextState = currentState === 'half' ? 'off' : 'half';
-  } else {
-    // Weekdays cycle: off -> full -> half -> off
-    if (currentState === 'off') nextState = 'full';
-    else if (currentState === 'full') nextState = 'half';
-    else nextState = 'off';
-  }
-
-  setDayState(day, nextState);
-}
-
-var wageDatesGrid = document.getElementById('wage-days');
-if (wageDatesGrid) wageDatesGrid.addEventListener('click', onWageTileClick);
-
-// Select Mon-Fri button
-if (selectMonFriBtn) selectMonFriBtn.addEventListener('click', function () {
-  WEEKDAYS.forEach(function (day) {
-    weekState.dayStates[day] = 'full';
-  });
-  weekState.dayStates['Sat'] = 'off';
-  ALL_DAYS.forEach(function (day) {
-    var state = weekState.dayStates[day];
-    var control = document.querySelector('#calc-days-standard .calc-day[data-day="' + day + '"], #calc-days-sat .calc-day[data-day="' + day + '"]');
-    if (control) {
-      var btns = control.querySelectorAll('.day-btn');
-      btns.forEach(function (btn) {
-        btn.classList.toggle('day-btn-active', btn.dataset.state === state);
-      });
+      window.location.href = '/invoices/' + body.id;
+      return;
     }
-    var tile = document.querySelector('#wage-days .wage-day-tile[data-day="' + day + '"]');
-    if (tile) {
-      tile.classList.toggle('wage-day-active', state !== 'off');
-      tile.classList.toggle('wage-day-half', state === 'half');
-      tile.classList.toggle('wage-day-full', state === 'full');
-    }
+    window.location.href = '/invoices/' + body.id;
+  })
+  .catch(function (err) {
+    showError('Something went wrong: ' + err.message);
   });
-  onWeekStateChanged('select-mon-fri');
 });
-
-// Select Mon-Sat button
-if (selectMonSatBtn) selectMonSatBtn.addEventListener('click', function () {
-  WEEKDAYS.forEach(function (day) {
-    weekState.dayStates[day] = 'full';
-  });
-  weekState.dayStates['Sat'] = 'half';
-  ALL_DAYS.forEach(function (day) {
-    var state = weekState.dayStates[day];
-    var control = document.querySelector('#calc-days-standard .calc-day[data-day="' + day + '"], #calc-days-sat .calc-day[data-day="' + day + '"]');
-    if (control) {
-      var btns = control.querySelectorAll('.day-btn');
-      btns.forEach(function (btn) {
-        btn.classList.toggle('day-btn-active', btn.dataset.state === state);
-      });
-    }
-    var tile = document.querySelector('#wage-days .wage-day-tile[data-day="' + day + '"]');
-    if (tile) {
-      tile.classList.toggle('wage-day-active', state !== 'off');
-      tile.classList.toggle('wage-day-half', state === 'half');
-      tile.classList.toggle('wage-day-full', state === 'full');
-    }
-  });
-  onWeekStateChanged('select-mon-sat');
-});
-
-// Clear Week button
-if (clearWeekBtn) clearWeekBtn.addEventListener('click', function () {
-  initializeWeekState();
-  onWeekStateChanged('clear-week');
-});
-
-if (weekStart) {
-  weekStart.addEventListener('change', function () {
-    onWeekStateChanged('week-start');
-  });
-}
-
-if (notesEl) notesEl.addEventListener('input', updatePreview);
-
-if (calcAdd) calcAdd.addEventListener('click', function () {
-  updateWeekState();
-  var dayStates = weekState.dayStates || {};
-  var hasSelected = false;
-  ALL_DAYS.forEach(function (day) {
-    if (dayStates[day] === 'half' || dayStates[day] === 'full') hasSelected = true;
-  });
-  if (!hasSelected) return;
-
-  itemRows().filter(function (row) {
-    return !row.querySelector('input[name="item_description"]').value.trim();
-  }).forEach(function (row) {
-    var details = row.nextElementSibling;
-    row.remove();
-    if (details && details.classList.contains('wage-details')) details.remove();
-  });
-  var cfg = companyConfigs[weekState.company] || companyConfigs.asg;
-  var mode = cfg.wageLineMode || 'aggregated';
-
-  var amount = 0;
-  var selectedDays = [];
-  ALL_DAYS.forEach(function (day) {
-    var state = dayStates[day];
-    if (state === 'half' || state === 'full') {
-      amount += getDayRate(day, state);
-      selectedDays.push({ day: day, state: state });
-    }
-  });
-  amount = Math.round(amount * 100) / 100;
-
-  var dayDetails = [];
-  var weekStartDate = parseLocalDate(weekState.weekStarting);
-  if (weekStartDate) {
-    var day = weekStartDate.getDay();
-    var diff = (day + 6) % 7;
-    var monday = new Date(weekStartDate);
-    monday.setDate(weekStartDate.getDate() - diff);
-    monday.setHours(0, 0, 0, 0);
-
-    selectedDays.forEach(function (item) {
-      var offset = dayOffsets[item.day] || 0;
-      var dayDate = new Date(monday);
-      dayDate.setDate(monday.getDate() + offset);
-      var dayNum = dayDate.getDate();
-      var suffix = getOrdinalSuffix(dayNum);
-      var detailLabel = getDayDetailLabel(item.day, item.state);
-      var detail = item.day + ' - ' + dayNum + suffix + ' ' + fmtDate(dayDate);
-      if (detailLabel) {
-        detail += ' - ' + detailLabel + ' - ' + fmt(getDayRate(item.day, item.state));
-      }
-      dayDetails.push(detail);
-    });
-  }
-
-  if (mode === 'daily') {
-    selectedDays.forEach(function (item) {
-      var dateInput = document.querySelector('input[name="date_' + item.day + '"]');
-      var dateText = dateInput && dateInput.value ? ' ' + dateInput.value : '';
-      addLine({ description: 'Wages - ' + item.day + dateText, quantity: 1, rate: getDayRate(item.day, item.state) });
-    });
-  } else {
-    var range = weekState.weekStarting ? 'Week of ' + fmtWeekRange(weekState.weekStarting) : '';
-    var primaryDesc = 'Wages/Retainer - ' + range;
-    addLine({
-      description: primaryDesc,
-      quantity: 1,
-      rate: amount,
-      amount: amount,
-      wageDetails: dayDetails
-    });
-  }
-});
-
-// Initialize
-loadPersistedSettings();
-
-var initialCompany = templateInput ? templateInput.value : 'asg';
-weekState.company = initialCompany;
-var initCfg = companyConfigs[initialCompany] || companyConfigs.asg;
-var initRate = document.getElementById('calc-rate');
-if (initRate && initCfg.perDayRate) initRate.value = initCfg.perDayRate;
-
-setTemplate(initialCompany);
-initializeWeekState();
 
 // Track initial invoice number for manual override detection
 var initialInvoiceNumber = (document.getElementById('invoice_number') || {}).value || '';
@@ -1130,25 +906,12 @@ if (typeof window.existingItems !== 'undefined' && Array.isArray(window.existing
 
     weekState.dayStates = restoredStates;
 
-    // Update UI to match restored states
     ALL_DAYS.forEach(function (day) {
-      var state = restoredStates[day];
-      var control = document.querySelector('#calc-days-standard .calc-day[data-day="' + day + '"], #calc-days-sat .calc-day[data-day="' + day + '"]');
-      if (control) {
-        var btns = control.querySelectorAll('.day-btn');
-        btns.forEach(function (btn) {
-          btn.classList.toggle('day-btn-active', btn.dataset.state === state);
-        });
-      }
-      var tile = document.querySelector('#wage-days .wage-day-tile[data-day="' + day + '"]');
-      if (tile) {
-        tile.classList.toggle('wage-day-active', state !== 'off');
-        tile.classList.toggle('wage-day-half', state === 'half');
-        tile.classList.toggle('wage-day-full', state === 'full');
-      }
+      updateDayUI(day);
     });
 
-    renderWageCalculator();
+    updateWeekTotal();
+    updatePreview();
   }
 } else {
   addLine();

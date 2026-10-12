@@ -80,12 +80,15 @@ test.beforeEach(async ({ page }) => {
 
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
-    await page.waitForSelector('#calc-days-standard .day-btn[data-state="off"]', { state: 'visible', timeout: 10000 });
+    await page.waitForSelector('.weekdays .day-btn[data-state="off"]', { state: 'visible', timeout: 10000 });
 
     // Clear all days first by clicking "Off" for each day
     const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     for (const day of allDays) {
-      const offBtn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="off"], #calc-days-sat .calc-day[data-day="${day}"] .day-btn[data-state="off"]`);
+      const sel = day === 'Sat'
+        ? '.saturday-controls .day-btn[data-state="off"]'
+        : `.weekday[data-day="${day}"] .day-btn[data-state="off"]`;
+      const offBtn = page.locator(sel);
       await offBtn.click();
     }
 
@@ -96,14 +99,14 @@ test.beforeEach(async ({ page }) => {
     for (const day of days) {
       const state = day === 'Sat' ? 'half' : 'full';
       const selector = day === 'Sat'
-        ? `#calc-days-sat .calc-day[data-day="${day}"] .day-btn[data-state="${state}"]`
-        : `#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="${state}"]`;
+        ? `.saturday-controls .day-btn[data-state="${state}"]`
+        : `.weekday[data-day="${day}"] .day-btn[data-state="${state}"]`;
       await page.locator(selector).click();
     }
     await page.waitForTimeout(100);
 
     if (template) {
-      await page.locator(`.tpl[data-template="${template}"]`).click();
+      await page.locator(`.company-option[data-template="${template}"]`).click();
       await page.waitForTimeout(100);
     }
 
@@ -177,18 +180,18 @@ test.beforeEach(async ({ page }) => {
 
     expect(text).toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
     expect(text).toContain('43 663 126 725');
-    expect(text).toContain('14C, 1 The Esplanade');
+    expect(text).toContain('4/58 Kishorn Road');
     expect(text).toContain('Natalie@sjssolutionscorp.com.au');
 
     // PDF should contain the template company name (ASG) in BILL TO section
     expect(text).toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
-    expect(text).toContain('14C, 1 The Esplanade');
+    expect(text).toContain('4/58 Kishorn Road');
     expect(text).toContain('Test notes for XHR PDF');
 
     expect(text).toContain('Wages/Retainer');
-    expect(text).toContain('Mon - 24th');
-    expect(text).toContain('Wed - 26th');
-    expect(text).toContain('Sat - 29th');
+    expect(text).toContain('Mon - 24/08/2026');
+    expect(text).toContain('Wed - 26/08/2026');
+    expect(text).toContain('Sat - 29/08/2026');
     expect(text).toContain('Full day');
     expect(text).toContain('Half day');
     expect(text).toContain('180');
@@ -249,16 +252,16 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
 
-    await page.locator('.tpl[data-template="asg"]').click();
+    await page.locator('.company-option[data-template="asg"]').click();
     await page.waitForTimeout(100);
 
     await expect(page.locator('#customer_name')).toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
     await expect(page.locator('#customer_email')).toHaveValue('Natalie@sjssolutionscorp.com.au');
-    await expect(page.locator('#customer_address')).toHaveValue('14C, 1 The Esplanade, Mount pleasant, 6153');
+    await expect(page.locator('#customer_address')).toHaveValue('4/58 Kishorn Road, Mount Pleasant WA 6153');
 
-    await page.waitForSelector('#calc-days-standard .day-btn[data-state="off"]', { state: 'visible' });
+    await page.waitForSelector('.weekdays .day-btn[data-state="off"]', { state: 'visible' });
     await page.fill('#week_start', '2026-08-24');
-    await page.locator('#calc-days-standard .calc-day[data-day="Mon"] .day-btn[data-state="full"]').click();
+    await page.locator('.weekday[data-day="Mon"] .day-btn[data-state="full"]').click();
     await page.fill('#customer_name', 'ASG Test Customer');
     await page.click('#calc-add');
     await page.waitForTimeout(500);
@@ -271,7 +274,7 @@ test.beforeEach(async ({ page }) => {
 
     expect(text).toContain('AMPLIFY SOLUTIONS GROUP PTY LTD');
     expect(text).toContain('43 663 126 725');
-    expect(text).toContain('14C, 1 The Esplanade');
+    expect(text).toContain('4/58 Kishorn Road');
     expect(text).toContain('Natalie@sjssolutionscorp.com.au');
   });
 
@@ -279,7 +282,7 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
 
-    await page.locator('.tpl[data-template="sjs"]').click();
+    await page.locator('.company-option[data-template="sjs"]').click();
     await page.waitForTimeout(100);
 
     await expect(page.locator('#customer_name')).toHaveValue('SJS WEALTH SOLUTIONS PTY LTD');
@@ -288,9 +291,9 @@ test.beforeEach(async ({ page }) => {
 
     await expect(page.locator('#customer_name')).not.toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
 
-    await page.waitForSelector('#calc-days-standard .day-btn[data-state="off"]', { state: 'visible' });
+    await page.waitForSelector('.weekdays .day-btn[data-state="off"]', { state: 'visible' });
     await page.fill('#week_start', '2026-08-24');
-    await page.locator('#calc-days-standard .calc-day[data-day="Mon"] .day-btn[data-state="full"]').click();
+    await page.locator('.weekday[data-day="Mon"] .day-btn[data-state="full"]').click();
     await page.fill('#customer_name', 'SJS Test Customer');
     await page.click('#calc-add');
     await page.waitForTimeout(500);
@@ -314,26 +317,26 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/invoices/new');
     await page.waitForSelector('form#invoice-form', { state: 'attached', timeout: 10000 });
 
-    await page.locator('.tpl[data-template="asg"]').click();
+    await page.locator('.company-option[data-template="asg"]').click();
     await page.waitForTimeout(100);
     await expect(page.locator('#customer_name')).toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
     await expect(page.locator('#customer_email')).toHaveValue('Natalie@sjssolutionscorp.com.au');
-    await expect(page.locator('#customer_address')).toHaveValue('14C, 1 The Esplanade, Mount pleasant, 6153');
+    await expect(page.locator('#customer_address')).toHaveValue('4/58 Kishorn Road, Mount Pleasant WA 6153');
     await expect(page.locator('#customer_name')).not.toHaveValue('SJS WEALTH SOLUTIONS PTY LTD');
 
-    await page.locator('.tpl[data-template="sjs"]').click();
+    await page.locator('.company-option[data-template="sjs"]').click();
     await page.waitForTimeout(100);
     await expect(page.locator('#customer_name')).toHaveValue('SJS WEALTH SOLUTIONS PTY LTD');
     await expect(page.locator('#customer_email')).toHaveValue('Natalie@sjssolutionscorp.com.au');
     await expect(page.locator('#customer_address')).toHaveValue('PO Box 3330, Beeliar Drive, Success WA 6964');
     await expect(page.locator('#customer_name')).not.toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
-    await expect(page.locator('#customer_address')).not.toHaveValue('14C, 1 The Esplanade, Mount pleasant, 6153');
+    await expect(page.locator('#customer_address')).not.toHaveValue('4/58 Kishorn Road, Mount Pleasant WA 6153');
 
-    await page.locator('.tpl[data-template="asg"]').click();
+    await page.locator('.company-option[data-template="asg"]').click();
     await page.waitForTimeout(100);
     await expect(page.locator('#customer_name')).toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
     await expect(page.locator('#customer_email')).toHaveValue('Natalie@sjssolutionscorp.com.au');
-    await expect(page.locator('#customer_address')).toHaveValue('14C, 1 The Esplanade, Mount pleasant, 6153');
+    await expect(page.locator('#customer_address')).toHaveValue('4/58 Kishorn Road, Mount Pleasant WA 6153');
     await expect(page.locator('#customer_name')).not.toHaveValue('SJS WEALTH SOLUTIONS PTY LTD');
     await expect(page.locator('#customer_address')).not.toHaveValue('PO Box 3330, Beeliar Drive, Success WA 6964');
   });

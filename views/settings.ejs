@@ -41,6 +41,17 @@
 
   <section class="card">
     <div class="card-head">
+      <h2 class="card-title">ASG invoice address</h2>
+      <p class="card-sub">Address printed on ASG invoices.</p>
+    </div>
+    <label class="field">
+      <span class="field-label">ASG office address</span>
+      <input class="input" type="text" name="asg_address" value="<%= settings.asg_address || '4/58 Kishorn Road, Mount Pleasant WA 6153' %>">
+    </label>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
       <h2 class="card-title">Invoice numbering</h2>
       <p class="card-sub">Prefix for new invoice numbers, e.g. <code>INV</code> gives <code>INV-0001</code>.</p>
     </div>

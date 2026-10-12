@@ -23,7 +23,11 @@ test.describe('Structured Wage Descriptions', () => {
   });
 
   async function setDayState(page, day, state) {
-    const btn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="${state}"], #calc-days-sat .calc-day[data-day="${day}"] .day-btn[data-state="${state}"]`);
+    const isSat = day === 'Sat';
+    const sel = isSat
+      ? `.saturday-controls .day-btn[data-state="${state}"]`
+      : `.weekday[data-day="${day}"] .day-btn[data-state="${state}"]`;
+    const btn = page.locator(sel);
     await btn.click();
     await page.waitForTimeout(50);
   }

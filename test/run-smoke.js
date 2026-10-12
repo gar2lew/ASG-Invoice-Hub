@@ -142,6 +142,10 @@ async function main() {
   settings = await db.getSettings();
   log(settings.company_name === 'ASG Sales Pty Ltd', 'settings update persisted');
 
+  await db.updateSettings({ asg_address: '4/58 Kishorn Road, Mount Pleasant WA 6153' });
+  settings = await db.getSettings();
+  log(settings.asg_address === '4/58 Kishorn Road, Mount Pleasant WA 6153', 'ASG office address setting persists');
+
   // Per-rep numbering: first invoice for a new rep should auto-generate
   const inv3 = await db.createInvoice({
     user_id: rep.id,
@@ -194,6 +198,46 @@ async function main() {
   log(inv5.invoice_number === 'INV-0005', `second gets next counter, got ${inv5.invoice_number}`);
   await db.deleteInvoice(inv4.id);
   await db.deleteInvoice(inv5.id);
+
+  const heldSequenceInvoice = await db.createInvoice({
+    user_id: rep.id,
+    template: 'standard',
+    invoice_number: 'INV-0090',
+    invoice_number_manual_override: true,
+    continue_numbering: false,
+    customer_name: 'Held Sequence Co',
+    issue_date: '2026-08-18',
+    tax_rate: 0,
+    subtotal: 1,
+    tax_amount: 0,
+    total: 1,
+    status: 'draft',
+    items: [{ description: 'Test', quantity: 1, rate: 1, amount: 1 }],
+  });
+  const afterHeldSequence = await db.getUserById(rep.id);
+  log(heldSequenceInvoice.invoice_number === 'INV-0090' && afterHeldSequence.next_invoice_number === 6,
+    'manual invoice number can be used without advancing the next number');
+
+  const continuedSequenceInvoice = await db.createInvoice({
+    user_id: rep.id,
+    template: 'standard',
+    invoice_number: 'INV-0091',
+    invoice_number_manual_override: true,
+    continue_numbering: true,
+    customer_name: 'Continued Sequence Co',
+    issue_date: '2026-08-19',
+    tax_rate: 0,
+    subtotal: 1,
+    tax_amount: 0,
+    total: 1,
+    status: 'draft',
+    items: [{ description: 'Test', quantity: 1, rate: 1, amount: 1 }],
+  });
+  const afterContinuedSequence = await db.getUserById(rep.id);
+  log(continuedSequenceInvoice.invoice_number === 'INV-0091' && afterContinuedSequence.next_invoice_number === 92,
+    'manual invoice number advances next number only when requested');
+  await db.deleteInvoice(heldSequenceInvoice.id);
+  await db.deleteInvoice(continuedSequenceInvoice.id);
 
   // Test first-invoice starting number workflow
   // Create a new rep with no invoices
@@ -262,6 +306,7 @@ async function main() {
     template: 'standard',
     invoice_number: 'INV-0016',
     invoice_number_manual_override: true,
+    continue_numbering: true,
     customer_name: 'Manual Override Co',
     issue_date: '2026-09-01',
     tax_rate: 0,
@@ -286,7 +331,7 @@ async function main() {
     status: 'draft',
     items: [{ description: 'Item', quantity: 1, rate: 100, amount: 100 }],
   });
-  log(afterManualInv.invoice_number === 'INV-0017', `counter advanced after higher manual: ${afterManualInv.invoice_number}`);
+  log(afterManualInv.invoice_number === 'INV-0092', `sequence continues after explicitly advanced manual number: ${afterManualInv.invoice_number}`);
 
   // Test 3: Duplicate manual number is rejected
   let duplicateRejected = false;
@@ -296,6 +341,7 @@ async function main() {
       template: 'standard',
       invoice_number: 'INV-0016',
       invoice_number_manual_override: true,
+      continue_numbering: true,
       customer_name: 'Duplicate Co',
       issue_date: '2026-09-03',
       tax_rate: 0,
@@ -366,6 +412,7 @@ async function main() {
       customer_name: 'Should Fail',
       invoice_number: 'INV-9999',
       invoice_number_manual_override: true,
+      continue_numbering: true,
       issue_date: '2026-09-01',
       tax_rate: 0,
       subtotal: 500,

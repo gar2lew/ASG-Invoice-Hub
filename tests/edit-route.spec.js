@@ -29,7 +29,7 @@ test.describe('Invoice Edit Route', () => {
 
     const days = ['Mon', 'Tue', 'Wed'];
     for (const day of days) {
-      const btn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="full"]`);
+      const btn = page.locator(`.weekday[data-day="${day}"] .day-btn[data-state="full"]`);
       await btn.click();
     }
     await page.click('#calc-add');
@@ -55,6 +55,7 @@ test.describe('Invoice Edit Route', () => {
 
     // Change notes
     await page.fill('#notes', 'Updated notes');
+    await page.fill('#invoice_number', 'INV-9001');
 
     // Save edit - should use PUT
     const putResponse = page.waitForResponse((resp) => {
@@ -70,6 +71,7 @@ test.describe('Invoice Edit Route', () => {
     // Verify the notes were saved
     const notesText = await page.locator('.detail-notes').textContent();
     expect(notesText).toContain('Updated notes');
+    await expect(page.locator('.page-title')).toHaveText('INV-9001');
   });
 
   test('draft invoice shows Edit invoice button', async ({ page }) => {
@@ -81,7 +83,7 @@ test.describe('Invoice Edit Route', () => {
 
     const days = ['Mon', 'Tue', 'Wed'];
     for (const day of days) {
-      const btn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="full"]`);
+      const btn = page.locator(`.weekday[data-day="${day}"] .day-btn[data-state="full"]`);
       await btn.click();
     }
     await page.click('#calc-add');
@@ -106,7 +108,7 @@ test.describe('Invoice Edit Route', () => {
 
     const days = ['Mon', 'Tue', 'Wed'];
     for (const day of days) {
-      const btn = page.locator(`#calc-days-standard .calc-day[data-day="${day}"] .day-btn[data-state="full"]`);
+      const btn = page.locator(`.weekday[data-day="${day}"] .day-btn[data-state="full"]`);
       await btn.click();
     }
     await page.click('#calc-add');

@@ -26,6 +26,7 @@ const SCHEMA = `
     company_name TEXT DEFAULT '',
     company_abn TEXT DEFAULT '',
     company_address TEXT DEFAULT '',
+    asg_address TEXT DEFAULT '4/58 Kishorn Road, Mount Pleasant WA 6153',
     company_phone TEXT DEFAULT '',
     company_email TEXT DEFAULT '',
     bank_name TEXT DEFAULT '',
@@ -146,6 +147,12 @@ async function initDb() {
     } catch (e) {
       console.warn('users next_invoice_number migration skipped:', e.message);
     }
+    try {
+      await p.query("ALTER TABLE settings ADD COLUMN IF NOT EXISTS asg_address TEXT DEFAULT '4/58 Kishorn Road, Mount Pleasant WA 6153'");
+      await p.query("UPDATE settings SET asg_address = '4/58 Kishorn Road, Mount Pleasant WA 6153' WHERE id = 1 AND (asg_address IS NULL OR asg_address = '')");
+    } catch (e) {
+      console.warn('settings ASG address migration skipped:', e.message);
+    }
   // Backfill next_invoice_number for existing reps based on their highest invoice number
     try {
       const repsWithInvoices = await p.query(
@@ -228,7 +235,7 @@ async function getSettings() {
 async function updateSettings(patch) {
   await ensureReady();
   const allowed = [
-    'company_name', 'company_abn', 'company_address', 'company_phone', 'company_email',
+    'company_name', 'company_abn', 'company_address', 'asg_address', 'company_phone', 'company_email',
     'bank_name', 'bank_bsb', 'bank_account', 'accounts_email', 'invoice_prefix',
     'payment_terms', 'footer_note', 'next_invoice_number',
   ];
@@ -512,7 +519,7 @@ async function createInvoice(tx) {
       invoice_number = tx.invoice_number;
 
       const numericPart = parseInt(tx.invoice_number.split('-')[1], 10);
-      if (!Number.isNaN(numericPart)) {
+      if (tx.continue_numbering && !Number.isNaN(numericPart)) {
         const userRes = await client.query('SELECT next_invoice_number FROM users WHERE id = $1', [tx.user_id]);
         const userNextNum = userRes.rows[0]?.next_invoice_number || 1;
         if (numericPart >= userNextNum) {

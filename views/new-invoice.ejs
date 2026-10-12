@@ -8,59 +8,47 @@
 </header>
 
 <form id="invoice-form" class="invoice-form" method="post" action="/api/invoices" data-next-number="<%= settings.invoice_prefix %>"<% if (typeof editingInvoice !== 'undefined' && editingInvoice) { %> data-edit-id="<%= editingInvoice.id %>"<% } %>>
-  <section class="card">
-    <div class="card-head">
-      <h2 class="card-title">Company template</h2>
-      <p class="card-sub">Pick which company this invoice is for.</p>
-    </div>
-    <div class="tpl-toggle" role="radiogroup" aria-label="Invoice template">
-      <button type="button" class="tpl" data-template="asg" role="radio" aria-checked="false">
-        <span class="tpl-preview tpl-preview-asg" aria-hidden="true">
-          <span class="pv-p1"></span><span class="pv-block"></span><span class="pv-rows"><i></i><i></i><i></i></span><span class="pv-tot"></span>
-        </span>
-        <span class="tpl-meta">
-          <span class="tpl-name">ASG</span>
-          <span class="tpl-desc">Amplify Solutions Group</span>
-          <span class="tpl-tag">Default</span>
-        </span>
-      </button>
-      <button type="button" class="tpl" data-template="sjs" role="radio" aria-checked="false">
-        <span class="tpl-preview tpl-preview-sjs" aria-hidden="true">
-          <span class="pv-band"></span><span class="pv-block"></span><span class="pv-rows pv-rows-slim"><i></i><i></i><i></i></span><span class="pv-tot"></span>
-        </span>
-        <span class="tpl-meta">
-          <span class="tpl-name">SJS</span>
-          <span class="tpl-desc">SJS Wealth Solutions</span>
-          <span class="tpl-tag">Wealth</span>
-        </span>
-      </button>
-      <input type="hidden" name="template" value="asg">
-    </div>
-  </section>
-
-  <div class="form-cols">
-    <!-- LEFT COLUMN ~60% -->
-    <div class="form-col">
-      <!-- Invoice Details -->
-      <section class="card">
+  
+  <!-- TWO COLUMN LAYOUT -->
+  <div class="invoice-builder">
+    
+    <!-- LEFT COLUMN: Builder -->
+    <div class="invoice-builder-main">
+      
+      <!-- SECTION 1: Invoice Setup -->
+      <section class="card card-setup">
         <div class="card-head">
-          <h2 class="card-title">Invoice details</h2>
-          <p class="card-sub">Invoice number and client information.</p>
+          <h2 class="card-title">Invoice setup</h2>
+          <p class="card-sub">Company, invoice number, and client details.</p>
         </div>
+        
+        <!-- Company selector -->
+        <div class="company-selector" role="radiogroup" aria-label="Invoice template">
+          <button type="button" class="company-option" data-template="asg" role="radio" aria-checked="true">
+            <span class="company-option-name">ASG</span>
+            <span class="company-option-desc">Amplify Solutions Group</span>
+          </button>
+          <button type="button" class="company-option" data-template="sjs" role="radio" aria-checked="false">
+            <span class="company-option-name">SJS</span>
+            <span class="company-option-desc">SJS Wealth Solutions</span>
+          </button>
+          <input type="hidden" name="template" value="asg" id="template-input">
+        </div>
+        
+        <!-- Invoice number + Email row -->
         <div class="grid2">
           <label class="field">
             <span class="field-label">Invoice number</span>
             <input class="input" type="text" name="invoice_number" id="invoice_number" value="<%= nextNumber %>" placeholder="e.g. INV-0045">
-            <span class="hint">Suggested automatically. You can change this invoice number while the invoice is a draft. Invoice numbers must be unique.</span>
-            <% if (typeof isFirstInvoice !== 'undefined' && isFirstInvoice) { %>
-              <input type="hidden" name="isFirstInvoice" value="true">
-            <% } %>
+            <span class="hint">Suggested automatically. You can change this number while the invoice is a draft.</span>
+            <span class="checkline"><input type="checkbox" name="continue_numbering" id="continue_numbering"><span>Continue Numbering from here on next invoice</span></span>
           </label>
           <label class="field">
-            <span class="field-label">Email</span>
+            <span class="field-label">Accounts email</span>
             <input class="input" type="email" name="customer_email" id="customer_email" value="<%= typeof customer_email !== 'undefined' && customer_email ? customer_email : '' %>">
           </label>
         </div>
+        
         <label class="field">
           <span class="field-label">Company name <em>*</em></span>
           <input class="input" type="text" name="customer_name" id="customer_name" required value="<%= typeof customer_name !== 'undefined' && customer_name ? customer_name : '' %>"/>
@@ -70,164 +58,162 @@
           <textarea class="input" name="customer_address" id="customer_address" rows="2"><%= typeof customer_address !== 'undefined' && customer_address ? customer_address : '' %></textarea>
         </label>
       </section>
-
-      <!-- Weekly Wage Calculator -->
-            <section class="card card-calc">
-              <div class="card-head">
-                <h2 class="card-title">Weekly wage calculator</h2>
-                <p class="card-sub">Select days worked, then add as a line item.</p>
-              </div>
-              <div id="calc-week-range" class="week-range-display"></div>
-
-              <!-- Rate display -->
-                            <div class="calc-rate-display">
-                                                          <span class="rate-label">Rate</span>
-                                                          <span class="rate-value" id="calc-rate-display">$180.00 / day</span>
-                                                        </div>
-                                                        <!-- Hidden rate input for JS compatibility -->
-                                                        <input type="hidden" id="calc-rate" name="calc_rate" value="180">
-
-              <!-- Standard Week -->
-              <div class="calc-section">
-                <h3 class="calc-section-title">Standard Week (Mon-Fri)</h3>
-                <div class="calc-days" id="calc-days-standard">
-                  <div class="calc-day" data-day="Mon">
-                    <span class="day-name">Mon</span>
-                    <div class="day-btn-group">
-                      <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
-                      <button type="button" class="day-btn" data-state="half">Half $90</button>
-                      <button type="button" class="day-btn" data-state="full">Full $180</button>
-                    </div>
-                  </div>
-                  <div class="calc-day" data-day="Tue">
-                    <span class="day-name">Tue</span>
-                    <div class="day-btn-group">
-                      <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
-                      <button type="button" class="day-btn" data-state="half">Half $90</button>
-                      <button type="button" class="day-btn" data-state="full">Full $180</button>
-                    </div>
-                  </div>
-                  <div class="calc-day" data-day="Wed">
-                    <span class="day-name">Wed</span>
-                    <div class="day-btn-group">
-                      <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
-                      <button type="button" class="day-btn" data-state="half">Half $90</button>
-                      <button type="button" class="day-btn" data-state="full">Full $180</button>
-                    </div>
-                  </div>
-                  <div class="calc-day" data-day="Thu">
-                    <span class="day-name">Thu</span>
-                    <div class="day-btn-group">
-                      <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
-                      <button type="button" class="day-btn" data-state="half">Half $90</button>
-                      <button type="button" class="day-btn" data-state="full">Full $180</button>
-                    </div>
-                  </div>
-                  <div class="calc-day" data-day="Fri">
-                    <span class="day-name">Fri</span>
-                    <div class="day-btn-group">
-                      <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
-                      <button type="button" class="day-btn" data-state="half">Half $90</button>
-                      <button type="button" class="day-btn" data-state="full">Full $180</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="calc-section-actions">
-                  <button type="button" class="btn btn-ghost btn-small" id="select-mon-fri">Select Mon-Fri</button>
-                  <button type="button" class="btn btn-ghost btn-small" id="select-mon-sat">Select Mon-Sat</button>
-                  <button type="button" class="btn btn-ghost btn-small" id="clear-week">Clear Week</button>
-                </div>
-              </div>
-
-              <!-- Saturday Extra -->
-              <div class="calc-section calc-section-sat">
-                <h3 class="calc-section-title">Saturday Extra</h3>
-                <div class="calc-days" id="calc-days-sat">
-                  <div class="calc-day" data-day="Sat">
-                    <span class="day-name">Sat</span>
-                    <div class="day-btn-group">
-                      <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
-                      <button type="button" class="day-btn" data-state="half">Half $100</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="calc-sat-hint">Adds <span id="sat-amount">$100.00</span> to weekly total</div>
-              </div>
-
-              <div class="calc-result">
-                              <div class="calc-total-row">
-                                <span class="calc-total-label">Week Total</span>
-                                <span class="calc-total" id="calc-total">$0.00</span>
-                              </div>
-                              <div id="calc-breakdown" class="calc-breakdown muted"><span>Select days worked to calculate wages.</span></div>
-                              <button type="button" class="btn btn-accent btn-small" id="calc-add">Add to invoice</button>
-                            </div>
-
-              <!-- Week start date - visible for date selection -->
-                            <div class="field week-start-field">
-                              <label for="week_start">Week starting</label>
-                              <div class="date-input-wrapper">
-                                <input type="date" name="week_start" id="week_start" value="<%= issueDate %>">
-                                <svg class="date-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 3h10v10H3z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 6h10M7 3v4" stroke="currentColor" stroke-width="1.5"/></svg>
-                              </div>
-                            </div>
-            </section>
-
-            <!-- Dates & Notes (Compact Grid) -->
-                        <section class="card">
-                          <div class="card-head">
-                            <h2 class="card-title">Dates &amp; Notes</h2>
-                            <p class="card-sub">Verify dates for selected days. Click a tile to cycle through states.</p>
-                          </div>
-                          <div class="wage-dates-grid" id="wage-days">
-                            <div class="wage-day-tile" data-day="Mon">
-                              <span class="wage-day-name">Mon</span>
-                              <span class="wage-date-display">-</span>
-                              <input class="input input-sm wage-date" type="date" name="date_Mon" hidden>
-                            </div>
-                            <div class="wage-day-tile" data-day="Tue">
-                              <span class="wage-day-name">Tue</span>
-                              <span class="wage-date-display">-</span>
-                              <input class="input input-sm wage-date" type="date" name="date_Tue" hidden>
-                            </div>
-                            <div class="wage-day-tile" data-day="Wed">
-                              <span class="wage-day-name">Wed</span>
-                              <span class="wage-date-display">-</span>
-                              <input class="input input-sm wage-date" type="date" name="date_Wed" hidden>
-                            </div>
-                            <div class="wage-day-tile" data-day="Thu">
-                              <span class="wage-day-name">Thu</span>
-                              <span class="wage-date-display">-</span>
-                              <input class="input input-sm wage-date" type="date" name="date_Thu" hidden>
-                            </div>
-                            <div class="wage-day-tile" data-day="Fri">
-                              <span class="wage-day-name">Fri</span>
-                              <span class="wage-date-display">-</span>
-                              <input class="input input-sm wage-date" type="date" name="date_Fri" hidden>
-                            </div>
-                            <div class="wage-day-tile wage-day-tile-sat" data-day="Sat">
-                              <span class="wage-day-name">Sat</span>
-                              <span class="wage-date-display">-</span>
-                              <input class="input input-sm wage-date" type="date" name="date_Sat" hidden>
-                            </div>
-                          </div>
-
-                          <label class="field" style="margin-top: 16px;">
-                            <span class="field-label">Notes</span>
-                            <textarea class="input" name="notes" id="notes" rows="2" placeholder="Optional message shown on the invoice"></textarea>
-                          </label>
-                        </section>
-    </div>
-
-    <!-- RIGHT COLUMN ~40% -->
-    <div class="form-col">
-      <!-- Line Items -->
-      <section class="card">
+      
+      <!-- SECTION 2: Weekly Wages -->
+      <section class="card card-wages">
         <div class="card-head">
-          <h2 class="card-title">Line items</h2>
+          <h2 class="card-title">Weekly wages</h2>
+          <p class="card-sub">Select days worked. Week of <span id="calc-week-range" class="week-range-display"></span></p>
+        </div>
+        
+        <!-- Rate display -->
+        <div class="wage-rates">
+          <span class="wage-rate"><strong>Weekday</strong> $180/day</span>
+          <span class="wage-rate"><strong>Half day</strong> $90</span>
+          <span class="wage-rate"><strong>Saturday</strong> $100</span>
+        </div>
+        
+        <!-- Weekday grid -->
+        <div class="weekdays" id="calc-days-standard">
+          <div class="weekday" data-day="Mon">
+            <span class="weekday-name">Mon</span>
+            <span class="weekday-date" id="date-Mon">-</span>
+            <div class="weekday-controls">
+              <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
+              <button type="button" class="day-btn" data-state="half">Half</button>
+              <button type="button" class="day-btn" data-state="full">Full</button>
+            </div>
+          </div>
+          <div class="weekday" data-day="Tue">
+            <span class="weekday-name">Tue</span>
+            <span class="weekday-date" id="date-Tue">-</span>
+            <div class="weekday-controls">
+              <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
+              <button type="button" class="day-btn" data-state="half">Half</button>
+              <button type="button" class="day-btn" data-state="full">Full</button>
+            </div>
+          </div>
+          <div class="weekday" data-day="Wed">
+            <span class="weekday-name">Wed</span>
+            <span class="weekday-date" id="date-Wed">-</span>
+            <div class="weekday-controls">
+              <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
+              <button type="button" class="day-btn" data-state="half">Half</button>
+              <button type="button" class="day-btn" data-state="full">Full</button>
+            </div>
+          </div>
+          <div class="weekday" data-day="Thu">
+            <span class="weekday-name">Thu</span>
+            <span class="weekday-date" id="date-Thu">-</span>
+            <div class="weekday-controls">
+              <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
+              <button type="button" class="day-btn" data-state="half">Half</button>
+              <button type="button" class="day-btn" data-state="full">Full</button>
+            </div>
+          </div>
+          <div class="weekday" data-day="Fri">
+            <span class="weekday-name">Fri</span>
+            <span class="weekday-date" id="date-Fri">-</span>
+            <div class="weekday-controls">
+              <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
+              <button type="button" class="day-btn" data-state="half">Half</button>
+              <button type="button" class="day-btn" data-state="full">Full</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Quick actions -->
+        <div class="quick-actions">
+          <button type="button" class="btn btn-ghost btn-small" id="select-mon-fri">Select Mon-Fri</button>
+          <button type="button" class="btn btn-ghost btn-small" id="select-mon-sat">Select Mon-Sat</button>
+          <button type="button" class="btn btn-ghost btn-small" id="clear-week">Clear Week</button>
+        </div>
+        
+        <!-- Saturday -->
+        <div class="saturday-section">
+          <div class="saturday-inner">
+            <div class="saturday-info">
+              <span class="saturday-name">Saturday</span>
+              <span class="saturday-date" id="date-Sat">-</span>
+            </div>
+            <div class="saturday-controls">
+              <button type="button" class="day-btn day-btn-active" data-state="off" id="sat-off">Off</button>
+              <button type="button" class="day-btn" data-state="half" id="sat-half">Half $100</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Week total -->
+        <div class="week-total">
+          <span class="week-total-label">Week total</span>
+          <span class="week-total-value" id="calc-total">$0.00</span>
+        </div>
+        <div class="week-breakdown muted" id="calc-breakdown">Select days worked to calculate wages.</div>
+        
+        <button type="button" class="btn btn-accent btn-block" id="calc-add">Add wages to invoice</button>
+        
+        <!-- Hidden inputs -->
+        <input type="hidden" id="calc-rate" name="calc_rate" value="180">
+        <div class="field week-start-field">
+          <label for="week_start">Week starting</label>
+          <div class="date-input-wrapper">
+            <input type="date" name="week_start" id="week_start" value="<%= issueDate %>">
+            <svg class="date-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 3h10v10H3z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 6h10M7 3v4" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+        </div>
+      </section>
+      
+      <!-- SECTION 3: Dates & Notes -->
+      <section class="card card-dates">
+        <div class="card-head">
+          <h2 class="card-title">Dates & notes</h2>
+          <p class="card-sub">Verify dates for selected days.</p>
+        </div>
+        <div class="wage-dates-grid" id="wage-days">
+          <div class="wage-day-tile" data-day="Mon">
+            <span class="wage-day-name">Mon</span>
+            <span class="wage-date-display">-</span>
+            <input class="input input-sm wage-date" type="date" name="date_Mon" hidden>
+          </div>
+          <div class="wage-day-tile" data-day="Tue">
+            <span class="wage-day-name">Tue</span>
+            <span class="wage-date-display">-</span>
+            <input class="input input-sm wage-date" type="date" name="date_Tue" hidden>
+          </div>
+          <div class="wage-day-tile" data-day="Wed">
+            <span class="wage-day-name">Wed</span>
+            <span class="wage-date-display">-</span>
+            <input class="input input-sm wage-date" type="date" name="date_Wed" hidden>
+          </div>
+          <div class="wage-day-tile" data-day="Thu">
+            <span class="wage-day-name">Thu</span>
+            <span class="wage-date-display">-</span>
+            <input class="input input-sm wage-date" type="date" name="date_Thu" hidden>
+          </div>
+          <div class="wage-day-tile" data-day="Fri">
+            <span class="wage-day-name">Fri</span>
+            <span class="wage-date-display">-</span>
+            <input class="input input-sm wage-date" type="date" name="date_Fri" hidden>
+          </div>
+          <div class="wage-day-tile wage-day-tile-sat" data-day="Sat">
+            <span class="wage-day-name">Sat</span>
+            <span class="wage-date-display">-</span>
+            <input class="input input-sm wage-date" type="date" name="date_Sat" hidden>
+          </div>
+        </div>
+        <label class="field" style="margin-top: 16px;">
+          <span class="field-label">Notes</span>
+          <textarea class="input" name="notes" id="notes" rows="2" placeholder="Optional message shown on the invoice"></textarea>
+        </label>
+      </section>
+      
+      <!-- SECTION 4: Additional Items -->
+      <section class="card card-items">
+        <div class="card-head">
+          <h2 class="card-title">Additional items</h2>
           <button type="button" class="btn btn-ghost btn-small" id="add-line">
             <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            Add line
+            Add item
           </button>
         </div>
         <div class="lines" id="lines">
@@ -235,6 +221,8 @@
             <span>Description</span><span>Qty</span><span>Rate</span><span class="num">Amount</span><span></span>
           </div>
         </div>
+        
+        <!-- Totals -->
         <div class="totals">
           <div class="total-row">
             <span>Subtotal</span>
@@ -249,101 +237,125 @@
             <span class="mono" id="t-gst">$0.00</span>
           </div>
           <div class="total-row total-row-grand">
-            <span>Total</span>
+            <span>Invoice total</span>
             <span class="mono" id="t-total">$0.00</span>
           </div>
         </div>
       </section>
-
-      <!-- Actions -->
-      <section class="card card-actions">
-        <label class="checkline">
-          <input type="checkbox" name="send_now" id="send_now" checked>
-          <span>Open an email to Natalie after saving (you&rsquo;ll attach the downloaded PDF)</span>
-        </label>
-        <div class="actions-row">
-          <input type="hidden" name="action" id="action-field" value="draft">
-          <button type="button" class="btn btn-ghost" id="submit-download" data-action="download">Download PDF</button>
-          <button type="submit" class="btn btn-ghost" id="submit-draft" data-action="draft">Save draft</button>
-          <button type="submit" class="btn btn-ink" id="submit-send" data-action="save">Save</button>
-          <button type="submit" class="btn btn-accent" id="submit-send-email" data-action="send">Send & email</button>
-        </div>
-      </section>
-
-      <!-- Invoice Preview -->
-      <section class="card preview-card">
-        <div class="card-head">
-          <h2 class="card-title">Invoice preview</h2>
-          <p class="card-sub">Live preview of your invoice.</p>
-        </div>
-        <div class="preview-page" id="preview-page">
-          <div class="preview-header">
-            <div class="preview-company">
-              <div class="preview-company-name" id="pv-company"><%= repName %></div>
-              <div class="preview-company-sub" id="pv-company-sub"><% if (repAbn) { %>ABN <%= repAbn %><% } %></div>
-            </div>
-            <div class="preview-invoice-label">INVOICE</div>
-            <div class="preview-invoice-num" id="pv-inv-num"><%= nextNumber %></div>
-          </div>
-          <div class="preview-divider"></div>
-          <div class="preview-rep-details" id="pv-rep-details"></div>
-                    <div class="preview-body">
-                      <div class="preview-billto">
-                        <div class="preview-label">BILL TO</div>
-                        <div class="preview-client-name" id="pv-client-name"></div>
-                        <div class="preview-client-contact" id="pv-client-contact"></div>
-                        <div class="preview-client-email" id="pv-client-email"></div>
-                        <div class="preview-client-address" id="pv-client-address"></div>
-                      </div>
-                      <div class="preview-meta">
-                        <div class="preview-meta-row">
-                          <span class="preview-label">ISSUE DATE</span>
-                          <span id="pv-issue-date"><%= issueDate %></span>
-                        </div>
-                      </div>
-          </div>
-          <div class="preview-divider"></div>
-          <table class="preview-items">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Description</th>
-                <th class="num">Qty</th>
-                <th class="num">Rate</th>
-                <th class="num">Amount</th>
-              </tr>
-            </thead>
-            <tbody id="pv-items">
-              <tr class="preview-empty"><td colspan="5">No items yet</td></tr>
-            </tbody>
-          </table>
-          <div class="preview-divider"></div>
-          <div class="preview-totals">
-            <div class="preview-total-row">
-              <span>Subtotal</span>
-              <span id="pv-subtotal">$0.00</span>
-            </div>
-            <div class="preview-total-row preview-total-gst" id="pv-gst-row" style="display:none">
-              <span>GST (10%)</span>
-              <span id="pv-gst">$0.00</span>
-            </div>
-            <div class="preview-total-row preview-total-grand">
-              <span>TOTAL</span>
-              <span id="pv-total">$0.00</span>
-            </div>
-          </div>
-          <div class="preview-footer">
-            <div id="pv-notes"></div>
-          </div>
-        </div>
-      </section>
+      
     </div>
+    
+    <!-- RIGHT COLUMN: Summary -->
+    <div class="invoice-builder-side">
+      <div class="summary-sticky">
+        
+        <!-- Live Invoice Summary -->
+        <section class="card card-summary">
+          <div class="card-head">
+            <h2 class="card-title">Invoice summary</h2>
+            <p class="card-sub">What Accounts will receive.</p>
+          </div>
+          
+          <div class="summary-preview" id="preview-page">
+            <div class="summary-header">
+              <div class="summary-company">
+                <div class="summary-company-name" id="pv-company"><%= repName %></div>
+                <div class="summary-company-sub" id="pv-company-sub"><% if (repAbn) { %>ABN <%= repAbn %><% } %></div>
+              </div>
+              <div class="summary-invoice-label">INVOICE</div>
+              <div class="summary-invoice-num" id="pv-inv-num"><%= nextNumber %></div>
+            </div>
+            
+            <div class="summary-divider"></div>
+            
+            <div class="summary-rep-details" id="pv-rep-details"></div>
+            
+            <div class="summary-body">
+              <div class="summary-billto">
+                <div class="summary-label">BILL TO</div>
+                <div class="summary-client-name" id="pv-client-name"></div>
+                <div class="summary-client-contact" id="pv-client-contact"></div>
+                <div class="summary-client-email" id="pv-client-email"></div>
+                <div class="summary-client-address" id="pv-client-address"></div>
+              </div>
+              <div class="summary-meta">
+                <div class="summary-meta-row">
+                  <span class="summary-label">WEEK</span>
+                  <span id="pv-week-range">-</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="summary-divider"></div>
+            
+            <table class="summary-items">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Description</th>
+                  <th class="num">Qty</th>
+                  <th class="num">Rate</th>
+                  <th class="num">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="pv-items">
+                <tr class="summary-empty"><td colspan="5">No items yet</td></tr>
+              </tbody>
+            </table>
+            
+            <div class="summary-divider"></div>
+            
+            <div class="summary-totals">
+              <div class="summary-total-row">
+                <span>Subtotal</span>
+                <span id="pv-subtotal">$0.00</span>
+              </div>
+              <div class="summary-total-row summary-total-gst" id="pv-gst-row" style="display:none">
+                <span>GST (10%)</span>
+                <span id="pv-gst">$0.00</span>
+              </div>
+              <div class="summary-total-row summary-total-grand">
+                <span>TOTAL</span>
+                <span id="pv-total">$0.00</span>
+              </div>
+            </div>
+            
+            <div class="summary-footer">
+              <div id="pv-notes"></div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Final Actions -->
+        <section class="card card-actions">
+          <div class="actions-review">
+            <div class="review-row">
+              <span class="review-label">Invoice</span>
+              <span class="review-value" id="review-inv-num"><%= nextNumber %></span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Total</span>
+              <span class="review-value review-total" id="review-total">$0.00</span>
+            </div>
+          </div>
+          <div class="actions-row">
+            <input type="hidden" name="action" id="action-field" value="draft">
+            <button type="button" class="btn btn-ghost" id="submit-download" data-action="download">Download PDF</button>
+            <button type="submit" class="btn btn-ghost" id="submit-draft" data-action="draft">Save draft</button>
+            <button type="submit" class="btn btn-accent" id="submit-send-email" data-action="send">Send & email</button>
+          </div>
+        </section>
+        
+      </div>
+    </div>
+    
   </div>
 </form>
+
 <% if (typeof existingItems !== 'undefined') { %>
 <script>
   window.existingItems = <%- JSON.stringify(existingItems) %>;
 </script>
 <% } %>
-<script>window.invoiceRepName = <%- JSON.stringify(repName) %>; window.invoiceRepDetails = <%- JSON.stringify({ name: repName, abn: repAbn, email: currentUser && currentUser.email, bankName: currentUser && currentUser.bank_name, bankBsb: currentUser && currentUser.bank_bsb, bankAccount: currentUser && currentUser.bank_account }) %>;</script>
+<script>window.invoiceRepName = <%- JSON.stringify(repName) %>; window.invoiceRepDetails = <%- JSON.stringify({ name: repName, abn: repAbn, email: currentUser && currentUser.email, bankName: currentUser && currentUser.bank_name, bankBsb: currentUser && currentUser.bank_bsb, bankAccount: currentUser && currentUser.bank_account }) %>; window.asgInvoiceAddress = <%- JSON.stringify(settings.asg_address || '4/58 Kishorn Road, Mount Pleasant WA 6153') %>;</script>
 <%- include('partials/footer', { pageScript: '/js/invoice-form.js' }) %>
