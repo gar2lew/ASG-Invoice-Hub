@@ -40,7 +40,7 @@ const SCHEMA = `
   );
   CREATE TABLE IF NOT EXISTS invoices (
     id SERIAL PRIMARY KEY,
-    invoice_number TEXT NOT NULL UNIQUE,
+    invoice_number TEXT NOT NULL,
     user_id INTEGER NOT NULL REFERENCES users(id),
     template TEXT NOT NULL DEFAULT 'standard',
     customer_name TEXT NOT NULL,
@@ -59,6 +59,7 @@ const SCHEMA = `
     paid_at TEXT DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
+  CREATE UNIQUE INDEX IF NOT EXISTS invoices_user_invoice_number_key ON invoices (user_id, invoice_number);
   CREATE TABLE IF NOT EXISTS invoice_items (
     id SERIAL PRIMARY KEY,
     invoice_id INTEGER NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
@@ -152,6 +153,12 @@ async function initDb() {
       await p.query("UPDATE settings SET asg_address = '4/58 Kishorn Road, Mount Pleasant WA 6153' WHERE id = 1 AND (asg_address IS NULL OR asg_address = '')");
     } catch (e) {
       console.warn('settings ASG address migration skipped:', e.message);
+    }
+    try {
+      await p.query('CREATE UNIQUE INDEX IF NOT EXISTS invoices_user_invoice_number_key ON invoices (user_id, invoice_number)');
+      await p.query('ALTER TABLE invoices DROP CONSTRAINT IF EXISTS invoices_invoice_number_key');
+    } catch (e) {
+      console.warn('per-rep invoice number uniqueness migration skipped:', e.message);
     }
   // Backfill next_invoice_number for existing reps based on their highest invoice number
     try {
@@ -433,8 +440,8 @@ async function allocateInvoiceNumber(client, userId, userSuppliedNumber) {
     
     // Check uniqueness
     const dupCheck = await client.query(
-      'SELECT id FROM invoices WHERE invoice_number = $1',
-      [userSuppliedNumber]
+      'SELECT id FROM invoices WHERE user_id = $1 AND invoice_number = $2',
+      [userId, userSuppliedNumber]
     );
     if (dupCheck.rows.length > 0) {
       throw new Error(`Invoice number ${userSuppliedNumber} already exists.`);
@@ -453,8 +460,8 @@ async function allocateInvoiceNumber(client, userId, userSuppliedNumber) {
     
     // Check uniqueness (should always pass, but safety check)
     const dupCheck = await client.query(
-      'SELECT id FROM invoices WHERE invoice_number = $1',
-      [finalNumber]
+      'SELECT id FROM invoices WHERE user_id = $1 AND invoice_number = $2',
+      [userId, finalNumber]
     );
     if (dupCheck.rows.length > 0) {
       // Number already exists, advance until we find a free one
@@ -462,8 +469,8 @@ async function allocateInvoiceNumber(client, userId, userSuppliedNumber) {
       while (true) {
         const tryNumber = `${prefix}-${String(candidate).padStart(4, '0')}`;
         const check = await client.query(
-          'SELECT id FROM invoices WHERE invoice_number = $1',
-          [tryNumber]
+          'SELECT id FROM invoices WHERE user_id = $1 AND invoice_number = $2',
+          [userId, tryNumber]
         );
         if (check.rows.length === 0) {
           finalNumber = tryNumber;
@@ -509,8 +516,8 @@ async function createInvoice(tx) {
       }
 
       const dupCheck = await client.query(
-        'SELECT id FROM invoices WHERE invoice_number = $1',
-        [tx.invoice_number]
+        'SELECT id FROM invoices WHERE user_id = $1 AND invoice_number = $2',
+        [tx.user_id, tx.invoice_number]
       );
       if (dupCheck.rows.length > 0) {
         throw new Error(`Invoice number ${tx.invoice_number} is already in use. Please choose another number.`);
@@ -564,9 +571,11 @@ async function getInvoice(id) {
   return r.rows[0];
 }
 
-async function getInvoiceByNumber(number) {
+async function getInvoiceByNumber(number, userId) {
   await ensureReady();
-  const r = await getPool().query('SELECT * FROM invoices WHERE invoice_number = $1', [number]);
+  const r = userId
+    ? await getPool().query('SELECT * FROM invoices WHERE invoice_number = $1 AND user_id = $2', [number, userId])
+    : await getPool().query('SELECT * FROM invoices WHERE invoice_number = $1 ORDER BY created_at DESC LIMIT 1', [number]);
   return r.rows[0];
 }
 
@@ -644,7 +653,7 @@ async function updateInvoice(invoiceId, tx) {
 
       // Check uniqueness (excluding current invoice)
       const dupCheck = await client.query(
-        'SELECT id FROM invoices WHERE invoice_number = $1 AND id != $2',
+        'SELECT id FROM invoices WHERE invoice_number = $1 AND user_id = (SELECT user_id FROM invoices WHERE id = $2) AND id != $2',
         [tx.invoice_number, invoiceId]
       );
       if (dupCheck.rows.length > 0) {

@@ -448,6 +448,24 @@ async function main() {
   });
   log(firstForDup.invoice_number === 'INV-0100', 'first invoice with INV-0100 succeeds');
 
+  await db.createUser({ username: 'rep5', password: 'secret6', name: 'Rep Five', email: 'rep5@co.com', role: 'rep' });
+  const independentRep = await db.getUserByUsername('rep5');
+  await db.updateUser(independentRep.id, { next_invoice_number: 100 });
+  const sameNumberForIndependentRep = await db.createInvoice({
+    user_id: independentRep.id,
+    template: 'standard',
+    customer_name: 'Independent Sequence Co',
+    issue_date: '2026-08-25',
+    tax_rate: 0,
+    subtotal: 100,
+    tax_amount: 0,
+    total: 100,
+    status: 'draft',
+    items: [{ description: 'Service', quantity: 1, rate: 100, amount: 100 }],
+  });
+  log(sameNumberForIndependentRep.invoice_number === 'INV-0100',
+    'different reps can use the same invoice number in their own sequence');
+
   // Second attempt to use INV-0100 should be ignored (not first invoice)
   const secondForDup = await db.createInvoice({
     user_id: dupRepUser.id,
@@ -463,10 +481,12 @@ async function main() {
     items: [{ description: 'Test', quantity: 1, rate: 100, amount: 100 }],
   });
   log(secondForDup.invoice_number !== 'INV-0100', 'duplicate starting number is ignored for non-first invoice');
-  log(secondForDup.invoice_number === 'INV-0101', `second invoice auto-generates ${secondForDup.invoice_number}`);
+  log(secondForDup.invoice_number === 'INV-0101', `second invoice continues the rep's own sequence: ${secondForDup.invoice_number}`);
 
   await db.deleteInvoice(firstForDup.id);
   await db.deleteInvoice(secondForDup.id);
+  await db.deleteInvoice(sameNumberForIndependentRep.id);
+  await db.deleteUser(independentRep.id);
 
   // Malformed starting number should be rejected (need a fresh rep)
   const malRep = await db.createUser({ username: 'rep4', password: 'secret4', name: 'Rep Four', email: 'rep4@co.com', abn: '66 777 888 999', bank_name: 'Bank D', bank_bsb: '666777', bank_account: '88899900', pin: '6666', role: 'rep' });

@@ -13,6 +13,21 @@ async function loginAsAdmin(page) {
 }
 
 test.describe('ASG Template Coverage', () => {
+  test('new invoice pre-fills the selected company on first load and when switching templates', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/invoices/new');
+
+    await expect(page.locator('#customer_name')).toHaveValue('AMPLIFY SOLUTIONS GROUP PTY LTD');
+    await expect(page.locator('#customer_address')).toHaveValue('4/58 Kishorn Road, Mount Pleasant WA 6153');
+    await expect(page.locator('#pv-client-name')).toHaveText('AMPLIFY SOLUTIONS GROUP PTY LTD');
+    await expect(page.locator('#pv-rep-details')).not.toContainText('4/58 Kishorn Road');
+
+    await page.locator('.company-option[data-template="sjs"]').click();
+    await expect(page.locator('#customer_name')).toHaveValue('SJS WEALTH SOLUTIONS PTY LTD');
+    await expect(page.locator('#customer_address')).toHaveValue('PO Box 3330, Beeliar Drive, Success WA 6964');
+    await expect(page.locator('#pv-client-name')).toHaveText('SJS WEALTH SOLUTIONS PTY LTD');
+  });
+
   test('ASG company data is correct in settings', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/settings');

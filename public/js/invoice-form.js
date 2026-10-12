@@ -515,7 +515,6 @@ function updatePreview() {
     repDetailsEl.innerHTML = '<strong>FROM</strong><br>' + escHtml(rd.name || '') + '<br>' +
       (rd.abn ? 'ABN: ' + escHtml(rd.abn) + '<br>' : '') +
       (rd.email ? escHtml(rd.email) + '<br>' : '') +
-      (templateInput && templateInput.value === 'asg' && window.asgInvoiceAddress ? escHtml(window.asgInvoiceAddress) + '<br>' : '') +
       (rd.bankName ? 'Bank: ' + escHtml(rd.bankName) + '<br>' : '') +
       (rd.bankBsb ? 'BSB: ' + escHtml(rd.bankBsb) + '<br>' : '') +
       (rd.bankAccount ? 'Account: ' + escHtml(rd.bankAccount) : '');
@@ -916,3 +915,5 @@ if (typeof window.existingItems !== 'undefined' && Array.isArray(window.existing
 } else {
   addLine();
 }
+
+if (!isEditing && templateInput) setTemplate(templateInput.value || 'asg');
