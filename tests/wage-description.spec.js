@@ -59,7 +59,7 @@ test.describe('Structured Wage Descriptions', () => {
     expect(await wageRow.isVisible()).toBeTruthy();
 
     const primaryDesc = await wageRow.locator('input[name="item_description"]').inputValue();
-    expect(primaryDesc).toMatch(/Wages\/Retainer - Week of \d{2}-\d{2} [A-Za-z]{3} \d{4}/);
+    expect(primaryDesc).toBe('Wages/Retainer - Week of 24/08/2026 - 29/08/2026');
     expect(primaryDesc).not.toContain('$900.00');
 
     const wageLineRate = await wageRow.locator('input[name="item_rate"]').inputValue();
@@ -69,19 +69,19 @@ test.describe('Structured Wage Descriptions', () => {
     expect(await detailsRow.isVisible()).toBeTruthy();
 
     const detailsText = await detailsRow.textContent();
-    expect(detailsText).toContain('Mon - 24th 24/08/2026');
-    expect(detailsText).toContain('Tue - 25th 25/08/2026');
-    expect(detailsText).toContain('Wed - 26th 26/08/2026');
-    expect(detailsText).toContain('Thu - 27th 27/08/2026');
-    expect(detailsText).toContain('Sat - 29th 29/08/2026');
+    expect(detailsText).toContain('Mon - 24/08/2026');
+    expect(detailsText).toContain('Tue - 25/08/2026');
+    expect(detailsText).toContain('Wed - 26/08/2026');
+    expect(detailsText).toContain('Thu - 27/08/2026');
+    expect(detailsText).toContain('Sat - 29/08/2026');
 
     expect(detailsText).not.toContain('Fri');
 
     const previewItems = page.locator('#pv-items');
     const previewHtml = await previewItems.innerHTML();
     expect(previewHtml).toContain('Wages/Retainer - Week of');
-    expect(previewHtml).toContain('Mon - 24th 24/08/2026');
-    expect(previewHtml).toContain('Sat - 29th 29/08/2026');
+    expect(previewHtml).toContain('Mon - 24/08/2026');
+    expect(previewHtml).toContain('Sat - 29/08/2026');
   });
 
   test('ordinary line items remain compatible', async ({ page }) => {

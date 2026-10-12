@@ -58,7 +58,7 @@ router.get('/', requireAuth, async (req, res, next) => {
         count: allStats.count,
       },
       statusCounts,
-      todayText: new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' }),
+      todayText: fmtDate(todayISO()),
       showEmpty: invoices.length === 0,
       weeklySendTo: WEEKLY_SEND_TO,
       draftCount: statusCounts.draft,

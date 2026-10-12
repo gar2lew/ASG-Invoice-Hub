@@ -63,12 +63,9 @@ function parseLocalDate(dateString) {
   return new Date(year, month, day);
 }
 
-// Format a date range as "DD-DD Mon YYYY"
+// Format a date range as "DD/MM/YYYY - DD/MM/YYYY"
 function formatWeekRange(startDate, endDate) {
-  const startDay = String(startDate.getDate()).padStart(2, '0');
-  const endDay = String(endDate.getDate()).padStart(2, '0');
-  const monthYear = endDate.toLocaleString('en-AU', { month: 'short', year: 'numeric' });
-  return startDay + '-' + endDay + ' ' + monthYear;
+  return fmtDate(startDate) + ' - ' + fmtDate(endDate);
 }
 
 function fmtWeekRange(weekStarting) {
@@ -91,17 +88,10 @@ function fmtWeekRange(weekStarting) {
 
 function fmtDate(d) {
   if (!d || !d.getDate) return '';
-  const day = d.getDate();
-  const ordinal = getOrdinal(day);
+  const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  return `${day}${ordinal} ${day}/${month}/${year}`;
-}
-
-function getOrdinal(n) {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return s[(v - 20) % 10] || s[v] || s[0];
+  return `${day}/${month}/${year}`;
 }
 
 function formatDateForInput(d) {
@@ -139,12 +129,10 @@ function getDayDate(weekStart, dayOffset) {
   return targetDay;
 }
 
-// Get short date label like "14 Sep"
+// Get date label in the app's standard DD/MM/YYYY format.
 function getShortDate(d) {
   if (!d) return '-';
-  var day = d.getDate();
-  var month = d.toLocaleString('en-AU', { month: 'short' });
-  return day + ' ' + month;
+  return fmtDate(d);
 }
 
 var initialInvoiceNumber = '';

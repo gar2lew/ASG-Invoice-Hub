@@ -23,10 +23,7 @@ function fmtDate(d) {
 }
 
 function fmtDateLong(d) {
-  if (!d) return '';
-  const dt = parseDate(d);
-  if (!dt || Number.isNaN(dt.getTime())) return String(d);
-  return dt.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return fmtDate(d);
 }
 
 function todayISO() {
@@ -66,22 +63,18 @@ function formatWeekRangeForEmail(items) {
   const firstDetail = details[0];
   const lastDetail = details[details.length - 1];
 
-  // Extract components from "Mon - 7th 07/09/2026 - Full day - $180"
-  const parts = firstDetail.split(' - ');
-  const firstDay = parts[0];
-  const firstDayNum = parts[1];
-  const firstDate = parts[2];
+  const parseDetailDate = (detail) => {
+    const match = String(detail).match(/^([A-Za-z]{3})\s+-\s+.*?(\d{2}\/\d{2}\/\d{4})/);
+    return match ? { day: match[1], date: match[2] } : null;
+  };
+  const first = parseDetailDate(firstDetail);
+  const last = parseDetailDate(lastDetail);
 
-  const lastParts = lastDetail.split(' - ');
-  const lastDay = lastParts[0];
-  const lastDayNum = lastParts[1];
-  const lastDate = lastParts[2];
-
-  if (!firstDay || !firstDayNum || !firstDate || !lastDay || !lastDayNum || !lastDate) {
+  if (!first || !last) {
     return '';
   }
 
-  return `${firstDay} - ${firstDayNum} ${firstDate} to ${lastDay} - ${lastDayNum} ${lastDate}`;
+  return `${first.day} - ${first.date} to ${last.day} - ${last.date}`;
 }
 
 module.exports = { fmtMoney, fmtDate, fmtDateLong, todayISO, addDaysISO, weekBounds, round2, formatWeekRangeForEmail };

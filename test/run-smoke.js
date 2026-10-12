@@ -6,6 +6,7 @@ process.env.PG_DRIVER = path.join(__dirname, 'pg-mem-driver.js');
 
 const db = require('../src/db');
 const mail = require('../src/mail');
+const { fmtDate, fmtDateLong, formatWeekRangeForEmail } = require('../src/helpers');
 
 function log(ok, msg) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${msg}`);
@@ -13,6 +14,13 @@ function log(ok, msg) {
 }
 
 async function main() {
+  log(fmtDate('2026-08-04') === '04/08/2026', 'dates format as DD/MM/YYYY');
+  log(fmtDateLong('2026-08-04') === '04/08/2026', 'long date display uses DD/MM/YYYY');
+  log(formatWeekRangeForEmail([{ details: [
+    'Mon - 24/08/2026 - Full day - $180.00',
+    'Sat - 29/08/2026 - Half day - $100.00',
+  ] }]) === 'Mon - 24/08/2026 to Sat - 29/08/2026', 'email week range uses DD/MM/YYYY');
+
   await db.initDb();
 
   log(mail.getInvoiceRecipients() === 'natalie@sjssolutionscorp.com.au', 'invoice recipient is Natalie');
