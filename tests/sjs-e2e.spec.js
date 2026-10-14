@@ -23,29 +23,23 @@ test.describe('SJS End-to-End Flow', () => {
     await expect(page).toHaveURL(/\/invoices\/\d+/);
   });
 
-  test('SJS invoice Mon-Fri wage calculation = $900', async ({ page }) => {
+  test('SJS invoice Mon-Fri wage calculation = $833.33', async ({ page }) => {
     await page.goto('/invoices/new');
     await page.click('.company-option[data-template="sjs"]');
     
-    await page.click('#add-line');
-    await page.fill('[name="item_description"]', 'SJS Service');
-    await page.fill('[name="item_qty"]', '5');
-    await page.fill('[name="item_rate"]', '180');
+    await page.click('#select-mon-fri');
     
-    // Expected total: 5 * 180 = 900
-    await expect(page.locator('#t-total')).toContainText('$900');
+    // Expected five-day total: $1,000 × 5/6 = $833.33.
+    await expect(page.locator('#calc-total')).toContainText('$833.33');
   });
 
-  test('SJS invoice Mon-Sat wage calculation = $1000', async ({ page }) => {
+  test('SJS invoice Mon-Fri plus a Saturday half day = $916.67', async ({ page }) => {
     await page.goto('/invoices/new');
     await page.click('.company-option[data-template="sjs"]');
     
-    await page.click('#add-line');
-    await page.fill('[name="item_description"]', 'SJS Service');
-    await page.fill('[name="item_qty"]', '5');
-    await page.fill('[name="item_rate"]', '180');
+    await page.locator('#select-mon-sat').click();
     
-    await expect(page.locator('#t-total')).toContainText('$900');
+    await expect(page.locator('#calc-total')).toContainText('$916.67');
   });
 
   test('SJS invoice save draft and reload', async ({ page }) => {

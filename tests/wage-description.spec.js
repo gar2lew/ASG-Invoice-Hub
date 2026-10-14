@@ -52,9 +52,6 @@ test.describe('Structured Wage Descriptions', () => {
     await page.fill('#customer_address', '123 Test Street');
     await page.fill('#notes', 'Test notes');
 
-    await page.click('#calc-add');
-    await page.waitForTimeout(100);
-
     const wageRow = page.locator('[data-line-item-type="wages"]').first();
     expect(await wageRow.isVisible()).toBeTruthy();
 
@@ -63,7 +60,7 @@ test.describe('Structured Wage Descriptions', () => {
     expect(primaryDesc).not.toContain('$900.00');
 
     const wageLineRate = await wageRow.locator('input[name="item_rate"]').inputValue();
-    expect(wageLineRate).toContain('820');
+    expect(wageLineRate).toContain('750');
 
     const detailsRow = wageRow.locator('..').locator('.wage-details').first();
     expect(await detailsRow.isVisible()).toBeTruthy();
@@ -92,9 +89,6 @@ test.describe('Structured Wage Descriptions', () => {
     await setDayState(page, 'Mon', 'full');
     await page.waitForTimeout(100);
 
-    await page.click('#calc-add');
-    await page.waitForTimeout(100);
-
     const wageRow = page.locator('[data-line-item-type="wages"]').first();
     expect(await wageRow.isVisible()).toBeTruthy();
 
@@ -115,18 +109,15 @@ test.describe('Structured Wage Descriptions', () => {
     await page.waitForTimeout(100);
 
     await page.fill('#customer_name', 'Half Day Test');
-    await page.click('#calc-add');
-    await page.waitForTimeout(100);
-
     const detailsRow = page.locator('.wage-details').first();
     const detailsText = await detailsRow.textContent();
 
-    // Half day should show "Half day - $90"
+    // Half day should use half the shared six-day allocation.
     expect(detailsText).toContain('Half day');
-    expect(detailsText).toContain('$90');
+    expect(detailsText).toContain('$83.33');
 
-    // Full day should show "Full day - $180"
+    // Full day uses the shared six-day allocation.
     expect(detailsText).toContain('Full day');
-    expect(detailsText).toContain('$180');
+    expect(detailsText).toContain('$166.67');
   });
 });

@@ -13,7 +13,6 @@ router.get('/', requireAuth, async (req, res, next) => {
     const week = weekBounds();
     const weekStats = await db.statsForUserSince(req.user.id, week.start, week.end);
     const allStats = await db.statsForUser(req.user.id);
-    const recent = invoices.slice(0, 8);
     const flashMsg = req.session.flash || null;
     req.session.flash = null;
 
@@ -27,28 +26,10 @@ router.get('/', requireAuth, async (req, res, next) => {
     const statusCounts = { draft: 0, sent: 0, paid: 0 };
     invoices.forEach((i) => { statusCounts[i.status] = (statusCounts[i.status] || 0) + 1; });
 
-    const outstanding = rows.filter((i) => i.status !== 'paid').sort((a, b) => {
-      if (a.status === b.status) return 0;
-      return a.status === 'draft' ? -1 : 1;
-    });
-    const paidInvoices = rows.filter((i) => i.status === 'paid');
-
-    console.log('DASHBOARD RENDER', {
-      hasOutstanding: 'outstanding' in { outstanding, paidInvoices },
-      outstandingCount: outstanding.length,
-      paidCount: paidInvoices.length,
-      rowsCount: rows.length,
-      admin,
-      userId: req.user ? req.user.id : null,
-      userRole: req.user ? req.user.role : null,
-    });
     res.render('dashboard', {
       title: 'Dashboard',
       flash: flashMsg,
       invoices: rows,
-      outstanding,
-      paidInvoices,
-      recent,
       admin,
       currentUser: req.user,
       weekStats: { ...weekStats, totalText: fmtMoney(weekStats.total), count: weekStats.count },
@@ -87,6 +68,7 @@ router.get('/invoices/new', requireAuth, async (req, res, next) => {
       flash: flashMsg,
       settings,
       nextNumber,
+      currentUser: req.user,
       isFirstInvoice,
       repName: req.user.name || '',
       repAbn: req.user.abn || '',
@@ -154,6 +136,7 @@ router.get('/invoices/:id/edit', requireAuth, async (req, res, next) => {
       flash: flashMsg,
       settings,
       nextNumber: invoice.invoice_number,
+      currentUser: req.user,
       repName: req.user.name || '',
       repAbn: req.user.abn || '',
       issueDate: invoice.issue_date,

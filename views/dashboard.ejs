@@ -7,7 +7,7 @@
   </div>
   <a class="btn btn-accent" href="/invoices/new">
     <svg aria-hidden="true" viewBox="0 0 16 16" width="15" height="15"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    New invoice
+    Create weekly invoice
   </a>
 </header>
 
@@ -44,14 +44,14 @@
   <div class="card empty">
     <span class="empty-mark">INV</span>
     <h2>No invoices yet</h2>
-    <p>Create your first invoice and email it straight to accounts.</p>
-    <a class="btn btn-accent" href="/invoices/new">Create an invoice</a>
+    <p>Choose the days worked, then save the invoice.</p>
+    <a class="btn btn-accent" href="/invoices/new">Create weekly invoice</a>
   </div>
 <% } else { %>
+  <% if (admin) { %><form id="bulk-delete-invoices" method="post" action="/admin/invoices/delete" onsubmit="return confirm('Permanently delete the selected invoices?');"><% } %>
   <section class="card">
     <div class="card-head">
-      <h2 class="card-title">Outstanding invoices</h2>
-      <% if (admin) { %><button class="btn btn-ghost btn-small" type="submit" form="bulk-delete-outstanding">Delete selected</button><% } %>
+      <h2 class="card-title">Invoice history</h2>
       <label class="filter">
         <span class="sr-only">Filter by status</span>
         <select class="input input-sm" data-filter-status>
@@ -61,15 +61,15 @@
           <option value="paid">Paid</option>
         </select>
       </label>
+      <% if (admin) { %><button class="btn btn-ghost btn-small" type="submit">Delete selected</button><% } %>
     </div>
     <div class="table-wrap">
-      <% if (admin) { %><form id="bulk-delete-outstanding" method="post" action="/admin/invoices/delete" onsubmit="return confirm('Permanently delete the selected invoices?');"><% } %>
       <table class="table">
         <thead>
           <tr>
-            <% if (admin) { %><th><input type="checkbox" data-select-all aria-label="Select all outstanding invoices"></th><% } %><th>Invoice</th>
+            <% if (admin) { %><th><input type="checkbox" data-select-all aria-label="Select all invoices"></th><% } %><th>Invoice</th>
             <th>Customer</th>
-            <th>Issued</th>
+            <th>Created</th>
             <% if (admin) { %><th>Rep</th><% } %>
             <th>Template</th>
             <th class="num">Total</th>
@@ -78,8 +78,7 @@
           </tr>
         </thead>
         <tbody>
-          <% var outstandingList = outstanding || invoices || []; %>
-          <% outstandingList.forEach(function(i) { %>
+          <% invoices.forEach(function(i) { %>
           <tr data-status="<%= i.status %>">
             <% if (admin) { %><td><input type="checkbox" name="delete_ids" value="<%= i.id %>" aria-label="Select <%= i.invoice_number %>"></td><% } %>
             <td class="mono"><a href="/invoices/<%= i.id %>"><%= i.invoice_number %></a></td>
@@ -87,75 +86,20 @@
               <span class="cell-main"><%= i.customer_name %></span>
               <% if (i.customer_company) { %><span class="cell-sub"><%= i.customer_company %></span><% } %>
             </td>
-            <td class="muted"><%= i.issueDateText %></td>
+            <td class="muted"><%= i.createdText %></td>
             <% if (admin) { %><td class="muted"><%= i.rep_name %></td><% } %>
             <td><span class="badge badge-tpl"><%= i.template %></span></td>
             <td class="num mono strong"><%= i.totalText %></td>
             <td><span class="badge badge-<%= i.status %>"><%= i.status %></span></td>
-            <td class="actions">
-              <a class="btn btn-ghost btn-tiny" href="/invoices/<%= i.id %>">View</a>
-              <a class="btn btn-ghost btn-tiny" href="/invoices/<%= i.id %>/download">PDF</a>
-              <% if (i.status !== 'paid') { %>
-                <form method="post" action="/invoices/<%= i.id %>/paid" onsubmit="return confirm('Mark invoice <%= i.invoice_number %> as paid?');">
-                  <button class="btn btn-ghost btn-tiny" type="submit">Mark paid</button>
-                </form>
-              <% } %>
-            </td>
+            <td class="actions"><a class="btn btn-ghost btn-tiny" href="/invoices/<%= i.id %>">View</a></td>
           </tr>
           <% }) %>
         </tbody>
       </table>
-      <% if (admin) { %></form><% } %>
     </div>
   </section>
+  <% if (admin) { %></form><% } %>
 
-  <% if (paidInvoices.length) { %>
-  <section class="card">
-    <div class="card-head">
-      <h2 class="card-title">Paid / completed invoices</h2>
-      <% if (admin) { %><button class="btn btn-ghost btn-small" type="submit" form="bulk-delete-paid">Delete selected</button><% } %>
-    </div>
-    <div class="table-wrap">
-      <% if (admin) { %><form id="bulk-delete-paid" method="post" action="/admin/invoices/delete" onsubmit="return confirm('Permanently delete the selected invoices?');"><% } %>
-      <table class="table">
-        <thead>
-          <tr>
-            <% if (admin) { %><th><input type="checkbox" data-select-all aria-label="Select all paid invoices"></th><% } %><th>Invoice</th>
-            <th>Customer</th>
-            <th>Issued</th>
-            <% if (admin) { %><th>Rep</th><% } %>
-            <th>Template</th>
-            <th class="num">Total</th>
-            <th>Status</th>
-            <th class="actions"><span class="sr-only">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% var paidList = paidInvoices || []; %>
-          <% paidList.forEach(function(i) { %>
-          <tr data-status="<%= i.status %>">
-            <td class="mono"><a href="/invoices/<%= i.id %>"><%= i.invoice_number %></a></td>
-            <td>
-              <span class="cell-main"><%= i.customer_name %></span>
-              <% if (i.customer_company) { %><span class="cell-sub"><%= i.customer_company %></span><% } %>
-            </td>
-            <td class="muted"><%= i.issueDateText %></td>
-            <% if (admin) { %><td class="muted"><%= i.rep_name %></td><% } %>
-            <td><span class="badge badge-tpl"><%= i.template %></span></td>
-            <td class="num mono strong"><%= i.totalText %></td>
-            <td><span class="badge badge-<%= i.status %>"><%= i.status %></span></td>
-            <td class="actions">
-              <a class="btn btn-ghost btn-tiny" href="/invoices/<%= i.id %>">View</a>
-              <a class="btn btn-ghost btn-tiny" href="/invoices/<%= i.id %>/download">PDF</a>
-            </td>
-          </tr>
-          <% }) %>
-        </tbody>
-      </table>
-      <% if (admin) { %></form><% } %>
-    </div>
-  </section>
-  <% } %>
 <% } %>
 
 <%- include('partials/footer', { pageScript: '/js/dashboard.js' }) %>

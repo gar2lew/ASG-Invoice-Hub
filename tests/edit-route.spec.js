@@ -32,7 +32,6 @@ test.describe('Invoice Edit Route', () => {
       const btn = page.locator(`.weekday[data-day="${day}"] .day-btn[data-state="full"]`);
       await btn.click();
     }
-    await page.click('#calc-add');
 
     // Save as draft
     await page.click('#submit-draft');
@@ -55,6 +54,7 @@ test.describe('Invoice Edit Route', () => {
 
     // Change notes
     await page.fill('#notes', 'Updated notes');
+    await page.locator('.invoice-more-options summary').click();
     await page.fill('#invoice_number', 'INV-9001');
 
     // Save edit - should use PUT
@@ -86,7 +86,6 @@ test.describe('Invoice Edit Route', () => {
       const btn = page.locator(`.weekday[data-day="${day}"] .day-btn[data-state="full"]`);
       await btn.click();
     }
-    await page.click('#calc-add');
 
     await page.click('#submit-draft');
     await page.waitForURL(/\/invoices\/(\d+)/);
@@ -111,7 +110,6 @@ test.describe('Invoice Edit Route', () => {
       const btn = page.locator(`.weekday[data-day="${day}"] .day-btn[data-state="full"]`);
       await btn.click();
     }
-    await page.click('#calc-add');
 
     await page.click('#submit-draft');
     await page.waitForURL(/\/invoices\/(\d+)/);

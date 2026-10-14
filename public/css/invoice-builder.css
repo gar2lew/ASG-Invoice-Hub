@@ -5,7 +5,7 @@
 
 .invoice-builder {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2xl);
   align-items: start;
 }
@@ -19,13 +19,32 @@
 }
 
 .summary-sticky {
-  position: sticky;
-  top: var(--space-lg);
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+  gap: var(--space-lg);
+  align-items: start;
 }
 
 /* Invoice Setup */
+.invoice-more-options {
+  margin-top: var(--space-md);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-sm);
+}
+
+.invoice-more-options summary,
+.invoice-more-actions summary {
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: var(--space-sm) 0;
+}
+
+.invoice-more-options[open] .grid2 {
+  margin-top: var(--space-md);
+}
+
 .card-setup .grid2 {
   margin-top: var(--space-lg);
 }
@@ -98,7 +117,7 @@
 /* Weekday grid */
 .weekdays {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: var(--space-md);
   margin-bottom: var(--space-lg);
 }
@@ -476,54 +495,44 @@
    =================================================================== */
 
 @media (max-width: 1099px) {
-  .invoice-builder {
-    grid-template-columns: 1fr;
-  }
-  
-  .invoice-builder-side {
-    order: 2;
-  }
-  
   .summary-sticky {
-    position: static;
-    max-height: none;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .weekdays {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
   .company-selector {
     grid-template-columns: 1fr;
   }
-  
+
+  .weekdays {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .saturday-inner {
     flex-direction: column;
     gap: var(--space-sm);
     align-items: flex-start;
   }
-  
+
   .wage-rates {
-    flex-wrap: wrap;
-    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
   }
 }
 
 @media (max-width: 540px) {
   .weekdays {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  
+
   .week-total-value {
     font-size: 20px;
   }
-  
+
   .actions-row .btn {
     width: 100%;
   }
-  
+
   .quick-actions .btn {
     flex: 1;
     text-align: center;

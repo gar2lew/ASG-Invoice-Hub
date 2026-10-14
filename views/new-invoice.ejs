@@ -7,7 +7,7 @@
   </div>
 </header>
 
-<form id="invoice-form" class="invoice-form" method="post" action="/api/invoices" data-next-number="<%= settings.invoice_prefix %>"<% if (typeof editingInvoice !== 'undefined' && editingInvoice) { %> data-edit-id="<%= editingInvoice.id %>"<% } %>>
+<form id="invoice-form" class="invoice-form" method="post" action="/api/invoices" data-next-number="<%= settings.invoice_prefix %>-<%= String(typeof editingInvoice !== 'undefined' && editingInvoice ? editingInvoice.invoice_number.split('-').pop() : (currentUser && currentUser.next_invoice_number) || 1).padStart(4, '0') %>"<% if (typeof editingInvoice !== 'undefined' && editingInvoice) { %> data-edit-id="<%= editingInvoice.id %>"<% } %>>
   
   <!-- TWO COLUMN LAYOUT -->
   <div class="invoice-builder">
@@ -18,8 +18,8 @@
       <!-- SECTION 1: Invoice Setup -->
       <section class="card card-setup">
         <div class="card-head">
-          <h2 class="card-title">Invoice setup</h2>
-          <p class="card-sub">Company, invoice number, and client details.</p>
+          <h2 class="card-title">Invoice details</h2>
+          <p class="card-sub">Choose the company and enter the customer.</p>
         </div>
         
         <!-- Company selector -->
@@ -35,20 +35,6 @@
           <input type="hidden" name="template" value="asg" id="template-input">
         </div>
         
-        <!-- Invoice number + Email row -->
-        <div class="grid2">
-          <label class="field">
-            <span class="field-label">Invoice number</span>
-            <input class="input" type="text" name="invoice_number" id="invoice_number" value="<%= nextNumber %>" placeholder="e.g. INV-0045">
-            <span class="hint">Suggested automatically. You can change this number while the invoice is a draft.</span>
-            <span class="checkline"><input type="checkbox" name="continue_numbering" id="continue_numbering"><span>Continue Numbering from here on next invoice</span></span>
-          </label>
-          <label class="field">
-            <span class="field-label">Accounts email</span>
-            <input class="input" type="email" name="customer_email" id="customer_email" value="<%= typeof customer_email !== 'undefined' && customer_email ? customer_email : '' %>">
-          </label>
-        </div>
-        
         <label class="field">
           <span class="field-label">Company name <em>*</em></span>
           <input class="input" type="text" name="customer_name" id="customer_name" required value="<%= typeof customer_name !== 'undefined' && customer_name ? customer_name : '' %>"/>
@@ -57,6 +43,21 @@
           <span class="field-label">Address</span>
           <textarea class="input" name="customer_address" id="customer_address" rows="2"><%= typeof customer_address !== 'undefined' && customer_address ? customer_address : '' %></textarea>
         </label>
+        <details class="invoice-more-options">
+          <summary>More options</summary>
+          <div class="grid2">
+            <label class="field">
+              <span class="field-label">Invoice number</span>
+              <input class="input" type="text" name="invoice_number" id="invoice_number" value="<%= nextNumber %>" placeholder="e.g. INV-0045">
+              <span class="hint">Suggested automatically. You can change this number while the invoice is a draft.</span>
+              <span class="checkline"><input type="checkbox" name="continue_numbering" id="continue_numbering"><span>Continue numbering from here on next invoice</span></span>
+            </label>
+            <label class="field">
+              <span class="field-label">Accounts email</span>
+              <input class="input" type="email" name="customer_email" id="customer_email" value="<%= typeof customer_email !== 'undefined' && customer_email ? customer_email : '' %>">
+            </label>
+          </div>
+        </details>
       </section>
       
       <!-- SECTION 2: Weekly Wages -->
@@ -67,11 +68,7 @@
         </div>
         
         <!-- Rate display -->
-        <div class="wage-rates">
-          <span class="wage-rate"><strong>Weekday</strong> $180/day</span>
-          <span class="wage-rate"><strong>Half day</strong> $90</span>
-          <span class="wage-rate"><strong>Saturday</strong> $100</span>
-        </div>
+        <p class="wage-rates">$1,000 ÷ 6 days = $166.67 per worked day. Half days are half that amount.</p>
         
         <!-- Weekday grid -->
         <div class="weekdays" id="calc-days-standard">
@@ -81,7 +78,7 @@
             <div class="weekday-controls">
               <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
               <button type="button" class="day-btn" data-state="half">Half</button>
-              <button type="button" class="day-btn" data-state="full">Full</button>
+              <button type="button" class="day-btn" data-state="full">Worked</button>
             </div>
           </div>
           <div class="weekday" data-day="Tue">
@@ -90,7 +87,7 @@
             <div class="weekday-controls">
               <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
               <button type="button" class="day-btn" data-state="half">Half</button>
-              <button type="button" class="day-btn" data-state="full">Full</button>
+              <button type="button" class="day-btn" data-state="full">Worked</button>
             </div>
           </div>
           <div class="weekday" data-day="Wed">
@@ -99,7 +96,7 @@
             <div class="weekday-controls">
               <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
               <button type="button" class="day-btn" data-state="half">Half</button>
-              <button type="button" class="day-btn" data-state="full">Full</button>
+              <button type="button" class="day-btn" data-state="full">Worked</button>
             </div>
           </div>
           <div class="weekday" data-day="Thu">
@@ -108,7 +105,7 @@
             <div class="weekday-controls">
               <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
               <button type="button" class="day-btn" data-state="half">Half</button>
-              <button type="button" class="day-btn" data-state="full">Full</button>
+              <button type="button" class="day-btn" data-state="full">Worked</button>
             </div>
           </div>
           <div class="weekday" data-day="Fri">
@@ -117,7 +114,7 @@
             <div class="weekday-controls">
               <button type="button" class="day-btn day-btn-active" data-state="off">Off</button>
               <button type="button" class="day-btn" data-state="half">Half</button>
-              <button type="button" class="day-btn" data-state="full">Full</button>
+              <button type="button" class="day-btn" data-state="full">Worked</button>
             </div>
           </div>
         </div>
@@ -138,7 +135,8 @@
             </div>
             <div class="saturday-controls">
               <button type="button" class="day-btn day-btn-active" data-state="off" id="sat-off">Off</button>
-              <button type="button" class="day-btn" data-state="half" id="sat-half">Half $100</button>
+              <button type="button" class="day-btn" data-state="half" id="sat-half">Half</button>
+              <button type="button" class="day-btn" data-state="full" id="sat-full">Worked</button>
             </div>
           </div>
         </div>
@@ -150,10 +148,6 @@
         </div>
         <div class="week-breakdown muted" id="calc-breakdown">Select days worked to calculate wages.</div>
         
-        <button type="button" class="btn btn-accent btn-block" id="calc-add">Add wages to invoice</button>
-        
-        <!-- Hidden inputs -->
-        <input type="hidden" id="calc-rate" name="calc_rate" value="180">
         <div class="field week-start-field">
           <label for="week_start">Week starting</label>
           <div class="date-input-wrapper">
@@ -339,10 +333,7 @@
             </div>
           </div>
           <div class="actions-row">
-            <input type="hidden" name="action" id="action-field" value="draft">
-            <button type="button" class="btn btn-ghost" id="submit-download" data-action="download">Download PDF</button>
-            <button type="submit" class="btn btn-ghost" id="submit-draft" data-action="draft">Save draft</button>
-            <button type="submit" class="btn btn-accent" id="submit-send-email" data-action="send">Send & email</button>
+            <button type="submit" class="btn btn-accent" id="submit-draft" data-action="draft"><%= typeof editingInvoice !== 'undefined' && editingInvoice ? 'Save changes' : 'Save invoice' %></button>
           </div>
         </section>
         

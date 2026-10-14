@@ -50,9 +50,6 @@ test.describe('Wage Detail Persistence', () => {
     await page.fill('#customer_address', '123 Persistence Street');
     await page.fill('#notes', 'Test notes for persistence');
 
-    await page.click('#calc-add');
-    await page.waitForTimeout(500);
-
     const wageRow = page.locator('[data-line-item-type="wages"]').first();
     await expect(wageRow).toBeVisible({ timeout: 5000 });
 
@@ -64,9 +61,9 @@ test.describe('Wage Detail Persistence', () => {
     await expect(detailsRow).toBeVisible({ timeout: 5000 });
 
     const detailsText = await detailsRow.textContent();
-    expect(detailsText).toContain('Mon - 24/08/2026 - Full day - $180.00');
-    expect(detailsText).toContain('Wed - 26/08/2026 - Full day - $180.00');
-    expect(detailsText).toContain('Sat - 29/08/2026 - Half day - $100.00');
+    expect(detailsText).toContain('Mon - 24/08/2026 - Full day - $166.67');
+    expect(detailsText).toContain('Wed - 26/08/2026 - Full day - $166.67');
+    expect(detailsText).toContain('Sat - 29/08/2026 - Half day - $83.33');
 
     expect(detailsText).not.toContain('Tue');
     expect(detailsText).not.toContain('Thu');
@@ -110,9 +107,9 @@ test.describe('Wage Detail Persistence', () => {
     await expect(restoredDetailsRow).toBeVisible({ timeout: 5000 });
 
     const restoredDetailsText = await restoredDetailsRow.textContent();
-    expect(restoredDetailsText).toContain('Mon - 24/08/2026 - Full day - $180.00');
-    expect(restoredDetailsText).toContain('Wed - 26/08/2026 - Full day - $180.00');
-    expect(restoredDetailsText).toContain('Sat - 29/08/2026 - Half day - $100.00');
+    expect(restoredDetailsText).toContain('Mon - 24/08/2026 - Full day - $166.67');
+    expect(restoredDetailsText).toContain('Wed - 26/08/2026 - Full day - $166.67');
+    expect(restoredDetailsText).toContain('Sat - 29/08/2026 - Half day - $83.33');
 
     expect(restoredDetailsText).not.toContain('Tue');
     expect(restoredDetailsText).not.toContain('Thu');
@@ -146,11 +143,8 @@ test.describe('Wage Detail Persistence', () => {
     await page.waitForTimeout(100);
 
     await page.fill('#customer_name', 'Half Day Persistence Test');
-    await page.click('#calc-add');
-    await page.waitForTimeout(500);
-
-    // Verify total = $370 (90 + 180 + 100)
-    expect(await page.locator('#calc-total').textContent()).toContain('370.00');
+    // One full day and two half days equal two sixths of $1,000.
+    expect(await page.locator('#calc-total').textContent()).toContain('333.33');
 
     // Save
     await page.click('#submit-draft');
@@ -171,7 +165,7 @@ test.describe('Wage Detail Persistence', () => {
     // Verify the total is preserved
     const wageRow = page.locator('[data-line-item-type="wages"]').first();
     const rate = await wageRow.locator('input[name="item_rate"]').inputValue();
-    expect(rate).toBe('370');
+    expect(rate).toBe('333.33');
 
     // Verify details show half/full labels
     const detailsRow = page.locator('.wage-details').first();

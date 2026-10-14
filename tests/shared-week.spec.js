@@ -95,11 +95,11 @@ test.describe('Shared Week State', () => {
     expect(tueState).toBe('off');
 
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$180.00');
+    expect(totalText).toBe('$166.67');
 
     const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Mon: $180.00');
-    expect(breakdown).toContain('→ $180.00');
+    expect(breakdown).toContain('Mon');
+    expect(breakdown).not.toContain('Tue');
 
     expect(page._jsErrors).toEqual([]);
   });
@@ -120,11 +120,11 @@ test.describe('Shared Week State', () => {
     expect(wedState).toBe('full');
 
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$180.00');
+    expect(totalText).toBe('$166.67');
 
     const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Wed: $180.00');
-    expect(breakdown).toContain('→ $180.00');
+    expect(breakdown).toContain('Wed');
+    expect(breakdown).not.toContain('Tue');
 
     expect(page._jsErrors).toEqual([]);
   });
@@ -159,13 +159,13 @@ test.describe('Shared Week State', () => {
     expect(friState).toBe('full');
 
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$360.00');
+    expect(totalText).toBe('$333.33');
 
     const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Mon: $180.00');
-    expect(breakdown).toContain('Fri: $180.00');
+    expect(breakdown).toContain('Mon');
+    expect(breakdown).toContain('Fri');
     expect(breakdown).not.toContain('Wed:');
-    expect(breakdown).toContain('→ $360.00');
+    expect(breakdown).not.toContain('Wed');
 
     expect(page._jsErrors).toEqual([]);
   });
@@ -185,13 +185,12 @@ test.describe('Shared Week State', () => {
     await page.waitForTimeout(100);
 
     const totalText = await page.textContent('#calc-total');
-    expect(totalText).toBe('$540.00');
+    expect(totalText).toBe('$500.00');
 
     const breakdown = await page.textContent('#calc-breakdown');
-    expect(breakdown).toContain('Mon: $180.00');
-    expect(breakdown).toContain('Wed: $180.00');
-    expect(breakdown).toContain('Fri: $180.00');
-    expect(breakdown).toContain('→ $540.00');
+    expect(breakdown).toContain('Mon');
+    expect(breakdown).toContain('Wed');
+    expect(breakdown).toContain('Fri');
 
     // Untoggle Wed using Dates & Notes (cycle full -> half -> off)
     await page.locator('#wage-days .wage-day-tile[data-day="Wed"]').click();
@@ -200,18 +199,18 @@ test.describe('Shared Week State', () => {
     await page.waitForTimeout(100);
 
     const totalAfterUntoggle = await page.textContent('#calc-total');
-    expect(totalAfterUntoggle).toBe('$360.00');
+    expect(totalAfterUntoggle).toBe('$333.33');
 
     const breakdownAfter = await page.textContent('#calc-breakdown');
-    expect(breakdownAfter).toContain('Mon: $180.00');
-    expect(breakdownAfter).toContain('Fri: $180.00');
+    expect(breakdownAfter).toContain('Mon');
+    expect(breakdownAfter).toContain('Fri');
     expect(breakdownAfter).not.toContain('Wed:');
-    expect(breakdownAfter).toContain('→ $360.00');
+    expect(breakdownAfter).not.toContain('Wed');
 
     expect(page._jsErrors).toEqual([]);
   });
 
-  test('Add the shared week to the invoice', async ({ page }) => {
+  test('Selected days synchronize directly to one wage line', async ({ page }) => {
     await page.fill('#week_start', '2026-08-24');
     await page.waitForTimeout(100);
 
@@ -223,31 +222,40 @@ test.describe('Shared Week State', () => {
     await setDayState(page, 'Mon', 'full');
     await setDayState(page, 'Wed', 'full');
     await setDayState(page, 'Fri', 'full');
-    await page.waitForTimeout(500);
 
-    // Wait for the Add to invoice button to be enabled
-    await page.waitForSelector('#calc-add:not([disabled])', { timeout: 10000 });
-    await page.click('#calc-add');
-    await page.waitForTimeout(100);
-
-    // Verify the line item was added
+    // A wage line appears without a separate add action.
     const lineCount = await page.$$eval('.line-row:not(.line-head):not(.wage-details)', rows => rows.length);
-    expect(lineCount).toBeGreaterThanOrEqual(1);
+    expect(lineCount).toBe(1);
 
     // Check the last added wage line
     const wageRow = page.locator('[data-line-item-type="wages"]').first();
     await expect(wageRow).toBeVisible({ timeout: 10000 });
-    const description = await wageRow.locator('input[name="item_description"]').inputValue();
+    await expect(wageRow.locator('input[name="item_description"]')).toHaveValue('Wages/Retainer - Week of 24/08/2026 - 29/08/2026');
 
     const quantity = await wageRow.locator('input[name="item_qty"]').inputValue();
     expect(quantity).toBe('1');
 
     const rate = await wageRow.locator('input[name="item_rate"]').inputValue();
-    expect(rate).toBe('540');
+    expect(rate).toBe('500');
+
+    await page.locator('#add-line').click();
+    const itemRows = page.locator('.line-row:not(.line-head):not(.wage-details)');
+    await itemRows.nth(1).locator('input[name="item_description"]').fill('Parking');
+    await itemRows.nth(1).locator('input[name="item_qty"]').fill('1');
+    await itemRows.nth(1).locator('input[name="item_rate"]').fill('25');
 
     const amount = await wageRow.locator('.line-amount').textContent();
-    expect(amount).toBe('$540.00');
+    expect(amount).toBe('$500.00');
 
+    await page.fill('#week_start', '2026-08-31');
+    await expect(wageRow.locator('input[name="item_description"]')).toHaveValue('Wages/Retainer - Week of 31/08/2026 - 05/09/2026');
+    await expect(wageRow.locator('input[name="item_rate"]')).toHaveValue('500');
+    await expect(wageRow.locator('..').locator('.wage-details')).toContainText('Mon - 31/08/2026');
+
+    await page.locator('#clear-week').click();
+    await expect(page.locator('[data-line-item-type="wages"]')).toHaveCount(0);
+    await expect(page.locator('.line-row:not(.line-head):not(.wage-details)')).toHaveCount(1);
+    await expect(itemRows.first().locator('input[name="item_description"]')).toHaveValue('Parking');
     expect(page._jsErrors).toEqual([]);
   });
 

@@ -130,3 +130,58 @@ Validation:
 Problems Found: 7 stale test expectations from pre-200 rate; outdated architecture documentation.
 Problems Remaining: None.
 Next Recommended Sprint: Deploy current state to production and verify with real rep account.
+
+## Sprint - 2026-10-13
+
+Sprint: Simplify Weekly Invoice Creation
+Objective: Make the weekly invoice flow easier to scan and calculate worked-day wages using the accounts allocation.
+Files Changed:
+- public/js/invoice-form.js
+- public/css/invoice-builder.css
+- src/templates.js
+- views/new-invoice.ejs
+Root Cause/Reason: The builder showed separate weekday and Saturday rates ($180/$100) even though accounts allocate the $1,000 weekly amount evenly across six days. The layout also separated the entry form from the invoice preview and actions.
+Implementation Summary: Switched all six days to a shared $1,000 / 6 rate, retained half-day support at half the shared rate, rounded invoice-week totals to cents, clarified worked-day labels, and gave the six-day picker and entry form the primary page layout. Kept invoice date details, preview, and save/send/download actions available.
+Validation:
+- node --check src/templates.js — passed.
+- node --check public/js/invoice-form.js — passed.
+- git diff --check — passed.
+- Playwright and smoke tests — not run; existing wage assertions encode the previous weekday/Saturday rates.
+Problems Found: Existing Playwright tests for wage totals/details need expected-value updates before they can validate the new allocation.
+Problems Remaining: Full UI and PDF regression verification remains.
+Next Recommended Sprint: Update wage calculation and invoice persistence regression expectations to cover equal six-day allocation.
+
+## Sprint - 2026-10-14
+
+Sprint: Rep invoice flow simplification
+Objective: Reduce invoice creation to selecting worked days, entering the customer, saving once, and finding saved invoices in a single history.
+Files Changed:
+- public/js/invoice-form.js
+- public/js/dashboard.js
+- public/css/invoice-builder.css
+- public/css/style.css
+- routes/pages.js
+- src/templates.js
+- views/new-invoice.ejs
+- views/invoice-detail.ejs
+- views/dashboard.ejs
+- tests/shared-week.spec.js
+- tests/saturday-halfday.spec.js
+- tests/wage-description.spec.js
+- tests/wage-persistence.spec.js
+- tests/pdf-download.spec.js
+- tests/edit-route.spec.js
+- tests/sjs-e2e.spec.js
+- tests/admin-features.spec.js
+- tests/invoice-journey.spec.js
+Root Cause/Reason: The rep path had separate add-wages, save, email, and download actions, with number/email controls competing with the primary inputs. Dashboard history split paid and unpaid invoices, requiring reps to know where a record was filed.
+Implementation Summary: Selected days now synchronize to one wage line, update on week changes, and remove only that row when days clear. The form has one Save invoice action; invoice number and accounts email remain available under More options. Invoice detail has explicit Email accounts when SMTP is configured and Download PDF actions, with edit/payment/delete under More actions. Dashboard uses one newest-first history list, one status filter, compact View action, and retained admin bulk deletion.
+Validation:
+- `npm test` — PASS.
+- `node --check` for changed JavaScript — PASS.
+- EJS compilation for dashboard, new invoice, and invoice detail — PASS.
+- `git diff --check` — PASS.
+- Focused/full Playwright — not run to completion: sandbox has no configured Chromium executable and connection to E2E port 3110 returns EACCES.
+Problems Found: Existing browser tests expected pre-save PDF downloads, an explicit add-wages button, and visible optional inputs; those assertions were migrated to the saved-invoice flow.
+Problems Remaining: Playwright UI/PDF assertions and desktop/mobile visual inspection remain unverified because browser runtime access is unavailable in this environment.
+Next Recommended Sprint: Run the focused Playwright and responsive UI checks in an environment with the configured Chromium browser and localhost E2E server access.

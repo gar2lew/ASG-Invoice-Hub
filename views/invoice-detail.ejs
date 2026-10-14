@@ -9,27 +9,29 @@
   <div class="head-actions">
     <span class="badge badge-<%= invoice.status %>"><%= invoice.status %></span>
     <a class="btn btn-accent" href="/invoices/<%= invoice.id %>/download">Download PDF</a>
-    <% if (invoice.status === 'draft' || invoice.status === 'paid') { %>
-      <a class="btn btn-ink" href="mailto:natalie@sjssolutionscorp.com.au?subject=<%= encodeURIComponent('Invoice ' + invoice.invoice_number) %>&amp;body=<%= encodeURIComponent('Please see my invoice attached for &quot;' + invoice.repName + '&quot; - &quot;' + invoice.issue_date + '&quot;') %>">Open email</a>
-    <% } %>
-    <% if (invoice.status === 'draft') { %>
-      <a class="btn btn-ghost" href="/invoices/<%= invoice.id %>/edit">Edit invoice</a>
-    <% } %>
-    <% if (invoice.status === 'sent') { %>
-      <a class="btn btn-ink" href="mailto:natalie@sjssolutionscorp.com.au?subject=<%= encodeURIComponent('Invoice ' + invoice.invoice_number) %>&amp;body=<%= encodeURIComponent('Please see my invoice attached for &quot;' + invoice.repName + '&quot; - &quot;' + invoice.issue_date + '&quot;') %>">Open email again</a>
-    <% } %>
-    <% if (invoice.status !== 'paid') { %>
-      <form method="post" action="/invoices/<%= invoice.id %>/paid">
-        <button class="btn btn-ghost" type="submit">Mark paid</button>
+    <% if (mailEnabled) { %>
+      <form method="post" action="/invoices/<%= invoice.id %>/send">
+        <button class="btn btn-ink" type="submit">Email accounts</button>
       </form>
     <% } %>
-    <form method="post" action="/invoices/<%= invoice.id %>/delete" onsubmit="return confirm('Delete invoice <%= invoice.invoice_number %>? This cannot be undone.');">
-      <button class="btn btn-danger" type="submit">Delete</button>
-    </form>
+    <details class="invoice-more-actions">
+      <summary>More actions</summary>
+      <div class="invoice-more-actions-menu">
+        <% if (invoice.status === 'draft') { %><a class="btn btn-ghost" href="/invoices/<%= invoice.id %>/edit">Edit invoice</a><% } %>
+        <% if (invoice.status !== 'paid') { %>
+          <form method="post" action="/invoices/<%= invoice.id %>/paid">
+            <button class="btn btn-ghost" type="submit">Mark paid</button>
+          </form>
+        <% } %>
+        <form method="post" action="/invoices/<%= invoice.id %>/delete" onsubmit="return confirm('Delete invoice <%= invoice.invoice_number %>? This cannot be undone.');">
+          <button class="btn btn-danger" type="submit">Delete</button>
+        </form>
+      </div>
+    </details>
   </div>
 </header>
 
-<div class="flash flash-warn" role="status">Download the PDF, then attach it to the email window before sending.</div>
+<% if (!mailEnabled) { %><div class="flash flash-warn" role="status">Email delivery is not configured. Download the PDF to send it manually.</div><% } %>
 
 <div class="detail-grid">
   <section class="card">

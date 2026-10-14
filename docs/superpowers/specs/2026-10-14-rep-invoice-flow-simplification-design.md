@@ -1,7 +1,7 @@
 # Rep Invoice Flow Simplification
 
 Date: 2026-10-14
-Status: Design approved in chat; awaiting written spec review.
+Status: Approved by user on 2026-10-14; implementation plan in review.
 
 ## Objective
 
@@ -18,11 +18,11 @@ Make the routine rep task direct and predictable: select the correct work dates,
 
 ## Proposed rep flow
 
-1. Dashboard presents one prominent **Create weekly invoice** action, a compact useful summary, and recent invoices. Administrative controls remain conditional for admins.
+1. Dashboard presents one prominent **Create weekly invoice** action, a compact useful summary, and one chronological invoice history. Administrative controls remain conditional for admins.
 2. Invoice entry uses one weekly checklist. Selecting or changing a day immediately creates or updates the wage line and total; no separate “Add wages” step is required. If no day is selected, no wage line is submitted. Existing customer, template, week date, half-day, optional item, note, and GST behavior remain available.
 3. The primary action is **Save invoice**. It persists the invoice as a draft and navigates to its detail page. It does not send or download implicitly.
 4. The detail page presents **Email accounts** and **Download PDF** as the main next actions. Email continues to use the existing server-side send route and existing validation; PDF continues to use the existing download route. Status, edit-draft, mark-paid, and delete controls remain available with lower visual emphasis.
-5. History becomes one chronological list with work week/date, customer, total, and status. Invoice detail remains the place for less frequent actions. Admin bulk selection/deletion is preserved.
+5. History becomes one chronological list with creation date, customer, total, and status. Invoice detail remains the place for less frequent actions. Admin bulk selection/deletion is preserved.
 
 ## Data and behavior
 

@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('Saturday Half-Day', () => {
+test.describe('Equal Six-Day Allocation', () => {
   test.beforeEach(async ({ page }) => {
     const errors = [];
     const consoleMessages = [];
@@ -55,9 +55,9 @@ test.describe('Saturday Half-Day', () => {
     expect(await getDayState(page, 'Wed')).toBe('full');
     expect(await getDayState(page, 'Thu')).toBe('full');
 
-    // Verify total is $720.00 (4 * 180)
+    // Four full weekdays total four sixths of $1,000.
     const calcTotal = await page.locator('#calc-total').textContent();
-    expect(calcTotal).toContain('720.00');
+    expect(calcTotal).toContain('666.67');
 
     // 2. Select Sat in Wage Calculator
     await setDayState(page, 'Sat', 'half');
@@ -70,14 +70,13 @@ test.describe('Saturday Half-Day', () => {
     const satDateInput = await page.locator('input[name="date_Sat"]').inputValue();
     expect(satDateInput).toBe('2026-08-29');
 
-    // 5. Confirm breakdown includes "Sat ½: $100.00"
+    // 5. Confirm Saturday half day is counted in the breakdown.
     const calcBreakdown = await page.locator('#calc-breakdown').textContent();
     expect(calcBreakdown).toContain('Sat Half');
-    expect(calcBreakdown).toContain('100.00');
 
-    // 6. Confirm total is $820.00 (720.00 + 100.00)
+    // 6. Confirm four full days and a Saturday half day total $750.00.
     const calcTotal2 = await page.locator('#calc-total').textContent();
-    expect(calcTotal2).toContain('820.00');
+    expect(calcTotal2).toContain('750.00');
 
     // 7. Untoggle Sat from Dates & Notes
     await page.locator('#wage-days .wage-day-tile[data-day="Sat"]').click();
@@ -86,9 +85,9 @@ test.describe('Saturday Half-Day', () => {
     // 8. Confirm it clears in Wage Calculator
     expect(await getDayState(page, 'Sat')).toBe('off');
 
-    // 9. Confirm total returns to $720.00
+    // 9. Confirm total returns to four full days = $666.67.
     const calcTotal3 = await page.locator('#calc-total').textContent();
-    expect(calcTotal3).toContain('720.00');
+    expect(calcTotal3).toContain('666.67');
 
     // 10. Repeat selection in opposite direction (Dates & Notes first)
     await page.locator('#wage-days .wage-day-tile[data-day="Sat"]').click();
@@ -97,9 +96,9 @@ test.describe('Saturday Half-Day', () => {
     // Confirm Sat selects in Wage Calculator
     expect(await getDayState(page, 'Sat')).toBe('half');
 
-    // Confirm total is $820.00 again
+    // Confirm total is $750.00 again.
     const calcTotal4 = await page.locator('#calc-total').textContent();
-    expect(calcTotal4).toContain('820.00');
+    expect(calcTotal4).toContain('750.00');
   });
 
   test('Select Mon-Fri deselects Saturday', async ({ page }) => {
@@ -125,12 +124,12 @@ test.describe('Saturday Half-Day', () => {
     // Verify Saturday is deselected
     expect(await getDayState(page, 'Sat')).toBe('off');
 
-    // Verify total is $900.00
+    // Verify five worked days total $833.33.
     const calcTotal = await page.locator('#calc-total').textContent();
-    expect(calcTotal.replace(/,/g, '')).toContain('900.00');
+    expect(calcTotal.replace(/,/g, '')).toContain('833.33');
   });
 
-  test('Mon-Fri week totals $900', async ({ page }) => {
+  test('Mon-Fri week totals $833.33', async ({ page }) => {
     await page.fill('#week_start', '2026-08-24');
     await page.waitForTimeout(100);
 
@@ -138,9 +137,9 @@ test.describe('Saturday Half-Day', () => {
     await page.locator('#select-mon-fri').click();
     await page.waitForTimeout(100);
 
-    // Verify total is $900.00
+    // Verify total is $833.33.
     const calcTotal = await page.locator('#calc-total').textContent();
-    expect(calcTotal.replace(/,/g, '')).toContain('900.00');
+    expect(calcTotal.replace(/,/g, '')).toContain('833.33');
 
     // Verify breakdown shows 5 days
     const calcBreakdown = await page.locator('#calc-breakdown').textContent();
@@ -152,7 +151,7 @@ test.describe('Saturday Half-Day', () => {
     expect(calcBreakdown).not.toContain('Sat');
   });
 
-  test('Saturday only totals $100', async ({ page }) => {
+  test('Saturday half day totals $83.33', async ({ page }) => {
     await page.fill('#week_start', '2026-08-24');
     await page.waitForTimeout(100);
 
@@ -160,12 +159,12 @@ test.describe('Saturday Half-Day', () => {
     await setDayState(page, 'Sat', 'half');
     await page.waitForTimeout(100);
 
-    // Verify total is $100.00
+    // Verify half a day uses half of the shared $1,000 / 6 rate.
     const calcTotal = await page.locator('#calc-total').textContent();
-    expect(calcTotal).toContain('100.00');
+    expect(calcTotal).toContain('83.33');
   });
 
-  test('Mon-Fri + Saturday totals $1000', async ({ page }) => {
+  test('Mon-Fri + Saturday half totals $916.67', async ({ page }) => {
     await page.fill('#week_start', '2026-08-24');
     await page.waitForTimeout(100);
 
@@ -177,12 +176,12 @@ test.describe('Saturday Half-Day', () => {
     await setDayState(page, 'Sat', 'half');
     await page.waitForTimeout(100);
 
-    // Verify total is $1000.00
+    // Five full days and one half day total $916.67.
     const calcTotal = await page.locator('#calc-total').textContent();
-    expect(calcTotal.replace(/,/g, '')).toContain('1000.00');
+    expect(calcTotal.replace(/,/g, '')).toContain('916.67');
   });
 
-  test('Deselect Saturday returns to $900', async ({ page }) => {
+  test('Deselect Saturday returns to $833.33', async ({ page }) => {
     await page.fill('#week_start', '2026-08-24');
     await page.waitForTimeout(100);
 
@@ -194,32 +193,32 @@ test.describe('Saturday Half-Day', () => {
     await setDayState(page, 'Sat', 'half');
     await page.waitForTimeout(100);
 
-    // Verify $1000
-    expect((await page.locator('#calc-total').textContent()).replace(/,/g, '')).toContain('1000.00');
+    // Verify five full days and one half day total $916.67.
+    expect((await page.locator('#calc-total').textContent()).replace(/,/g, '')).toContain('916.67');
 
     // Deselect Saturday
     await setDayState(page, 'Sat', 'off');
     await page.waitForTimeout(100);
 
-    // Verify back to $900
-    expect((await page.locator('#calc-total').textContent()).replace(/,/g, '')).toContain('900.00');
+    // Verify back to the five-day total of $833.33.
+    expect((await page.locator('#calc-total').textContent()).replace(/,/g, '')).toContain('833.33');
   });
 
   test('Individual day combinations are correct', async ({ page }) => {
     await page.fill('#week_start', '2026-08-24');
     await page.waitForTimeout(100);
 
-    // Mon only = $180
+    // Mon only = $166.67 when rounded to cents.
     await setDayState(page, 'Mon', 'full');
     await page.waitForTimeout(50);
-    expect(await page.locator('#calc-total').textContent()).toContain('180.00');
+    expect(await page.locator('#calc-total').textContent()).toContain('166.67');
 
-    // Add Wed + Fri = $540
+    // Mon + Wed + Fri = $500.00.
     await setDayState(page, 'Wed', 'full');
     await page.waitForTimeout(50);
     await setDayState(page, 'Fri', 'full');
     await page.waitForTimeout(50);
-    expect(await page.locator('#calc-total').textContent()).toContain('540.00');
+    expect(await page.locator('#calc-total').textContent()).toContain('500.00');
   });
 
   test('Dates display in DD/MM/YYYY format', async ({ page }) => {
@@ -253,42 +252,42 @@ test.describe('Saturday Half-Day', () => {
     // Verify Saturday appears in breakdown
     const breakdown2 = await page.locator('#calc-breakdown').textContent();
     expect(breakdown2).toContain('Sat');
-    expect(breakdown2).toContain('½');
+    expect(breakdown2).toContain('Half');
   });
 
   test('Half day weekday calculations are correct', async ({ page }) => {
     await page.fill('#week_start', '2026-08-24');
     await page.waitForTimeout(100);
 
-    // Monday Half = $90
+    // Monday Half = $83.33.
     await setDayState(page, 'Mon', 'half');
     await page.waitForTimeout(50);
-    expect(await page.locator('#calc-total').textContent()).toContain('90.00');
+    expect(await page.locator('#calc-total').textContent()).toContain('83.33');
 
-    // Monday Half + Tuesday Half = $180
+    // Monday Half + Tuesday Half = $166.67.
     await setDayState(page, 'Tue', 'half');
     await page.waitForTimeout(50);
-    expect(await page.locator('#calc-total').textContent()).toContain('180.00');
+    expect(await page.locator('#calc-total').textContent()).toContain('166.67');
 
-    // Mon-Fri Half = $450
+    // Mon-Fri Half = $416.67.
     await setDayState(page, 'Wed', 'half');
     await setDayState(page, 'Thu', 'half');
     await setDayState(page, 'Fri', 'half');
     await page.waitForTimeout(50);
-    expect(await page.locator('#calc-total').textContent()).toContain('450.00');
+    expect(await page.locator('#calc-total').textContent()).toContain('416.67');
   });
 
-  test('Mixed Full and Half week + Saturday = $550', async ({ page }) => {
+  test('Mixed Full and Half week + Saturday totals $500', async ({ page }) => {
     await page.fill('#week_start', '2026-08-24');
     await page.waitForTimeout(100);
 
-    // Monday Full + Tuesday Half + Wednesday Full + Saturday = $550
+    // Two full days and two half days equal three sixths of $1,000.
     await setDayState(page, 'Mon', 'full');
     await setDayState(page, 'Tue', 'half');
     await setDayState(page, 'Wed', 'full');
     await setDayState(page, 'Sat', 'half');
     await page.waitForTimeout(50);
-    expect(await page.locator('#calc-total').textContent()).toContain('550.00');
+    expect(await page.locator('#calc-total').textContent()).toContain('500.00');
   });
 
   test('Select Mon-Sat sets weekdays Full, Saturday Half', async ({ page }) => {
@@ -307,9 +306,9 @@ test.describe('Saturday Half-Day', () => {
     expect(await getDayState(page, 'Fri')).toBe('full');
     expect(await getDayState(page, 'Sat')).toBe('half');
 
-    // Verify total is $1000
+    // Verify five full days and a half Saturday total $916.67.
     const calcTotal = await page.locator('#calc-total').textContent();
-    expect(calcTotal.replace(/,/g, '')).toContain('1000.00');
+    expect(calcTotal.replace(/,/g, '')).toContain('916.67');
   });
 
   test('Clear Week sets all days off', async ({ page }) => {
@@ -319,7 +318,7 @@ test.describe('Saturday Half-Day', () => {
     // First select some days
     await page.locator('#select-mon-sat').click();
     await page.waitForTimeout(100);
-    expect((await page.locator('#calc-total').textContent()).replace(/,/g, '')).toContain('1000.00');
+    expect((await page.locator('#calc-total').textContent()).replace(/,/g, '')).toContain('916.67');
 
     // Click "Clear Week"
     await page.locator('#clear-week').click();
@@ -350,9 +349,6 @@ test.describe('Saturday Half-Day', () => {
 
     await page.fill('#customer_name', 'Test Customer');
     await page.fill('#customer_address', '123 Test St');
-    await page.click('#calc-add');
-    await page.waitForTimeout(100);
-
     const detailsRow = page.locator('.wage-details').first();
     const detailsText = await detailsRow.textContent();
 

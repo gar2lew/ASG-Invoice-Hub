@@ -396,6 +396,38 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.head-actions form {
+  margin: 0;
+}
+
+.invoice-more-actions {
+  position: relative;
+}
+
+.invoice-more-actions-menu {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  top: 100%;
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 180px;
+  padding: var(--space-sm);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.invoice-more-actions-menu form {
+  margin: 0;
+}
+
+.invoice-more-actions-menu .btn {
+  width: 100%;
+  justify-content: flex-start;
+}
+
 /* ===================================================================
    STATS
    =================================================================== */

@@ -73,6 +73,18 @@ test.describe('Invoice Download Tracking', () => {
     }
   });
 
+  test('admin can bulk-select invoices from the consolidated history', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Invoice history' })).toBeVisible();
+    await expect(page.locator('table.table')).toHaveCount(1);
+    const selectAll = page.locator('[data-select-all]');
+    await expect(selectAll).toBeVisible();
+    await selectAll.check();
+    const invoiceCount = await page.locator('#bulk-delete-invoices input[name="delete_ids"]').count();
+    await expect(page.locator('#bulk-delete-invoices input[name="delete_ids"]:checked')).toHaveCount(invoiceCount);
+  });
+
   test('repeated PDF download does not create duplicate invoice', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/invoices/new');

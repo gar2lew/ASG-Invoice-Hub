@@ -15,7 +15,6 @@ var wageDays = document.getElementById('wage-days');
 var weekRangeEl = document.getElementById('calc-week-range');
 var templateInput = form ? form.querySelector('input[name="template"]') : null;
 var tplButtons = form ? Array.prototype.slice.call(form.querySelectorAll('.company-option')) : [];
-var submitSend = document.getElementById('submit-send-email');
 
 var editId = form ? form.dataset.editId || null : null;
 var isEditing = Boolean(editId);
@@ -137,14 +136,19 @@ function getShortDate(d) {
 
 var initialInvoiceNumber = '';
 
+function getInvoiceNumberInput() {
+  return document.getElementById('invoice_number') || document.querySelector('input[name="invoice_number"]');
+}
+
 function isInvoiceNumberManuallyOverridden() {
-  var invNumEl = document.getElementById('invoice_number');
+  var invNumEl = getInvoiceNumberInput();
   if (!invNumEl) return false;
   return invNumEl.value.trim() !== initialInvoiceNumber;
 }
 
 function buildPayload() {
   var data = new FormData(form);
+  var invoiceNumberInput = getInvoiceNumberInput();
   var items = itemRows().map(function (row) {
     var description = row.querySelector('input[name="item_description"]').value.trim();
     var quantity = parseFloat(row.querySelector('input[name="item_qty"]').value) || 0;
@@ -172,8 +176,8 @@ function buildPayload() {
 
   return {
     template: templateInput.value,
-    invoice_number: data.get('invoice_number'),
-    invoice_number_manual_override: isInvoiceNumberManuallyOverridden(),
+    invoice_number: (invoiceNumberInput ? invoiceNumberInput.value : '') || (form && form.dataset.nextNumber) || '',
+    invoice_number_manual_override: Boolean(invoiceNumberInput && isInvoiceNumberManuallyOverridden()),
     continue_numbering: Boolean(data.get('continue_numbering')),
     customer_name: data.get('customer_name'),
     customer_company: data.get('customer_company'),
@@ -186,29 +190,6 @@ function buildPayload() {
     items: items,
     send_now: false,
   };
-}
-
-// (removed duplicate submit handler — see below)
-
-function downloadPdf(invoiceId) {
-  var payload = buildPayload();
-  fetch('/api/invoices', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(Object.assign({}, payload, { action: 'download' })),
-  })
-  .then(function (res) { return res.blob(); })
-  .then(function (blob) {
-    var url = URL.createObjectURL(blob);
-    var download = document.createElement('a');
-    download.href = url;
-    download.download = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
-    download.click();
-    URL.revokeObjectURL(url);
-  })
-  .catch(function (err) {
-    showError('Download failed: ' + err.message);
-  });
 }
 
 function showError(msg) {
@@ -254,9 +235,6 @@ function setTemplate(name) {
     }
   }
 
-  var rateInput = document.getElementById('calc-rate');
-  if (rateInput && cfg.perDayRate) rateInput.value = cfg.perDayRate;
-
   var notes = document.getElementById('notes');
   if (notes && tpl && !isEditing) {
     notes.value = '';
@@ -266,17 +244,14 @@ function setTemplate(name) {
 }
 
 var WAGE_RATES = {
-  weekdayFull: 180,
-  weekdayHalf: 90,
-  saturdayHalf: 100,
+  daily: 1000 / 6,
 };
 
 var ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 var weekState = {
   company: 'asg',
-  perDayRate: WAGE_RATES.weekdayFull,
-  saturdayRate: WAGE_RATES.saturdayHalf,
+  perDayRate: WAGE_RATES.daily,
   dayStates: {},
   weekStarting: '',
   notes: '',
@@ -284,12 +259,10 @@ var weekState = {
 
 var companyConfigs = {
   asg: {
-    perDayRate: 180,
-    saturdayRate: 100,
+    perDayRate: WAGE_RATES.daily,
   },
   sjs: {
-    perDayRate: 180,
-    saturdayRate: 100,
+    perDayRate: WAGE_RATES.daily,
   },
 };
 
@@ -298,8 +271,8 @@ function initializeWeekState() {
   var weekStart = document.getElementById('week_start');
   if (weekStart && weekStart.value) {
     weekState.weekStarting = weekStart.value;
-    updateWeekRange();
     updateDateTiles();
+    updateWeekRange();
   }
 }
 
@@ -309,6 +282,7 @@ function updateWeekRange() {
   }
   updateDateTiles();
   updatePreview();
+  syncWageLine();
 }
 
 function updateDateTiles() {
@@ -343,8 +317,7 @@ function updateDateTiles() {
 function setDayState(day, state) {
   weekState.dayStates[day] = state;
   updateDayUI(day);
-  updateWeekTotal();
-  updatePreview();
+  syncWageLine();
 }
 
 function updateDayUI(day) {
@@ -383,19 +356,24 @@ function updateWeekTotal() {
     var dayName = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i];
     var state = weekState.dayStates[dayName];
     if (state === 'full') {
-      total += WAGE_RATES.weekdayFull;
-      breakdown.push(dayName + ' Full');
+      total += WAGE_RATES.daily;
+      breakdown.push(dayName);
     } else if (state === 'half') {
-      total += WAGE_RATES.weekdayHalf;
+      total += WAGE_RATES.daily / 2;
       breakdown.push(dayName + ' Half');
     }
   }
 
   var satState = weekState.dayStates['Sat'];
-  if (satState === 'half') {
-    total += WAGE_RATES.saturdayHalf;
+  if (satState === 'full') {
+    total += WAGE_RATES.daily;
+    breakdown.push('Sat');
+  } else if (satState === 'half') {
+    total += WAGE_RATES.daily / 2;
     breakdown.push('Sat Half');
   }
+
+  total = Math.round((total + Number.EPSILON) * 100) / 100;
 
   var totalEl = document.getElementById('calc-total');
   if (totalEl) totalEl.textContent = fmt(total);
@@ -405,29 +383,27 @@ function updateWeekTotal() {
     breakdownEl.textContent = breakdown.length > 0 ? breakdown.join(' + ') : 'Select days worked to calculate wages.';
   }
 
-  var satAmountEl = document.getElementById('sat-amount');
-  if (satAmountEl) satAmountEl.textContent = fmt(WAGE_RATES.saturdayHalf);
-
   return total;
 }
 
-function addWageLine() {
+function syncWageLine() {
   var total = updateWeekTotal();
+  var existingWageRow = itemRows().find(function (row) {
+    return row.getAttribute('data-line-item-type') === 'wages';
+  });
+
   if (total === 0) {
-    showError('Select at least one day worked before adding to invoice.');
+    if (existingWageRow) {
+      var emptyDetailsRow = existingWageRow.nextElementSibling;
+      existingWageRow.remove();
+      if (emptyDetailsRow && emptyDetailsRow.classList.contains('wage-details')) emptyDetailsRow.remove();
+      updateTotals();
+    }
     return;
   }
 
   var weekStart = weekState.weekStarting;
   var weekRange = fmtWeekRange(weekStart);
-
-  var existingWageRow = null;
-  var rows = itemRows();
-  rows.forEach(function (row) {
-    if (row.getAttribute('data-line-item-type') === 'wages') {
-      existingWageRow = row;
-    }
-  });
 
   var details = [];
   for (var i = 0; i < 5; i++) {
@@ -436,14 +412,16 @@ function addWageLine() {
     if (state === 'off') continue;
     var d = getDayDate(weekStart, i);
     var dateStr = fmtDate(d);
-    var amount = state === 'full' ? WAGE_RATES.weekdayFull : WAGE_RATES.weekdayHalf;
+    var amount = state === 'full' ? WAGE_RATES.daily : WAGE_RATES.daily / 2;
     var label = state === 'full' ? 'Full day' : 'Half day';
     details.push(dayName + ' - ' + dateStr + ' - ' + label + ' - ' + fmt(amount));
   }
   var satState = weekState.dayStates['Sat'];
-  if (satState === 'half') {
+  if (satState === 'full' || satState === 'half') {
     var sat = getSaturdayDate(weekStart);
-    details.push('Sat - ' + fmtDate(sat) + ' - Half day - ' + fmt(WAGE_RATES.saturdayHalf));
+    var satAmount = satState === 'full' ? WAGE_RATES.daily : WAGE_RATES.daily / 2;
+    var satLabel = satState === 'full' ? 'Full day' : 'Half day';
+    details.push('Sat - ' + fmtDate(sat) + ' - ' + satLabel + ' - ' + fmt(satAmount));
   }
 
   if (existingWageRow) {
@@ -453,6 +431,18 @@ function addWageLine() {
     var detailsRow = existingWageRow.nextElementSibling;
     if (detailsRow && detailsRow.classList.contains('wage-details')) {
       detailsRow.querySelector('.wage-details-container').innerHTML = details.map(function (d) { return '<div>' + d + '</div>'; }).join('');
+    } else if (details.length) {
+      var newDetailsRow = document.createElement('div');
+      newDetailsRow.className = 'line-row wage-details';
+      var newDetailsContainer = document.createElement('div');
+      newDetailsContainer.className = 'wage-details-container';
+      details.forEach(function (detail) {
+        var detailElement = document.createElement('div');
+        detailElement.textContent = detail;
+        newDetailsContainer.appendChild(detailElement);
+      });
+      newDetailsRow.appendChild(newDetailsContainer);
+      existingWageRow.after(newDetailsRow);
     }
   } else {
     addLine({
@@ -508,7 +498,7 @@ function updatePreview() {
       (rd.bankAccount ? 'Account: ' + escHtml(rd.bankAccount) : '');
   }
 
-  var invNum = document.getElementById('invoice_number');
+  var invNum = getInvoiceNumberInput();
   if (pvInvNum) pvInvNum.textContent = invNum ? invNum.value : '';
 
   var cn = document.getElementById('customer_name');
@@ -516,7 +506,7 @@ function updatePreview() {
   var cc = document.getElementById('customer_company');
   if (pvClientContact) pvClientContact.textContent = cc ? cc.value : '';
   var ce = document.getElementById('customer_email');
-  if (pvClientEmail) pvClientEmail.textContent = ce ? ce.value : '';
+  if (pvClientEmail) pvClientEmail.textContent = ce && ce.value ? 'Email: ' + ce.value : '';
   var ca = document.getElementById('customer_address');
   if (pvClientAddress) pvClientAddress.textContent = ca ? ca.value : '';
 
@@ -749,11 +739,8 @@ if (form) {
   if (weekStart) weekStart.addEventListener('change', function () {
     weekState.weekStarting = weekStart.value;
     updateWeekRange();
+    syncWageLine();
   });
-
-  // Add wage line
-  var calcAdd = document.getElementById('calc-add');
-  if (calcAdd) calcAdd.addEventListener('click', addWageLine);
 
   // Add line
   var addLineBtn = document.getElementById('add-line');
@@ -767,27 +754,9 @@ if (form) {
     updatePreview();
   });
 
-  // Submit buttons
-  var submitDraft = document.getElementById('submit-draft');
-  var submitDownload = document.getElementById('submit-download');
-  var submitSendBtn = document.getElementById('submit-send-email');
-  var actionField = document.getElementById('action-field');
-
-  if (submitDraft) submitDraft.addEventListener('click', function () {
-    actionField.value = 'draft';
-  });
-  if (submitSendBtn) submitSendBtn.addEventListener('click', function () {
-    actionField.value = 'send';
-  });
-  if (submitDownload) submitDownload.addEventListener('click', function (e) {
-    e.preventDefault();
-    actionField.value = 'download';
-    form.dispatchEvent(new Event('submit', { cancelable: true }));
-  });
 }
 
 if (form) form.addEventListener('submit', function (e) {
-  var action = actionField.value || 'draft';
   e.preventDefault();
   var sendNowEl = document.getElementById('send_now');
   if (sendNowEl) sendNowEl.checked = false;
@@ -799,27 +768,6 @@ if (form) form.addEventListener('submit', function (e) {
   }
   if (!payload.customer_name) {
     showError('Company name is required.');
-    return;
-  }
-
-  if (action === 'download') {
-    fetch('/api/invoices', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(Object.assign({}, payload, { action: 'download' })),
-    })
-    .then(function (res) { return res.blob(); })
-    .then(function (blob) {
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = (document.getElementById('invoice_number').value || 'invoice') + '.pdf';
-      a.click();
-      URL.revokeObjectURL(url);
-    })
-    .catch(function (err) {
-      showError('Download failed: ' + err.message);
-    });
     return;
   }
 
@@ -836,14 +784,6 @@ if (form) form.addEventListener('submit', function (e) {
       showError(body.error || 'Something went wrong.');
       return;
     }
-    if (action === 'send') {
-      if (body.warning) {
-        showError('Invoice saved but email failed. Please try again.');
-        return;
-      }
-      window.location.href = '/invoices/' + body.id;
-      return;
-    }
     window.location.href = '/invoices/' + body.id;
   })
   .catch(function (err) {
@@ -852,10 +792,11 @@ if (form) form.addEventListener('submit', function (e) {
 });
 
 // Track initial invoice number for manual override detection
-var initialInvoiceNumber = (document.getElementById('invoice_number') || {}).value || '';
+var initialInvoiceNumber = (getInvoiceNumberInput() || {}).value || '';
 
 // Handle existing items when editing an invoice
 if (typeof window.existingItems !== 'undefined' && Array.isArray(window.existingItems) && window.existingItems.length > 0) {
+  initializeWeekState();
   window.existingItems.forEach(function (item) {
     addLine({
       description: item.description,
@@ -899,6 +840,7 @@ if (typeof window.existingItems !== 'undefined' && Array.isArray(window.existing
 
     updateWeekTotal();
     updatePreview();
+    syncWageLine();
   }
 } else {
   addLine();

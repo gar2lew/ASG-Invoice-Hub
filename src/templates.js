@@ -22,12 +22,9 @@ const TEMPLATES = {
 };
 
 const WEEKLY_WAGE = {
-  fullDays: 5,
-  halfDays: 1,
-  defaultTotal: 900,
-  weekdayRate: 180,
-  weekdayHalfRate: 90,
-  saturdayRate: 100,
+  fullDays: 6,
+  weeklyAmount: 1000,
+  weekdayRate: 1000 / 6,
   get perDay() {
     return WEEKLY_WAGE.weekdayRate;
   },
