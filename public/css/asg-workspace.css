@@ -96,6 +96,37 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
+/* Forms and cards: clearer label-to-field and row spacing (profile, admin, workspace) */
+.field {
+  gap: 6px;
+  margin-bottom: var(--space-md);
+}
+
+.grid2 {
+  row-gap: 24px;
+  column-gap: 16px;
+}
+
+.grid2 .field {
+  margin-bottom: 0;
+}
+
+.card-head {
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+@media (max-width: 540px) {
+  .grid2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card-head {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
 /* Invoice totals and line items: styled rows (these classes had no CSS before) */
 .line-row {
   display: grid;
